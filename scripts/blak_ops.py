@@ -15,3 +15,7 @@ def ops_config(root: Path) -> dict:
 
 def sbom_required(root: Path) -> bool:
     return bool(ops_config(root).get('sbom'))
+
+def observability_signals(root: Path) -> list[str]:
+    raw = str(ops_config(root).get('signals') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
