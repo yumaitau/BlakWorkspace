@@ -17,4 +17,4 @@ See the ADR set:
 - [ADR-001](../adr/ADR-001.md) through [ADR-009](../adr/ADR-009.md)
 - Index: [docs/adr/README.md](../adr/README.md)
 
-Working defaults: [docs/assumptions.md](../assumptions.md). Pin: [docs/upstream-baseline.md](../upstream-baseline.md). Contract: [docs/product-contract.md](../product-contract.md).
+Working defaults: [docs/assumptions.md](../assumptions.md). Pin: [docs/upstream-baseline.md](../upstream-baseline.md). Contract: [docs/product-contract.md](../product-contract.md). Profiles: [docs/architecture/profile-matrix.md](profile-matrix.md).
