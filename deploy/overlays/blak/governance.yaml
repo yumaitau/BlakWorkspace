@@ -1,3 +1,4 @@
 governance:
   controls: access,sharing,retention,export
   stewardshipFields: owner,classification,country
+  enforcement: disable-share,revoke,escalate
