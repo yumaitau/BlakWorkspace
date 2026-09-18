@@ -129,7 +129,11 @@ class TestRealManifest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertIn("OK: manifest valid", proc.stdout)
+        self.assertTrue(
+            "OK: manifest valid" in proc.stdout
+            or "OK: manifest and profiles valid" in proc.stdout,
+            proc.stdout,
+        )
 
 
 class TestValidatorRejects(unittest.TestCase):
