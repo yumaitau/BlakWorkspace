@@ -42,9 +42,13 @@ class TestAdrSet(unittest.TestCase):
         self.assertIn("ADR-009", text)
         self.assertIn("Docmost", text)
 
-    def test_no_extra_adr_files_missing_from_index(self):
+    def test_index_lists_every_adr_file(self):
         files = sorted(p.name for p in (ROOT / "docs" / "adr").glob("ADR-*.md"))
-        self.assertEqual(files, [f"{adr}.md" for adr in ADR_IDS])
+        index = read("docs/adr/README.md")
+        for name in files:
+            self.assertIn(name, index)
+        for adr in ADR_IDS:
+            self.assertIn(f"{adr}.md", files)
 
 
 if __name__ == "__main__":
