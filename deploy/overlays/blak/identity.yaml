@@ -7,3 +7,4 @@ identity:
   entraFederation: false
   lifecycle: join,move,leave
   guestDefault: deny
+  auditEvents: authn.success,authn.failure,member.add,member.remove,role.change
