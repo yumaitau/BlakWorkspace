@@ -46,3 +46,6 @@ def idp_failures(root: Path) -> list[str]:
     if cfg.get("protocol") != REQUIRED_PROTOCOL:
         failed.append("protocol")
     return failed
+
+def entra_federation_enabled(root: Path) -> bool:
+    return bool(identity_config(root).get("entraFederation"))
