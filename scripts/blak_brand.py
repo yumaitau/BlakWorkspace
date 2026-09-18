@@ -6,6 +6,11 @@ from pathlib import Path
 
 PORTAL_REL = "deploy/overlays/blak/portal-labels.example.yaml"
 NAMING_REL = "docs/brand/naming-map.md"
+LOCALE_RELS = (
+    "deploy/overlays/blak/theme-values.example.yaml",
+    "deploy/overlays/blak/portal-labels.example.yaml",
+)
+REQUIRED_LOCALE = "en-AU"
 
 
 def _portal_tiles(text: str) -> list[dict]:
@@ -74,6 +79,26 @@ def branding_coverage(root: Path) -> list[dict]:
             }
         )
     return rows
+
+
+def overlay_locales(root: Path) -> dict[str, str]:
+    """Locale strings declared in overlay YAML (key: locale)."""
+    found: dict[str, str] = {}
+    for rel in LOCALE_RELS:
+        text = (root / rel).read_text(encoding="utf-8")
+        for raw in text.splitlines():
+            stripped = raw.split("#", 1)[0].strip()
+            if stripped.startswith("locale:"):
+                found[rel] = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+    return found
+
+
+def locale_mismatches(root: Path) -> list[str]:
+    return [
+        f"{rel}={value}"
+        for rel, value in overlay_locales(root).items()
+        if value != REQUIRED_LOCALE
+    ]
 
 
 def coverage_gaps(root: Path) -> list[str]:
