@@ -1,0 +1,25 @@
+# Example only. Align keys with upstream functional.portal before use.
+# Labels only; do not rename Helm releases or OIDC client IDs.
+portal:
+  locale: "en-AU"
+  tiles:
+    - id: nextcloud
+      label: "Blak Drive"
+    - id: collabora
+      label: "Blak Docs"
+    - id: notes
+      label: "Blak Notes"
+    - id: element
+      label: "Blak Chat"
+    - id: jitsi
+      label: "Blak Meet"
+    - id: ox
+      label: "Blak Mail and Calendar"
+      enabled: false
+    - id: docmost
+      label: "Blak Knowledge"
+    - id: openproject
+      label: "Blak Projects"
+    - id: nubus-admin
+      label: "Blak Admin"
+# xwiki tile is omitted on purpose (not a Blak Knowledge backend).
