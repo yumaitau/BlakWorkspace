@@ -16,3 +16,7 @@ def governance_config(root: Path) -> dict:
 def policy_controls(root: Path) -> list[str]:
     raw = str(governance_config(root).get('controls') or '')
     return [p.strip() for p in raw.split(',') if p.strip()]
+
+def stewardship_fields(root: Path) -> list[str]:
+    raw = str(governance_config(root).get('stewardshipFields') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
