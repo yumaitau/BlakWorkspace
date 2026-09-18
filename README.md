@@ -47,7 +47,7 @@ Internal chart and application IDs are not renamed.
 2. Review ADRs under [docs/adr/](docs/adr/).
 3. Validate backlog: `python scripts/validate-manifest.py`
 4. Dry-run GitHub seed: `python scripts/seed-github.py --dry-run`
-5. Explore deploy stubs under [deploy/](deploy/) (do not apply production).
+5. Explore deploy stubs under [deploy/](deploy/) (do not apply production). Eval intent: [deploy/profiles/eval/](deploy/profiles/eval/) and [deploy/PREREQS.md](deploy/PREREQS.md).
 
 ## Upstream baseline
 
