@@ -10,12 +10,13 @@ Blak Workspace is an overlay on a pinned openDesk deployment: baseline first, th
 - Collaboration: Element, Jitsi, optional OX, OpenProject, Notes
 - Brand: upstream theme hooks and label maps only
 - Sovereign AI: Blak Hermes (opt-in, default off; Nubus control plane; ADR-011)
+- Sites: Blak Sites (opt-in intranet aggregation layer, default off; Nextcloud libraries; ADR-012)
 
 ## Decisions
 
 See the ADR set:
 
-- [ADR-001](../adr/ADR-001.md) through [ADR-011](../adr/ADR-011.md)
+- [ADR-001](../adr/ADR-001.md) through [ADR-012](../adr/ADR-012.md)
 - Index: [docs/adr/README.md](../adr/README.md)
 
 Working defaults: [docs/assumptions.md](../assumptions.md). Pin: [docs/upstream-baseline.md](../upstream-baseline.md). Contract: [docs/product-contract.md](../product-contract.md). Profiles: [docs/architecture/profile-matrix.md](profile-matrix.md).

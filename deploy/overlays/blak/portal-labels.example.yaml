@@ -25,5 +25,9 @@ portal:
     - id: hermes
       label: "Blak Hermes"
       enabled: false
+    - id: sites
+      label: "Blak Sites"
+      enabled: false
 # xwiki tile is omitted on purpose (not a Blak Knowledge backend).
 # hermes tile stays off until hermes.enabled is opted in (ADR-011).
+# sites tile stays off until sites.enabled is opted in (ADR-012).

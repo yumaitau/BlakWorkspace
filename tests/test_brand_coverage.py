@@ -23,6 +23,7 @@ class TestBrandCoverage(unittest.TestCase):
             "Blak Docs",
             "Blak Knowledge",
             "Blak Hermes",
+            "Blak Sites",
             "Blak Admin",
         ):
             self.assertIn(required, labels)
