@@ -3,3 +3,4 @@ governance:
   stewardshipFields: owner,classification,country
   enforcement: disable-share,revoke,escalate
   retentionDays: 365
+  dataResidency: AU
