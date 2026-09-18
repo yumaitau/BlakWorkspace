@@ -6,3 +6,4 @@ identity:
   personas: site-owner,site-admin,member,contributor,reader
   entraFederation: false
   lifecycle: join,move,leave
+  guestDefault: deny
