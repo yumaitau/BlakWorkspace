@@ -3,3 +3,5 @@ pilot:
   operatorDocs: secrets,backup-restore,hermes,notes-knowledge
   ossFiles: LICENSE,NOTICE,THIRD_PARTY_NOTICES.md
   blakFlow: reserved
+  aiDefault: off
+  aiDefault: disabled
