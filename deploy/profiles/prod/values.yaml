@@ -8,3 +8,6 @@ optional:
   oxMailCalendar: false
   entraFederation: false
   aiFeatures: false
+knowledge:
+  xwiki: false
+  docmost: false  # enable only after BW-055 pin/licence; never with xwiki
