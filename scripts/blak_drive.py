@@ -25,3 +25,6 @@ def collabora_enabled(root: Path) -> bool:
 def sync_clients(root: Path) -> list[str]:
     raw = str(drive_config(root).get('syncClients') or '')
     return [p.strip() for p in raw.split(',') if p.strip()]
+
+def drive_migration(root: Path) -> str:
+    return str(drive_config(root).get('migration') or '')
