@@ -18,3 +18,6 @@ def drive_quota_gb(root: Path) -> int:
 
 def share_link_default(root: Path) -> str:
     return str(drive_config(root).get('shareLinkDefault') or '')
+
+def collabora_enabled(root: Path) -> bool:
+    return bool(drive_config(root).get('collabora'))

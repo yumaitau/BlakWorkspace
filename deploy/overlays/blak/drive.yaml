@@ -1,3 +1,4 @@
 drive:
   quotasGb: 10
   shareLinkDefault: authenticated
+  collabora: true
