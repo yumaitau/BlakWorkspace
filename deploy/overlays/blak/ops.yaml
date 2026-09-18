@@ -3,3 +3,4 @@ ops:
   signals: metrics,logs,traces
   restoreRehearsal: not-run
   upgrade: pin-then-overlay
+  pilotUsers: 50
