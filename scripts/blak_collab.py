@@ -18,3 +18,6 @@ def chat_backend(root: Path) -> str:
 
 def meet_backend(root: Path) -> str:
     return str(collab_config(root).get('meet') or '')
+
+def ox_enabled(root: Path) -> bool:
+    return bool(collab_config(root).get('oxMailCalendar'))

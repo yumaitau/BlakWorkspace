@@ -1,3 +1,4 @@
 collab:
   chat: element
   meet: jitsi
+  oxMailCalendar: false
