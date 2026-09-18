@@ -15,3 +15,6 @@ def collab_config(root: Path) -> dict:
 
 def chat_backend(root: Path) -> str:
     return str(collab_config(root).get('chat') or '')
+
+def meet_backend(root: Path) -> str:
+    return str(collab_config(root).get('meet') or '')
