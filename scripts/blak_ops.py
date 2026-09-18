@@ -19,3 +19,6 @@ def sbom_required(root: Path) -> bool:
 def observability_signals(root: Path) -> list[str]:
     raw = str(ops_config(root).get('signals') or '')
     return [p.strip() for p in raw.split(',') if p.strip()]
+
+def restore_rehearsal_status(root: Path) -> str:
+    return str(ops_config(root).get('restoreRehearsal') or '')
