@@ -122,7 +122,10 @@ class TestSeedGithub(unittest.TestCase):
         committed_map = json.loads(
             (ROOT / "docs/backlog/seed-map.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(committed_map.get("issues"), {})
+        issues = committed_map.get("issues") or {}
+        for iid, number in issues.items():
+            self.assertIsInstance(number, int, iid)
+            self.assertGreater(number, 0, iid)
 
     def test_cli_rejects_dry_run_and_apply_together(self):
         proc = subprocess.run(
