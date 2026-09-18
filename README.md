@@ -6,7 +6,7 @@ Indigenous-branded digital workplace suite by Yuma IT, distributed as branding, 
 
 ## Purpose
 
-Blak Workspace helps Australian organisations run a coherent digital workplace experience with Blak product naming on top of openDesk components, while preserving upstream compatibility and honest licensing.
+Blak Workspace helps Australian organisations run a coherent digital workplace experience with Blak product naming on top of openDesk components, while preserving upstream compatibility and honest licensing. The [product contract](docs/product-contract.md) is the definition of done for this seed.
 
 ## Scope
 
@@ -43,7 +43,7 @@ Internal chart and application IDs are not renamed.
 
 ## Quick start
 
-1. Read [docs/assumptions.md](docs/assumptions.md) and [docs/upstream-baseline.md](docs/upstream-baseline.md).
+1. Read the [product contract](docs/product-contract.md), [docs/assumptions.md](docs/assumptions.md), and [docs/upstream-baseline.md](docs/upstream-baseline.md).
 2. Review ADRs under [docs/adr/](docs/adr/).
 3. Validate backlog: `python scripts/validate-manifest.py`
 4. Dry-run GitHub seed: `python scripts/seed-github.py --dry-run`
