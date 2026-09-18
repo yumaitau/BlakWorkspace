@@ -32,4 +32,5 @@ Pilot: start small (single-digit GiB DB, tens of GiB object) and re-evaluate aft
 ## Related
 
 - [ADR-005](../adr/ADR-005.md)
+- [docs/runbooks/backup-restore.md](../runbooks/backup-restore.md)
 - [docs/architecture/profile-matrix.md](profile-matrix.md)
