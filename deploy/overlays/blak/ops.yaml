@@ -1,2 +1,3 @@
 ops:
   sbom: true
+  signals: metrics,logs,traces
