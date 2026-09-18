@@ -24,3 +24,6 @@ def ox_enabled(root: Path) -> bool:
 
 def notes_backend(root: Path) -> str:
     return str(collab_config(root).get('notes') or '')
+
+def projects_backend(root: Path) -> str:
+    return str(collab_config(root).get('projects') or '')
