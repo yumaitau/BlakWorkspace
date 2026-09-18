@@ -64,6 +64,11 @@ def both_knowledge_enabled(profile: dict) -> bool:
     return xwiki and docmost
 
 
+def public_unauthenticated_knowledge(profile: dict) -> bool:
+    knowledge = profile.get("knowledge") or {}
+    return bool(knowledge.get("allowPublicUnauthenticated"))
+
+
 def load_profile(path: Path) -> dict:
     return parse_profile(path.read_text(encoding="utf-8"))
 
@@ -76,19 +81,38 @@ REQUIRED_PROFILES = ("eval", "staging", "prod")
 
 
 def validate_profiles(root: Path) -> list[str]:
-    """Fail if default profiles are missing or dual-enable Knowledge engines."""
+    """Fail if default profiles are missing, dual-enable Knowledge, or public-unauth."""
     errors: list[str] = []
     for name in REQUIRED_PROFILES:
         path = root / "deploy" / "profiles" / name / "values.yaml"
         if not path.is_file():
             errors.append(f"missing profile {path.relative_to(root)}")
             continue
-        profile = load_profile(path)
-        xwiki, docmost = knowledge_flags(profile)
-        if xwiki:
-            errors.append(f"{name}: knowledge.xwiki must be false in Blak defaults")
-        if both_knowledge_enabled(profile):
-            errors.append(f"{name}: knowledge.xwiki and knowledge.docmost must not both be true")
-        if docmost and xwiki:
-            errors.append(f"{name}: Docmost must not be co-enabled with XWiki")
+        errors.extend(_check_profile(name, load_profile(path), require_deny=True))
+    profiles_root = root / "deploy" / "profiles"
+    if profiles_root.is_dir():
+        for path in sorted(profiles_root.rglob("*.yaml")):
+            rel = path.relative_to(root).as_posix()
+            if path.name == "values.yaml" and path.parent.name in REQUIRED_PROFILES:
+                continue
+            errors.extend(_check_profile(rel, load_profile(path), require_deny=False))
+    return errors
+
+
+def _check_profile(name: str, profile: dict, *, require_deny: bool) -> list[str]:
+    errors: list[str] = []
+    knowledge = profile.get("knowledge") or {}
+    xwiki, docmost = knowledge_flags(profile)
+    if xwiki:
+        errors.append(f"{name}: knowledge.xwiki must be false in Blak defaults")
+    if both_knowledge_enabled(profile):
+        errors.append(f"{name}: knowledge.xwiki and knowledge.docmost must not both be true")
+    if public_unauthenticated_knowledge(profile):
+        errors.append(
+            f"{name}: public unauthenticated Knowledge is forbidden (default-deny)"
+        )
+    if require_deny and "allowPublicUnauthenticated" not in knowledge:
+        errors.append(f"{name}: knowledge.allowPublicUnauthenticated must be explicit false")
+    if docmost and xwiki:
+        errors.append(f"{name}: Docmost must not be co-enabled with XWiki")
     return errors
