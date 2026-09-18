@@ -70,3 +70,25 @@ def load_profile(path: Path) -> dict:
 
 def iter_profile_paths(root: Path) -> list[Path]:
     return sorted((root / "deploy" / "profiles").glob("*/values.yaml"))
+
+
+REQUIRED_PROFILES = ("eval", "staging", "prod")
+
+
+def validate_profiles(root: Path) -> list[str]:
+    """Fail if default profiles are missing or dual-enable Knowledge engines."""
+    errors: list[str] = []
+    for name in REQUIRED_PROFILES:
+        path = root / "deploy" / "profiles" / name / "values.yaml"
+        if not path.is_file():
+            errors.append(f"missing profile {path.relative_to(root)}")
+            continue
+        profile = load_profile(path)
+        xwiki, docmost = knowledge_flags(profile)
+        if xwiki:
+            errors.append(f"{name}: knowledge.xwiki must be false in Blak defaults")
+        if both_knowledge_enabled(profile):
+            errors.append(f"{name}: knowledge.xwiki and knowledge.docmost must not both be true")
+        if docmost and xwiki:
+            errors.append(f"{name}: Docmost must not be co-enabled with XWiki")
+    return errors
