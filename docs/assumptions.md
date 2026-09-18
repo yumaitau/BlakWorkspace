@@ -10,6 +10,6 @@ Working defaults for the Blak Workspace seed. Change via ADR or decision issue.
 6. **Locale:** en-AU for human docs and default locale configuration intent.
 7. **Identity:** Start with Nubus; optional Microsoft Entra investigation is not mandatory.
 8. **Pilot:** Focus on a core pilot workflow across Drive/Docs and essential collaboration, not full suite parity.
-9. **AI:** No AI processing of customer content by default; any future AI is explicit opt-in.
+9. **AI:** No AI processing of customer content by default. Opt-in runtime is **Blak Hermes** (ADR-011): cluster-local, Nubus control plane, owner-chosen inference. Document search across Drive/Docs/Knowledge is a second explicit flag.
 10. **Claims:** No invented sovereignty, PROTECTED, IRAP, or community endorsement claims.
 11. **Blak Knowledge:** Docmost replaces XWiki for Blak defaults; do not enable both engines in the same default profile (BW-055).

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from blak_hermes import validate_hermes
+
 
 def _as_bool(raw: str) -> bool:
     value = raw.split("#", 1)[0].strip().lower()
@@ -16,7 +18,7 @@ def _as_bool(raw: str) -> bool:
 
 def parse_profile(text: str) -> dict:
     """Parse the simple profile YAML used in deploy/profiles/*/values.yaml."""
-    data: dict = {"knowledge": {}, "optional": {}}
+    data: dict = {"knowledge": {}, "optional": {}, "hermes": {}}
     section = None
     for raw in text.splitlines():
         if not raw.strip() or raw.lstrip().startswith("#"):
@@ -115,4 +117,5 @@ def _check_profile(name: str, profile: dict, *, require_deny: bool) -> list[str]
         errors.append(f"{name}: knowledge.allowPublicUnauthenticated must be explicit false")
     if docmost and xwiki:
         errors.append(f"{name}: Docmost must not be co-enabled with XWiki")
+    errors.extend(validate_hermes(name, profile, require_deny=require_deny))
     return errors

@@ -23,6 +23,7 @@ openDesk is provided by ZenDiS GmbH. Overlay materials in this repository are Ap
 | Blak Projects | OpenProject |
 | Blak Admin | Nubus admin / portal admin surfaces |
 | Blak Flow | Reserved for later |
+| Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off) |
 
 Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels.
 

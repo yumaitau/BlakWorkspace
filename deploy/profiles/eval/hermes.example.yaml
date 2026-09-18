@@ -1,0 +1,29 @@
+# Supported Hermes-enabled eval sketch. Not applied by this seed.
+# Search spans Drive, Docs, and Knowledge through the Nubus control plane.
+# Gateway stays cluster-local. Public unauth is forbidden.
+profile: eval-hermes
+blakOverlay: true
+optional:
+  oxMailCalendar: false
+  entraFederation: false
+  aiFeatures: true
+  hermes: true
+knowledge:
+  xwiki: false
+  docmost: true
+  allowPublicUnauthenticated: false
+hermes:
+  enabled: true
+  allowPublicUnauthenticated: false
+  documentSearch: true
+  publishGateway: false
+  controlPlane: nubus
+  mcpPath: "/api/hermes/mcp"
+  inferenceProvider: owner-chosen
+  allowExternalInference: false
+  image: ghcr.io/yumaitau/companyos-hermes
+  imageTag: TBD
+  corpusDrive: true
+  corpusDocs: true
+  corpusKnowledge: true
+  sso: nubus-oidc

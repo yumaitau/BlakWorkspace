@@ -21,7 +21,7 @@ class TestEpicE09(unittest.TestCase):
         self.assertEqual(by_id["BW-E09"]["priority"], "P1")
         self.assertEqual(
             by_id["BW-E09"]["children"],
-            ["BW-049", "BW-050", "BW-051", "BW-052", "BW-053", "BW-054"],
+            ["BW-049", "BW-050", "BW-051", "BW-052", "BW-053", "BW-054", "BW-056"],
         )
 
 

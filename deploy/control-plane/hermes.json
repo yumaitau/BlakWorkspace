@@ -1,0 +1,26 @@
+{
+  "id": "hermes",
+  "label": "Blak Hermes",
+  "kind": "sovereign-ai-runtime",
+  "defaultEnabled": false,
+  "controlPlane": "nubus",
+  "mcpPath": "/api/hermes/mcp",
+  "gateway": {
+    "port": 8642,
+    "publish": false,
+    "health": "/health"
+  },
+  "dashboard": {
+    "port": 9119,
+    "publish": false
+  },
+  "image": "ghcr.io/yumaitau/companyos-hermes",
+  "imageTag": "TBD",
+  "isolation": "one-hermes-per-organisation-deployment",
+  "corpus": ["drive", "docs", "knowledge"],
+  "search": {
+    "drive": "Nextcloud (Blak Drive)",
+    "docs": "Collabora files on Drive (Blak Docs)",
+    "knowledge": "Docmost (Blak Knowledge)"
+  }
+}

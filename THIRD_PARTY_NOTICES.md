@@ -23,6 +23,7 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 | Projects | OpenProject | GPL-3.0-only | Blak Projects |
 | Meet | Jitsi | Apache-2.0 | Blak Meet |
 | Weboffice | Collabora | MPL-2.0 | Blak Docs |
+| Sovereign AI runtime | Hermes Agent (Yuma package `companyos-hermes`) | TBD — record upstream licence at pin | Blak Hermes (opt-in, default off) |
 
 ## Gaps (honest)
 
@@ -31,6 +32,7 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 - Enterprise Edition only components (for example Dovecot Pro / Cassandra paths) are not enabled by default and need separate licence review.
 - Container base image notices are not yet collected.
 - Exact Docmost licence and image pin are TBD until recorded under BW-055.
+- Exact Hermes Agent licence and `companyos-hermes` image pin are TBD until recorded under BW-056.
 
 Do not treat this file as legal advice. Do not relicense upstream components as Apache-2.0.
 

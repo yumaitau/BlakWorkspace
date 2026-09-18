@@ -1,0 +1,20 @@
+# Opt-in Blak Hermes sidecar. Cluster-local only. Do not publish 8642/9119.
+# Image tag is TBD until pinned; do not invent a digest.
+# Inference is owner-chosen (local/AU). External SaaS needs allowExternalInference.
+blak:
+  productName: "Blak Workspace"
+hermes:
+  enabled: false
+  allowPublicUnauthenticated: false
+  documentSearch: false
+  publishGateway: false
+  controlPlane: nubus
+  mcpPath: "/api/hermes/mcp"
+  inferenceProvider: owner-chosen
+  allowExternalInference: false
+  image: ghcr.io/yumaitau/companyos-hermes
+  imageTag: TBD
+  corpusDrive: false
+  corpusDocs: false
+  corpusKnowledge: false
+  sso: nubus-oidc

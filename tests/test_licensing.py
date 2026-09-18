@@ -16,6 +16,7 @@ MAJOR_APPS = [
     "OpenProject",
     "Nubus",
     "OX App Suite",
+    "Hermes Agent",
 ]
 
 

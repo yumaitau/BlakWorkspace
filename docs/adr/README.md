@@ -10,3 +10,4 @@
 - [ADR-008](ADR-008.md) — Regional data flows
 - [ADR-009](ADR-009.md) — Optional component profiles
 - [ADR-010](ADR-010.md) — Docmost for Blak Knowledge
+- [ADR-011](ADR-011.md) — Hermes as opt-in sovereign AI runtime
