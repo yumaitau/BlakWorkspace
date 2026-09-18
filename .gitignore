@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 .env
 *.secret
+*.pem
+id_rsa
+id_rsa.pub
