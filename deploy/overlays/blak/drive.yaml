@@ -3,3 +3,4 @@ drive:
   shareLinkDefault: authenticated
   collabora: true
   syncClients: desktop,mobile
+  migration: copy-then-cutover
