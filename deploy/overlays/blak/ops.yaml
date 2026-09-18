@@ -4,3 +4,4 @@ ops:
   restoreRehearsal: not-run
   upgrade: pin-then-overlay
   pilotUsers: 50
+  threats: authn,sharing,backup,supply-chain
