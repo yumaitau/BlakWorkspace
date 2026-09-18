@@ -1,0 +1,7 @@
+profile: staging
+blakOverlay: true
+externalServicesRequired: true
+optional:
+  oxMailCalendar: false
+  entraFederation: false
+  aiFeatures: false

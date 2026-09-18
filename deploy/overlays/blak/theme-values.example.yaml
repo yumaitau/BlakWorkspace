@@ -1,0 +1,9 @@
+# Example only. Align keys with upstream theme.yaml.gotmpl before use.
+# Do not commit production secrets.
+blak:
+  productName: "Blak Workspace"
+  locale: "en-AU"
+  theme:
+    # Fill from brand/tokens.json once approved
+    primaryColor: null
+    logoPath: null
