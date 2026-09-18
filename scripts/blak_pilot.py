@@ -15,3 +15,7 @@ def pilot_config(root: Path) -> dict:
 
 def pilot_status(root: Path) -> str:
     return str(pilot_config(root).get('status') or '')
+
+def operator_docs(root: Path) -> list[str]:
+    raw = str(pilot_config(root).get('operatorDocs') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
