@@ -21,3 +21,7 @@ def share_link_default(root: Path) -> str:
 
 def collabora_enabled(root: Path) -> bool:
     return bool(drive_config(root).get('collabora'))
+
+def sync_clients(root: Path) -> list[str]:
+    raw = str(drive_config(root).get('syncClients') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
