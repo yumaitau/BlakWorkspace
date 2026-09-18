@@ -27,3 +27,7 @@ def notes_backend(root: Path) -> str:
 
 def projects_backend(root: Path) -> str:
     return str(collab_config(root).get('projects') or '')
+
+def pilot_journeys(root: Path) -> list[str]:
+    raw = str(collab_config(root).get('pilotJourneys') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
