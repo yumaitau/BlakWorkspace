@@ -28,3 +28,7 @@ def upgrade_procedure(root: Path) -> str:
 
 def pilot_user_capacity(root: Path) -> int:
     return int(ops_config(root).get('pilotUsers'))
+
+def threat_model_topics(root: Path) -> list[str]:
+    raw = str(ops_config(root).get('threats') or '')
+    return [p.strip() for p in raw.split(',') if p.strip()]
