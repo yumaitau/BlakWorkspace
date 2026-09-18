@@ -1,0 +1,5 @@
+# Identity overlay intent. Nubus is the baseline IdP. Do not invent a second IdP.
+identity:
+  idp: nubus
+  protocol: oidc
+  issuer: nubus-keycloak
