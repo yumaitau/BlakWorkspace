@@ -64,3 +64,21 @@ def lifecycle_failures(root: Path) -> list[str]:
 
 def guest_default(root: Path) -> str:
     return str(identity_config(root).get("guestDefault") or "")
+
+REQUIRED_AUDIT_EVENTS = (
+    "authn.success",
+    "authn.failure",
+    "member.add",
+    "member.remove",
+    "role.change",
+)
+
+
+def identity_audit_events(root: Path) -> list[str]:
+    raw = str(identity_config(root).get("auditEvents") or "")
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def audit_event_failures(root: Path) -> list[str]:
+    got = identity_audit_events(root)
+    return [name for name in REQUIRED_AUDIT_EVENTS if name not in got]
