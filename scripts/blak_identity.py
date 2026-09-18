@@ -49,3 +49,15 @@ def idp_failures(root: Path) -> list[str]:
 
 def entra_federation_enabled(root: Path) -> bool:
     return bool(identity_config(root).get("entraFederation"))
+
+REQUIRED_LIFECYCLE = ("join", "move", "leave")
+
+
+def identity_lifecycle(root: Path) -> list[str]:
+    raw = str(identity_config(root).get("lifecycle") or "")
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def lifecycle_failures(root: Path) -> list[str]:
+    got = identity_lifecycle(root)
+    return [step for step in REQUIRED_LIFECYCLE if step not in got]
