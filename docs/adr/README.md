@@ -9,3 +9,4 @@
 - [ADR-007](ADR-007.md) — Indigenous governance boundary
 - [ADR-008](ADR-008.md) — Regional data flows
 - [ADR-009](ADR-009.md) — Optional component profiles
+- [ADR-010](ADR-010.md) — Docmost for Blak Knowledge

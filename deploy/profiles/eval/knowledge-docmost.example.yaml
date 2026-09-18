@@ -1,0 +1,13 @@
+# Supported Knowledge-enabled eval sketch. Not applied by this seed.
+# Uses Docmost, not XWiki. Auth required. Do not copy into prod without pin/licence.
+profile: eval-knowledge-docmost
+blakOverlay: true
+knowledge:
+  xwiki: false
+  docmost: true
+  allowPublicUnauthenticated: false
+sso:
+  provider: nubus-oidc
+  notes: "Wire Docmost OIDC to Nubus/Keycloak when BW-019/BW-020 exist. Do not invent client IDs."
+imagePin:
+  docmost: TBD  # do not invent a digest
