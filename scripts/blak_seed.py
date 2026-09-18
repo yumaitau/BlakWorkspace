@@ -130,11 +130,27 @@ def remote_markers(remote: list[RemoteIssue]) -> dict[str, int]:
     return found
 
 
-def plan_seed(data: dict, root: Path, remote: list[RemoteIssue]) -> SeedPlan:
+def issues_for_epic(data: dict, epic_id: str | None) -> list[dict]:
+    issues = list(data["issues"])
+    if not epic_id:
+        return issues
+    by_id = {item["id"]: item for item in issues}
+    if epic_id not in by_id:
+        raise ValueError(f"unknown epic {epic_id}")
+    allow = {epic_id, *(by_id[epic_id].get("children") or [])}
+    return [item for item in issues if item["id"] in allow]
+
+
+def plan_seed(
+    data: dict,
+    root: Path,
+    remote: list[RemoteIssue],
+    epic_id: str | None = None,
+) -> SeedPlan:
     markers = remote_markers(remote)
     creates: list[PlannedCreate] = []
     skips: list[tuple[str, int, str]] = []
-    for item in data["issues"]:
+    for item in issues_for_epic(data, epic_id):
         iid = item["id"]
         if iid in markers:
             skips.append((iid, markers[iid], "marker present"))
@@ -300,6 +316,7 @@ def run_seed(
     dry_run: bool,
     client: GitHubClient | None = None,
     remote: list[RemoteIssue] | None = None,
+    epic_id: str | None = None,
 ) -> tuple[int, str, dict | None]:
     errors = validate_tree(root)
     if errors:
@@ -311,7 +328,7 @@ def run_seed(
             owner, repo = owner_repo.split("/", 1)
             client = GhCliGitHub(owner, repo)
         remote = client.list_issues()
-    plan = plan_seed(data, root, remote)
+    plan = plan_seed(data, root, remote, epic_id=epic_id)
     text = format_plan(plan, dry_run=dry_run)
     if dry_run:
         return 0, text, None
@@ -327,13 +344,14 @@ def main_seed(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Seed GitHub issues from the backlog manifest")
     parser.add_argument("--dry-run", action="store_true", help="print planned creates; do not write")
     parser.add_argument("--apply", action="store_true", help="create missing issues and write seed-map")
+    parser.add_argument("--epic", help="limit seed to this epic id and its children")
     args = parser.parse_args(argv)
     if args.apply and args.dry_run:
         print("ERROR: choose either --dry-run or --apply", file=sys.stderr)
         return 2
     dry_run = not args.apply
     root = repo_root()
-    code, text, _seed_map = run_seed(root=root, dry_run=dry_run)
+    code, text, _seed_map = run_seed(root=root, dry_run=dry_run, epic_id=args.epic)
     stream = sys.stderr if code else sys.stdout
     print(text, file=stream)
     return code
