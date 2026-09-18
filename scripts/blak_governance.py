@@ -27,3 +27,6 @@ def enforcement_paths(root: Path) -> list[str]:
 
 def retention_days(root: Path) -> int:
     return int(governance_config(root).get('retentionDays'))
+
+def data_residency(root: Path) -> str:
+    return str(governance_config(root).get('dataResidency') or '')
