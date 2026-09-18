@@ -1,0 +1,7 @@
+profile: eval
+blakOverlay: true
+# Uses upstream-bundled services only for evaluation. Not for production.
+optional:
+  oxMailCalendar: false
+  entraFederation: false
+  aiFeatures: false

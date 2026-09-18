@@ -1,0 +1,10 @@
+profile: prod
+blakOverlay: true
+externalServicesRequired: true
+highAvailabilityIntent: true
+backupsRequired: true
+# Production intent only. Do not apply from this seed without owner approval.
+optional:
+  oxMailCalendar: false
+  entraFederation: false
+  aiFeatures: false
