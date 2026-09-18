@@ -17,3 +17,5 @@ jobs:
         run: python scripts/validate-manifest.py
       - name: Minimal config tests
         run: python -m unittest discover -s tests -v
+      - name: Generate SBOM
+        run: python scripts/generate_sbom.py
