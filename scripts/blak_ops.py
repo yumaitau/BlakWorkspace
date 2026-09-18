@@ -22,3 +22,6 @@ def observability_signals(root: Path) -> list[str]:
 
 def restore_rehearsal_status(root: Path) -> str:
     return str(ops_config(root).get('restoreRehearsal') or '')
+
+def upgrade_procedure(root: Path) -> str:
+    return str(ops_config(root).get('upgrade') or '')
