@@ -23,3 +23,6 @@ def operator_docs(root: Path) -> list[str]:
 def oss_package_files(root: Path) -> list[str]:
     raw = str(pilot_config(root).get('ossFiles') or '')
     return [p.strip() for p in raw.split(',') if p.strip()]
+
+def blak_flow_status(root: Path) -> str:
+    return str(pilot_config(root).get('blakFlow') or '')
