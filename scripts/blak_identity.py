@@ -61,3 +61,6 @@ def identity_lifecycle(root: Path) -> list[str]:
 def lifecycle_failures(root: Path) -> list[str]:
     got = identity_lifecycle(root)
     return [step for step in REQUIRED_LIFECYCLE if step not in got]
+
+def guest_default(root: Path) -> str:
+    return str(identity_config(root).get("guestDefault") or "")
