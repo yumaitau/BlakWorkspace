@@ -13,6 +13,7 @@ This repository currently contains seed documentation, configuration stubs, and 
 - No production secrets in git
 - CI workflows must not deploy production infrastructure
 - Overlay changes should not weaken default share or authentication controls without an explicit decision
+- Overlay copyright and third-party licence inventory: [NOTICE](NOTICE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Do not relicense upstream components.
 
 ## Preferred process
 
