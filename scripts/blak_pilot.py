@@ -26,3 +26,6 @@ def oss_package_files(root: Path) -> list[str]:
 
 def blak_flow_status(root: Path) -> str:
     return str(pilot_config(root).get('blakFlow') or '')
+
+def ai_default(root: Path) -> str:
+    return str(pilot_config(root).get('aiDefault') or '')
