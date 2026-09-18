@@ -2,3 +2,4 @@ ops:
   sbom: true
   signals: metrics,logs,traces
   restoreRehearsal: not-run
+  upgrade: pin-then-overlay
