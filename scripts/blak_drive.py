@@ -15,3 +15,6 @@ def drive_config(root: Path) -> dict:
 
 def drive_quota_gb(root: Path) -> int:
     return int(drive_config(root).get('quotasGb'))
+
+def share_link_default(root: Path) -> str:
+    return str(drive_config(root).get('shareLinkDefault') or '')
