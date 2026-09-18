@@ -1,0 +1,1224 @@
+{
+  "version": 1,
+  "repo": "yumaitau/BlakWorkspace",
+  "issues": [
+    {
+      "id": "BW-E01",
+      "title": "Product definition and foundation",
+      "type": "epic",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M0",
+      "depends_on": [],
+      "children": [
+        "BW-001",
+        "BW-002",
+        "BW-003",
+        "BW-004",
+        "BW-005",
+        "BW-006"
+      ],
+      "body_path": "docs/backlog/issues/BW-E01.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-E02",
+      "title": "Infrastructure and recovery",
+      "type": "epic",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M1",
+      "depends_on": [],
+      "children": [
+        "BW-007",
+        "BW-008",
+        "BW-009",
+        "BW-010",
+        "BW-011",
+        "BW-012"
+      ],
+      "body_path": "docs/backlog/issues/BW-E02.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-E03",
+      "title": "Brand and UX overlay",
+      "type": "epic",
+      "priority": "P0",
+      "area": "brand",
+      "milestone": "M1",
+      "depends_on": [],
+      "children": [
+        "BW-013",
+        "BW-014",
+        "BW-015",
+        "BW-016",
+        "BW-017",
+        "BW-018"
+      ],
+      "body_path": "docs/backlog/issues/BW-E03.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-E04",
+      "title": "Identity and access",
+      "type": "epic",
+      "priority": "P0",
+      "area": "identity",
+      "milestone": "M2",
+      "depends_on": [],
+      "children": [
+        "BW-019",
+        "BW-020",
+        "BW-021",
+        "BW-022",
+        "BW-023",
+        "BW-024"
+      ],
+      "body_path": "docs/backlog/issues/BW-E04.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-E05",
+      "title": "Blak Drive and Docs",
+      "type": "epic",
+      "priority": "P0",
+      "area": "drive",
+      "milestone": "M2",
+      "depends_on": [],
+      "children": [
+        "BW-025",
+        "BW-026",
+        "BW-027",
+        "BW-028",
+        "BW-029",
+        "BW-030"
+      ],
+      "body_path": "docs/backlog/issues/BW-E05.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-E06",
+      "title": "Collaboration communications",
+      "type": "epic",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "depends_on": [],
+      "children": [
+        "BW-031",
+        "BW-032",
+        "BW-033",
+        "BW-034",
+        "BW-035",
+        "BW-036",
+        "BW-055"
+      ],
+      "body_path": "docs/backlog/issues/BW-E06.md",
+      "labels": [
+        "type:epic",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-E07",
+      "title": "Indigenous governance and data stewardship",
+      "type": "epic",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M4",
+      "depends_on": [],
+      "children": [
+        "BW-037",
+        "BW-038",
+        "BW-039",
+        "BW-040",
+        "BW-041",
+        "BW-042"
+      ],
+      "body_path": "docs/backlog/issues/BW-E07.md",
+      "labels": [
+        "type:epic",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-E08",
+      "title": "Operations hardening",
+      "type": "epic",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "depends_on": [],
+      "children": [
+        "BW-043",
+        "BW-044",
+        "BW-045",
+        "BW-046",
+        "BW-047",
+        "BW-048"
+      ],
+      "body_path": "docs/backlog/issues/BW-E08.md",
+      "labels": [
+        "type:epic",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-E09",
+      "title": "Pilot and release packaging",
+      "type": "epic",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "depends_on": [],
+      "children": [
+        "BW-049",
+        "BW-050",
+        "BW-051",
+        "BW-052",
+        "BW-053",
+        "BW-054"
+      ],
+      "body_path": "docs/backlog/issues/BW-E09.md",
+      "labels": [
+        "type:epic",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-001",
+      "title": "Define Blak Workspace product contract",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [],
+      "body_path": "docs/backlog/issues/BW-001.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-002",
+      "title": "Pin openDesk upstream baseline",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-002.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-003",
+      "title": "Establish licensing boundary NOTICE and third-party notices",
+      "type": "task",
+      "priority": "P0",
+      "area": "licensing",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-003.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:licensing"
+      ]
+    },
+    {
+      "id": "BW-004",
+      "title": "Build seed tooling validate-manifest and seed-github",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-004.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-005",
+      "title": "Define Indigenous governance review process",
+      "type": "decision",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-005.md",
+      "labels": [
+        "type:decision",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-006",
+      "title": "Author required architecture decision records",
+      "type": "docs",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M0",
+      "epic": "BW-E01",
+      "depends_on": [
+        "BW-001",
+        "BW-002",
+        "BW-003"
+      ],
+      "body_path": "docs/backlog/issues/BW-006.md",
+      "labels": [
+        "type:docs",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-007",
+      "title": "Stand up eval baseline deployment profile",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M1",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-002"
+      ],
+      "body_path": "docs/backlog/issues/BW-007.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-008",
+      "title": "Define environment profiles eval staging prod",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M1",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-007"
+      ],
+      "body_path": "docs/backlog/issues/BW-008.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-009",
+      "title": "Design AU production hosting intent without applying",
+      "type": "spike",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M1",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-008",
+        "BW-006"
+      ],
+      "body_path": "docs/backlog/issues/BW-009.md",
+      "labels": [
+        "type:spike",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-010",
+      "title": "Define secrets management approach",
+      "type": "task",
+      "priority": "P0",
+      "area": "security",
+      "milestone": "M2",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-008"
+      ],
+      "body_path": "docs/backlog/issues/BW-010.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:security"
+      ]
+    },
+    {
+      "id": "BW-011",
+      "title": "Design production database and object storage",
+      "type": "task",
+      "priority": "P0",
+      "area": "platform",
+      "milestone": "M2",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-002",
+        "BW-009"
+      ],
+      "body_path": "docs/backlog/issues/BW-011.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-012",
+      "title": "Backup and restore rehearsal plan",
+      "type": "task",
+      "priority": "P0",
+      "area": "operations",
+      "milestone": "M2",
+      "epic": "BW-E02",
+      "depends_on": [
+        "BW-011"
+      ],
+      "body_path": "docs/backlog/issues/BW-012.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-013",
+      "title": "Create brand tokens placeholder and provenance register",
+      "type": "task",
+      "priority": "P0",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-005"
+      ],
+      "body_path": "docs/backlog/issues/BW-013.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-014",
+      "title": "Map openDesk theme hooks for Blak overlay",
+      "type": "task",
+      "priority": "P0",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-002",
+        "BW-013"
+      ],
+      "body_path": "docs/backlog/issues/BW-014.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-015",
+      "title": "Apply Blak names and navigation labels",
+      "type": "task",
+      "priority": "P1",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-001",
+        "BW-014"
+      ],
+      "body_path": "docs/backlog/issues/BW-015.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-016",
+      "title": "Audit per-app branding coverage",
+      "type": "task",
+      "priority": "P1",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-015"
+      ],
+      "body_path": "docs/backlog/issues/BW-016.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-017",
+      "title": "Configure en-AU locale defaults",
+      "type": "task",
+      "priority": "P1",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-017.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-018",
+      "title": "Accessibility baseline for branded surfaces",
+      "type": "task",
+      "priority": "P1",
+      "area": "brand",
+      "milestone": "M1",
+      "epic": "BW-E03",
+      "depends_on": [
+        "BW-014"
+      ],
+      "body_path": "docs/backlog/issues/BW-018.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:brand"
+      ]
+    },
+    {
+      "id": "BW-019",
+      "title": "Configure Nubus sign-in as baseline IdP",
+      "type": "task",
+      "priority": "P0",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-007"
+      ],
+      "body_path": "docs/backlog/issues/BW-019.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-020",
+      "title": "Map groups and roles for pilot personas",
+      "type": "task",
+      "priority": "P0",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-020.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-021",
+      "title": "Investigate optional Microsoft Entra federation",
+      "type": "spike",
+      "priority": "P1",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-021.md",
+      "labels": [
+        "type:spike",
+        "priority:P1",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-022",
+      "title": "Define join move leave identity lifecycle",
+      "type": "task",
+      "priority": "P1",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-020"
+      ],
+      "body_path": "docs/backlog/issues/BW-022.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-023",
+      "title": "Design external collaborator access pattern",
+      "type": "task",
+      "priority": "P1",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-020"
+      ],
+      "body_path": "docs/backlog/issues/BW-023.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-024",
+      "title": "Capture identity audit evidence approach",
+      "type": "task",
+      "priority": "P1",
+      "area": "identity",
+      "milestone": "M2",
+      "epic": "BW-E04",
+      "depends_on": [
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-024.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:identity"
+      ]
+    },
+    {
+      "id": "BW-025",
+      "title": "Configure Blak Drive storage and quotas",
+      "type": "task",
+      "priority": "P0",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-007",
+        "BW-011"
+      ],
+      "body_path": "docs/backlog/issues/BW-025.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-026",
+      "title": "Harden upload and share security defaults",
+      "type": "task",
+      "priority": "P0",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-025"
+      ],
+      "body_path": "docs/backlog/issues/BW-026.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-027",
+      "title": "Enable Blak Docs Collabora integration",
+      "type": "task",
+      "priority": "P0",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-025"
+      ],
+      "body_path": "docs/backlog/issues/BW-027.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-028",
+      "title": "Document and validate sync clients",
+      "type": "task",
+      "priority": "P1",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-025"
+      ],
+      "body_path": "docs/backlog/issues/BW-028.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-029",
+      "title": "Define Drive migration approach",
+      "type": "task",
+      "priority": "P1",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-025"
+      ],
+      "body_path": "docs/backlog/issues/BW-029.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-030",
+      "title": "Search and export capabilities for Drive",
+      "type": "task",
+      "priority": "P1",
+      "area": "drive",
+      "milestone": "M2",
+      "epic": "BW-E05",
+      "depends_on": [
+        "BW-025"
+      ],
+      "body_path": "docs/backlog/issues/BW-030.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:drive"
+      ]
+    },
+    {
+      "id": "BW-031",
+      "title": "Enable Blak Chat Element baseline",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-007",
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-031.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-032",
+      "title": "Enable Blak Meet Jitsi baseline",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-007",
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-032.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-033",
+      "title": "Optional Blak Mail and Calendar OX profile",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-008"
+      ],
+      "body_path": "docs/backlog/issues/BW-033.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-034",
+      "title": "Configure Blak Notes and Knowledge",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-007"
+      ],
+      "body_path": "docs/backlog/issues/BW-034.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-035",
+      "title": "Configure Blak Projects OpenProject",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-007",
+        "BW-019"
+      ],
+      "body_path": "docs/backlog/issues/BW-035.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-036",
+      "title": "Document cross-app pilot journeys",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-031",
+        "BW-032",
+        "BW-055"
+      ],
+      "body_path": "docs/backlog/issues/BW-036.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-037",
+      "title": "Author policy control matrix",
+      "type": "task",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-005"
+      ],
+      "body_path": "docs/backlog/issues/BW-037.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-038",
+      "title": "Define stewardship metadata approach",
+      "type": "task",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-037"
+      ],
+      "body_path": "docs/backlog/issues/BW-038.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-039",
+      "title": "Document enforcement paths for policy breaches",
+      "type": "task",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-037"
+      ],
+      "body_path": "docs/backlog/issues/BW-039.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-040",
+      "title": "Define retention and deletion policy",
+      "type": "task",
+      "priority": "P1",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-037"
+      ],
+      "body_path": "docs/backlog/issues/BW-040.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-041",
+      "title": "Document AU regional data flow diagram",
+      "type": "task",
+      "priority": "P0",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-009"
+      ],
+      "body_path": "docs/backlog/issues/BW-041.md",
+      "labels": [
+        "type:task",
+        "priority:P0",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-042",
+      "title": "Design cultural content user journeys",
+      "type": "task",
+      "priority": "P1",
+      "area": "governance",
+      "milestone": "M4",
+      "epic": "BW-E07",
+      "depends_on": [
+        "BW-005",
+        "BW-015"
+      ],
+      "body_path": "docs/backlog/issues/BW-042.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:governance"
+      ]
+    },
+    {
+      "id": "BW-043",
+      "title": "CI pipeline with SBOM generation",
+      "type": "task",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-004"
+      ],
+      "body_path": "docs/backlog/issues/BW-043.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-044",
+      "title": "Observability baseline metrics logs traces",
+      "type": "task",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-007"
+      ],
+      "body_path": "docs/backlog/issues/BW-044.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-045",
+      "title": "Execute restore rehearsal on eval",
+      "type": "task",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-012"
+      ],
+      "body_path": "docs/backlog/issues/BW-045.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-046",
+      "title": "Document upstream upgrade procedure",
+      "type": "task",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-002"
+      ],
+      "body_path": "docs/backlog/issues/BW-046.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-047",
+      "title": "Capacity planning guide for pilot",
+      "type": "task",
+      "priority": "P1",
+      "area": "operations",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-011"
+      ],
+      "body_path": "docs/backlog/issues/BW-047.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:operations"
+      ]
+    },
+    {
+      "id": "BW-048",
+      "title": "Threat model and QA security checklist",
+      "type": "task",
+      "priority": "P1",
+      "area": "security",
+      "milestone": "M4",
+      "epic": "BW-E08",
+      "depends_on": [
+        "BW-010"
+      ],
+      "body_path": "docs/backlog/issues/BW-048.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:security"
+      ]
+    },
+    {
+      "id": "BW-049",
+      "title": "Run branded pilot with core workflow",
+      "type": "task",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-015",
+        "BW-025",
+        "BW-055"
+      ],
+      "body_path": "docs/backlog/issues/BW-049.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-050",
+      "title": "Publish operator and admin documentation set",
+      "type": "docs",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-049"
+      ],
+      "body_path": "docs/backlog/issues/BW-050.md",
+      "labels": [
+        "type:docs",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-051",
+      "title": "Prepare OSS release package",
+      "type": "task",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-003",
+        "BW-050"
+      ],
+      "body_path": "docs/backlog/issues/BW-051.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-052",
+      "title": "Spike Blak Flow reserved capability",
+      "type": "spike",
+      "priority": "P2",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-052.md",
+      "labels": [
+        "type:spike",
+        "priority:P2",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-053",
+      "title": "Define opt-in AI policy default off",
+      "type": "task",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-001"
+      ],
+      "body_path": "docs/backlog/issues/BW-053.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-054",
+      "title": "Design multi-customer fleet isolation model",
+      "type": "task",
+      "priority": "P2",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-009"
+      ],
+      "body_path": "docs/backlog/issues/BW-054.md",
+      "labels": [
+        "type:task",
+        "priority:P2",
+        "area:platform"
+      ]
+    },
+    {
+      "id": "BW-055",
+      "title": "Replace XWiki with Docmost for Blak Knowledge",
+      "type": "task",
+      "priority": "P1",
+      "area": "collaboration",
+      "milestone": "M3",
+      "epic": "BW-E06",
+      "depends_on": [
+        "BW-002",
+        "BW-003",
+        "BW-006",
+        "BW-007",
+        "BW-008",
+        "BW-019",
+        "BW-020"
+      ],
+      "body_path": "docs/backlog/issues/BW-055.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:collaboration"
+      ]
+    }
+  ]
+}
