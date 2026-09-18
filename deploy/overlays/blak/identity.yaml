@@ -5,3 +5,4 @@ identity:
   issuer: nubus-keycloak
   personas: site-owner,site-admin,member,contributor,reader
   entraFederation: false
+  lifecycle: join,move,leave
