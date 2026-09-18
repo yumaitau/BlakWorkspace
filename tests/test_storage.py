@@ -15,6 +15,7 @@ PILOT_APPS = (
     "OpenProject",
     "Notes",
     "Docmost",
+    "Hermes",
 )
 
 

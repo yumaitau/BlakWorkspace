@@ -15,6 +15,7 @@ Eval may use upstream-bundled data stores. Production must not. Mapping follows 
 | Notes / Blak Notes | Per upstream Notes store | Bundled | Operator DB | Yes |
 | Docmost / Blak Knowledge | PostgreSQL + object (discovery under BW-055) | Disabled until pin | Operator Postgres + object | Yes (once enabled) |
 | OX App Suite (optional) | MariaDB; EE paths may involve Cassandra | Off | Off unless licensed | Yes if enabled |
+| Hermes / Blak Hermes | Local volume (sessions, memory, skills) | Off until opt-in | Operator volume, AU-resident | Yes if enabled |
 | Redis / Memcached | Cache | Bundled | Operator cache | No (rebuild) |
 
 Do not use NFS for RWO volumes where upstream marks it unsupported.

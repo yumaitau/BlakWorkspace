@@ -201,7 +201,8 @@
         "BW-051",
         "BW-052",
         "BW-053",
-        "BW-054"
+        "BW-054",
+        "BW-056"
       ],
       "body_path": "docs/backlog/issues/BW-E09.md",
       "labels": [
@@ -1218,6 +1219,27 @@
         "type:task",
         "priority:P1",
         "area:collaboration"
+      ]
+    },
+    {
+      "id": "BW-056",
+      "title": "Expose Hermes as opt-in sovereign AI and document search",
+      "type": "task",
+      "priority": "P1",
+      "area": "platform",
+      "milestone": "M5",
+      "epic": "BW-E09",
+      "depends_on": [
+        "BW-001",
+        "BW-008",
+        "BW-053",
+        "BW-055"
+      ],
+      "body_path": "docs/backlog/issues/BW-056.md",
+      "labels": [
+        "type:task",
+        "priority:P1",
+        "area:platform"
       ]
     }
   ]

@@ -7,4 +7,5 @@
 - [ADRs](adr/README.md)
 - [Governance](governance/indigenous-governance.md)
 - [Runbooks](runbooks/secrets.md)
+- [Hermes](architecture/hermes.md)
 - [Backlog](backlog/manifest.json)

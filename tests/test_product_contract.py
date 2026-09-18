@@ -19,6 +19,7 @@ NAMING = {
     "Blak Projects": "OpenProject",
     "Blak Admin": "Nubus",
     "Blak Flow": "Reserved",
+    "Blak Hermes": "Hermes",
 }
 
 

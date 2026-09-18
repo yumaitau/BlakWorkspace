@@ -8,7 +8,19 @@ optional:
   oxMailCalendar: false
   entraFederation: false
   aiFeatures: false
+  hermes: false
 knowledge:
   xwiki: false
   docmost: false  # enable only after BW-055 pin/licence; never with xwiki
   allowPublicUnauthenticated: false
+hermes:
+  enabled: false
+  allowPublicUnauthenticated: false
+  documentSearch: false
+  publishGateway: false
+  controlPlane: nubus
+  inferenceProvider: owner-chosen
+  allowExternalInference: false
+  corpusDrive: false
+  corpusDocs: false
+  corpusKnowledge: false

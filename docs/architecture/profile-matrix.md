@@ -12,6 +12,9 @@ Promotion from eval to staging or prod is a **human gate**. No CI job in this re
 | Backups | Optional rehearsal | Required before promotion | Required |
 | Secrets in git | None | None | None |
 | Optional OX / Entra / AI | Off | Off | Off |
+| Hermes (`hermes.enabled`) | false | false | false |
+| Hermes document search | false | false | false |
+| Hermes public gateway | Forbidden | Forbidden | Forbidden |
 | `knowledge.xwiki` | false | false | false |
 | `knowledge.docmost` | false until BW-055 pin | false until BW-055 pin | false until BW-055 pin |
 | Dual-enable XWiki + Docmost | Forbidden | Forbidden | Forbidden |

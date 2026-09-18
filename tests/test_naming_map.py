@@ -18,6 +18,7 @@ LABELS = [
     "Blak Projects",
     "Blak Admin",
     "Blak Flow",
+    "Blak Hermes",
 ]
 
 
@@ -40,7 +41,7 @@ class TestNamingMap(unittest.TestCase):
         self.assertIn("do not rename", text.lower())
         self.assertIn("OIDC", text)
         self.assertIn("Helm", text)
-        for internal in ("nextcloud", "collabora", "docmost", "openproject", "nubus"):
+        for internal in ("nextcloud", "collabora", "docmost", "openproject", "nubus", "hermes"):
             self.assertIn(internal, text)
 
     def test_portal_plan_documented(self):

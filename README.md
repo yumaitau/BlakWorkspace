@@ -38,6 +38,7 @@ Blak Workspace helps Australian organisations run a coherent digital workplace e
 | Blak Projects | OpenProject |
 | Blak Admin | Nubus admin / portal admin surfaces |
 | Blak Flow | Reserved for later |
+| Blak Hermes | Hermes agent runtime (opt-in sovereign AI / document search; default off) |
 
 Internal chart and application IDs are not renamed.
 
