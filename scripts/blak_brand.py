@@ -11,6 +11,13 @@ LOCALE_RELS = (
     "deploy/overlays/blak/portal-labels.example.yaml",
 )
 REQUIRED_LOCALE = "en-AU"
+A11Y_REL = "docs/brand/accessibility.yaml"
+A11Y_REQUIRED = (
+    "keyboardNavigation",
+    "textContrast",
+    "controlLabels",
+    "noSeizureMotion",
+)
 
 
 def _portal_tiles(text: str) -> list[dict]:
@@ -91,6 +98,27 @@ def overlay_locales(root: Path) -> dict[str, str]:
             if stripped.startswith("locale:"):
                 found[rel] = stripped.split(":", 1)[1].strip().strip('"').strip("'")
     return found
+
+
+def a11y_baseline(root: Path) -> dict:
+    from blak_profiles import load_profile
+
+    profile = load_profile(root / A11Y_REL)
+    section = profile.get("a11y") or {}
+    if not isinstance(section, dict):
+        return {}
+    return section
+
+
+def a11y_failures(root: Path) -> list[str]:
+    baseline = a11y_baseline(root)
+    failed: list[str] = []
+    for key in A11Y_REQUIRED:
+        if baseline.get(key) is not True:
+            failed.append(key)
+    if baseline.get("locale") != REQUIRED_LOCALE:
+        failed.append("locale")
+    return failed
 
 
 def locale_mismatches(root: Path) -> list[str]:
