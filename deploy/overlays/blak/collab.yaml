@@ -4,3 +4,4 @@ collab:
   oxMailCalendar: false
   notes: notes
   projects: openproject
+  pilotJourneys: drive-docs,chat-meet,knowledge
