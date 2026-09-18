@@ -11,6 +11,7 @@ From [docs/architecture/storage.md](../architecture/storage.md):
 3. S3-compatible buckets (Drive, Projects, Knowledge, media)
 4. LDAP / identity artefacts required to bind users after restore
 5. Backup encryption keys (held outside the cluster)
+6. Hermes volume when Blak Hermes is enabled (sessions, memory, skills)
 
 Skip caches (Redis/Memcached). Collabora is stateless.
 
