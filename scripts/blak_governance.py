@@ -30,3 +30,6 @@ def retention_days(root: Path) -> int:
 
 def data_residency(root: Path) -> str:
     return str(governance_config(root).get('dataResidency') or '')
+
+def cultural_review_required(root: Path) -> bool:
+    return bool(governance_config(root).get('culturalReviewRequired'))
