@@ -15,7 +15,7 @@ Use Australian English in human-readable docs. Avoid em dashes. Avoid hype and u
 
 ## Cultural and licence review
 
-- Apply `needs:cultural-review` for cultural content, community claims, or brand assets with cultural significance.
+- Apply `needs:cultural-review` for cultural content, community claims, or brand assets with cultural significance. Process: [docs/governance/indigenous-governance.md](docs/governance/indigenous-governance.md).
 - Apply `needs:licence-review` when changing licence notices, adding redistributed binaries, or enabling AGPL/GPL-heavy optional stacks.
 - Do not invent community endorsements or cultural assets.
 
