@@ -4,3 +4,4 @@ governance:
   enforcement: disable-share,revoke,escalate
   retentionDays: 365
   dataResidency: AU
+  culturalReviewRequired: true
