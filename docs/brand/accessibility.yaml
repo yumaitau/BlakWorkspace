@@ -1,0 +1,8 @@
+# Accessibility baseline for branded overlay surfaces (BW-018).
+# Portal, login, and theme overlays must keep these true.
+a11y:
+  keyboardNavigation: true
+  textContrast: true
+  controlLabels: true
+  noSeizureMotion: true
+  locale: en-AU
