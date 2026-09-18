@@ -28,3 +28,6 @@ def sync_clients(root: Path) -> list[str]:
 
 def drive_migration(root: Path) -> str:
     return str(drive_config(root).get('migration') or '')
+
+def drive_search_trims_acl(root: Path) -> bool:
+    return bool(drive_config(root).get('searchTrimsAcl'))

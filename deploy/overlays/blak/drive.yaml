@@ -4,3 +4,4 @@ drive:
   collabora: true
   syncClients: desktop,mobile
   migration: copy-then-cutover
+  searchTrimsAcl: true
