@@ -9,6 +9,13 @@ from blak_profiles import load_profile
 IDENTITY_REL = "deploy/overlays/blak/identity.yaml"
 REQUIRED_IDP = "nubus"
 REQUIRED_PROTOCOL = "oidc"
+REQUIRED_PERSONAS = (
+    "site-owner",
+    "site-admin",
+    "member",
+    "contributor",
+    "reader",
+)
 
 
 def identity_config(root: Path) -> dict:
@@ -19,6 +26,16 @@ def identity_config(root: Path) -> dict:
 
 def baseline_idp(root: Path) -> str:
     return str(identity_config(root).get("idp") or "")
+
+
+def personas(root: Path) -> list[str]:
+    raw = str(identity_config(root).get("personas") or "")
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def persona_failures(root: Path) -> list[str]:
+    got = personas(root)
+    return [name for name in REQUIRED_PERSONAS if name not in got]
 
 
 def idp_failures(root: Path) -> list[str]:

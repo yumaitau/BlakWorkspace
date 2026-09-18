@@ -3,3 +3,4 @@ identity:
   idp: nubus
   protocol: oidc
   issuer: nubus-keycloak
+  personas: site-owner,site-admin,member,contributor,reader
