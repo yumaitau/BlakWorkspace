@@ -25,3 +25,6 @@ def restore_rehearsal_status(root: Path) -> str:
 
 def upgrade_procedure(root: Path) -> str:
     return str(ops_config(root).get('upgrade') or '')
+
+def pilot_user_capacity(root: Path) -> int:
+    return int(ops_config(root).get('pilotUsers'))
