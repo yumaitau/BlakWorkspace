@@ -2,3 +2,4 @@ collab:
   chat: element
   meet: jitsi
   oxMailCalendar: false
+  notes: notes
