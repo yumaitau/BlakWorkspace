@@ -29,3 +29,6 @@ def blak_flow_status(root: Path) -> str:
 
 def ai_default(root: Path) -> str:
     return str(pilot_config(root).get('aiDefault') or '')
+
+def fleet_isolation(root: Path) -> str:
+    return str(pilot_config(root).get('fleetIsolation') or '')

@@ -5,3 +5,4 @@ pilot:
   blakFlow: reserved
   aiDefault: off
   aiDefault: disabled
+  fleetIsolation: one-org-per-deployment
