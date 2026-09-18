@@ -34,7 +34,7 @@ Blak Workspace helps Australian organisations run a coherent digital workplace e
 | Blak Chat | Element |
 | Blak Meet | Jitsi |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed) |
-| Blak Knowledge | XWiki |
+| Blak Knowledge | Docmost (replaces openDesk XWiki in Blak defaults) |
 | Blak Projects | OpenProject |
 | Blak Admin | Nubus admin / portal admin surfaces |
 | Blak Flow | Reserved for later |
