@@ -39,7 +39,7 @@ class TestAdrSet(unittest.TestCase):
         text = read("docs/architecture/overview.md")
         self.assertIn("adr/README.md", text)
         self.assertIn("ADR-001", text)
-        self.assertIn("ADR-011", text)
+        self.assertIn("ADR-012", text)
         self.assertIn("Docmost", text)
 
     def test_index_lists_every_adr_file(self):

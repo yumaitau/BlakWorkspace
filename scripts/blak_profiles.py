@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from blak_hermes import validate_hermes
+from blak_sites import validate_sites_profile
 
 
 def _as_bool(raw: str) -> bool:
@@ -18,7 +19,7 @@ def _as_bool(raw: str) -> bool:
 
 def parse_profile(text: str) -> dict:
     """Parse the simple profile YAML used in deploy/profiles/*/values.yaml."""
-    data: dict = {"knowledge": {}, "optional": {}, "hermes": {}}
+    data: dict = {"knowledge": {}, "optional": {}, "hermes": {}, "sites": {}}
     section = None
     for raw in text.splitlines():
         if not raw.strip() or raw.lstrip().startswith("#"):
@@ -118,4 +119,5 @@ def _check_profile(name: str, profile: dict, *, require_deny: bool) -> list[str]
     if docmost and xwiki:
         errors.append(f"{name}: Docmost must not be co-enabled with XWiki")
     errors.extend(validate_hermes(name, profile, require_deny=require_deny))
+    errors.extend(validate_sites_profile(name, profile, require_deny=require_deny))
     return errors
