@@ -341,7 +341,7 @@ function navGroups(active) {
       const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.png" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || '#888'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
       return a.url
         ? `<a class=nav-item href="${a.url}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.name)}">${inner}</a>`
-        : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}<span class=tag>Soon</span></span>`;
+        : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}</span>`;
     }).join('');
     return `<div class=nav-sec>${g}</div>${links}`;
   }).join('');
