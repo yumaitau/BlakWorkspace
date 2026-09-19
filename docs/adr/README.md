@@ -12,3 +12,4 @@
 - [ADR-010](ADR-010.md) — Docmost for Blak Knowledge
 - [ADR-011](ADR-011.md) — Hermes as opt-in sovereign AI runtime
 - [ADR-012](ADR-012.md) — Sites as aggregation layer with provider interfaces
+- [ADR-013](ADR-013.md) — Terraform + Helm standup for K3s and EKS

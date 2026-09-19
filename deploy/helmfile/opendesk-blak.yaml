@@ -1,0 +1,38 @@
+global:
+  domain: eval.blak.local
+ingress:
+  ingressClassName: nginx
+cluster:
+  service:
+    type: NodePort
+  container:
+    engine: containerd
+persistence:
+  storageClassNames:
+    RWO: local-path
+apps:
+  xwiki:
+    enabled: false
+  oxAppSuite:
+    enabled: false
+  collabora:
+    enabled: true
+  nextcloud:
+    enabled: true
+  element:
+    enabled: true
+  jitsi:
+    enabled: true
+  notes:
+    enabled: true
+  openproject:
+    enabled: true
+  nubus:
+    enabled: true
+  dovecot:
+    enabled: false
+blak:
+  profile: eval
+  identityProvider: nubus
+  fileProvider: nextcloud
+  pin: v1.18.2
