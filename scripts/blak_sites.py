@@ -278,8 +278,11 @@ class SitesStore:
                         raise ValueError("lookup would break")
         store.rows = [row for row in store.rows if row.get("_id") != row_id]
 
-    def search(self, role: str, slug: str, query: str) -> list[dict]:
+    def search(self, actor: str, slug: str, query: str) -> list[dict]:
         site = self.sites[slug]
+        role = site.members.get(actor)
+        if not role:
+            return []
         hits: list[dict] = []
         needle = query.lower()
         if can(role, "site.pages.read"):
