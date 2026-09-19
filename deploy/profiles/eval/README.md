@@ -15,8 +15,8 @@ See [deploy/PREREQS.md](../../PREREQS.md). Follow https://docs.opendesk.eu/opera
 1. `python scripts/validate-manifest.py`
 2. Confirm `knowledge.xwiki` is false and `knowledge.docmost` is not true alongside it
 3. Read `deploy/README.md` no-apply warning
-4. Optional later: helmfile diff against a kind cluster under explicit owner approval (not this seed)
+4. Optional operator: `terraform apply -var-file=deploy/terraform/examples/k3s.tfvars` (not CI; not production)
 
 ## Helmfile notes
 
-Check out upstream openDesk at the pin, place this overlay beside it, and run helmfile **diff** only until owners approve an eval apply. Never helmfile apply prod values from this repository.
+Check out upstream openDesk at the pin (`deploy/terraform/scripts/fetch-opendesk.sh`). Terraform copies Blak helmfile values into the checkout `dev` environment when `apply_suite=true`. Never helmfile apply prod values from this repository.

@@ -5,7 +5,7 @@ Promotion from eval to staging or prod is a **human gate**. No CI job in this re
 | Topic | eval | staging | prod |
 | --- | --- | --- | --- |
 | Purpose | Learn overlay and helmfile diff | Pre-prod intent | Production intent |
-| Apply from this seed | No | No | No |
+| Apply from this seed | K3s opt-in (operator, ADR-013); CI never applies | No | No |
 | Bundled DB/object storage | Allowed for learning | Must not be the production path | Forbidden; operator-managed services |
 | External services | Optional | Required | Required |
 | High availability | No | Optional | Intent: yes |

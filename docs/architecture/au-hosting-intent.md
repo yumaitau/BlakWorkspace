@@ -18,7 +18,7 @@ No option is selected. Do not treat this table as a purchase recommendation.
 
 ## Explicit non-apply
 
-Do not run terraform, cloud CLIs, or helmfile apply against production from this repository. Eval remains local/kind-or-lab only under later owner approval (BW-007).
+This seed does not create credentials. Do not run terraform apply against production from this repository. Eval K3s apply is operator-local and opt-in ([ADR-013](../adr/ADR-013.md), [deploy/terraform](../../deploy/terraform)). GitHub Actions never runs `terraform apply` or `helmfile apply`. Paid EKS needs `allow_paid_cloud`.
 
 ## Decisions for owners
 

@@ -7,5 +7,9 @@ Match upstream openDesk operations requirements for the pin in [docs/upstream-ba
 | Kubernetes | >= 1.24 |
 | Helm | >= 3.17.3, and **not** 3.18.0 or 3.20.1 |
 | Helmfile | >= 1.0.0 |
+| Helm Diff | >= 3.11.0 |
+| yq | >= 4.52.4 |
+| Terraform | >= 1.6 (eval K3s / optional EKS; never from CI) |
+| k3d | for local K3s-in-Docker standup |
 
-Do not apply production from this seed. Eval may use bundled services; production must replace them. Exact cluster distro is an owner choice (BW-009) and is not purchased here.
+Do not apply production from this seed. Eval may use bundled services; production must replace them. Exact cluster distro is an owner choice (BW-009). Local K3s apply is operator-opt-in (ADR-013). EKS is not purchased here unless `allow_paid_cloud`.

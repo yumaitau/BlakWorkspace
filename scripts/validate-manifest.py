@@ -5,13 +5,14 @@ import json
 import sys
 
 from blak_backlog import repo_root, validate_tree
+from blak_deploy import validate_deploy
 from blak_hermes import load_control_plane, validate_control_plane
 from blak_profiles import validate_profiles
 
 
 def main() -> int:
     root = repo_root()
-    errors = validate_tree(root) + validate_profiles(root)
+    errors = validate_tree(root) + validate_profiles(root) + validate_deploy(root)
     try:
         errors.extend(validate_control_plane(load_control_plane(root)))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
