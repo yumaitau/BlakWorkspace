@@ -1,16 +1,4 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-core
-  namespace: blak-micro
-type: Opaque
-stringData:
-  postgres-user: blak
-  postgres-password: blak-dev-only
-  minio-root-user: blak
-  minio-root-password: blak-dev-only-123
-  meili-master-key: blak-dev-only
----
+# Secrets for blak-core live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

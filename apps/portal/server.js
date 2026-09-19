@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
 const { APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps } = require('./catalog');
 const flowEngine = require('./flow-engine');
+const { dispatchCloudObject, writeCloudResult } = require('./cloud-object');
 
 const port = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -671,34 +672,26 @@ const server = http.createServer(async (req, res) => {
     if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
     const bucket = url.searchParams.get('bucket') || '';
     const key = url.searchParams.get('key') || '';
-    if (!bucket || !key) { res.writeHead(400, { 'content-type': 'text/plain' }); res.end('bucket and key required'); return; }
+    const s3Req = (method, path, body) => awsReq('s3', method, path, {}, body, body ? 'application/octet-stream' : null);
     if (req.method === 'PUT') {
       const chunks = [];
       req.on('data', (c) => chunks.push(c));
       req.on('end', async () => {
-    if (req.method === 'DELETE') {
-      try {
-        const r = await awsReq('s3', 'DELETE', `/${bucket}/${key.split('/').map(encodeURIComponent).join('/')}`, {}, null, null);
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ ok: r.status < 300, status: r.status }));
-      } catch (e) { res.writeHead(502, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: e.message })); }
-      return;
-    }
-    try {
-          const body = Buffer.concat(chunks);
-          const r = await awsReq('s3', 'PUT', `/${bucket}/${key.split('/').map(encodeURIComponent).join('/')}`, {}, body, 'application/octet-stream');
-          res.writeHead(r.status < 300 ? 200 : r.status, { 'content-type': 'application/json' });
-          res.end(JSON.stringify({ ok: r.status < 300, status: r.status }));
-        } catch (e) { res.writeHead(502, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: e.message })); }
+        try {
+          writeCloudResult(res, await dispatchCloudObject(s3Req, { method: 'PUT', bucket, key, body: Buffer.concat(chunks) }));
+        } catch (e) {
+          res.writeHead(502, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: e.message }));
+        }
       });
       return;
     }
     try {
-      const r = await awsReq('s3', 'GET', `/${bucket}/${key.split('/').map(encodeURIComponent).join('/')}`, {}, null, null);
-      if (r.status !== 200) { res.writeHead(r.status, { 'content-type': 'text/plain' }); res.end('object fetch failed'); return; }
-      res.writeHead(200, { 'content-type': r.headers['content-type'] || 'application/octet-stream', 'content-length': r.body.length, 'content-disposition': `attachment; filename="${key.split('/').pop()}"` });
-      res.end(r.body);
-    } catch (e) { res.writeHead(502, { 'content-type': 'text/plain' }); res.end('fetch failed: ' + e.message); }
+      writeCloudResult(res, await dispatchCloudObject(s3Req, { method: req.method, bucket, key, body: null }));
+    } catch (e) {
+      res.writeHead(502, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
     return;
   }
   if (url.pathname === '/cloud/bucket' && req.method === 'POST') {

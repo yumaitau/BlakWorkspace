@@ -24,7 +24,7 @@ spec:
             - { name: server_name, value: docs.homelab.local }
             - { name: extra_params, value: '--o:ssl.enable=false --o:ssl.termination=true' }
             - { name: username, value: admin }
-            - { name: password, value: REDACTED }
+            - { name: password, valueFrom: { secretKeyRef: { name: blak-docs, key: admin-password } } }
             - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
           volumeMounts:
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }

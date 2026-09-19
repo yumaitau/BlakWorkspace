@@ -2,6 +2,8 @@
 
 Deployed 2026-09-19 on `homelab` (Ubuntu 26.04, x86_64), namespace `blak-micro`.
 Manifests: `deploy/k3s/micro/`. Portal image built on-host (`blak-portal:micro`).
+Opaque secrets stay in the cluster (`scripts/homelab/ensure-secrets.sh`); applying
+these YAML files must not recreate Secret objects from git.
 
 All user-facing copy follows Australian English
 (see `australian-english` skill; code identifiers keep original spelling).
@@ -76,13 +78,15 @@ or keep using the `-ts` kubeconfig).
 
 ## Credentials (DEV-ONLY — rotate before any real use)
 
-- Portal/Blak ID login: Authentik `akadmin` (password in `blak-idp` secret
-  `bootstrap-password`; was reset via Django to match)
-- Blak Drive admin (API/basic auth): `admin` / `blak-drive` secret
+Passwords live in cluster secrets, not git. Create missing secrets with
+`scripts/homelab/ensure-secrets.sh`. Read with `kubectl -n blak-micro get secret <name>`.
+
+- Portal/Blak ID login: Authentik `akadmin` (`blak-idp` / `bootstrap-password`)
+- Blak Drive admin: `admin` (`blak-drive` / `admin-password`)
 - Blak Sites: Outline, OIDC-only (no local accounts exist); first login enrols `akadmin`
-- Blak Chat: Mattermost `blakadmin` / `Mattermost-Blak-01` (local account; SSO needs Enterprise licence)
-- Blak Projects: OpenProject `admin` / `OpenProject-Blak-01` (local account; SSO needs Enterprise licence)
-- Collabora admin console: `admin` / `REDACTED` (manifest)
+- Blak Chat: Mattermost local accounts (SSO needs Enterprise licence) — not advertised live
+- Blak Projects: OpenProject local accounts (SSO plugins Enterprise-licenced) — not advertised live
+- Collabora admin console: `admin` (`blak-docs` / `admin-password`)
 
 ## Verified end-to-end (2026-09-19)
 

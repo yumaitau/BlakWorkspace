@@ -6,15 +6,7 @@
 # - PROXY_TLS=false (plain HTTP pod :9200, TLS terminated at Traefik edge)
 # - PROXY_ENABLE_BASIC_AUTH=true (WebDAV/desktop clients)
 # - COLLABORA_DOMAIN points at Blak Docs (browser + server reachable via hostAlias)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-drive
-  namespace: blak-micro
-type: Opaque
-stringData:
-  admin-password: "REDACTED"
----
+# Secrets for blak-drive live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

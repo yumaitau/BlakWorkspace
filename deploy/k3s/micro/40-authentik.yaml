@@ -1,14 +1,4 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-idp
-  namespace: blak-micro
-type: Opaque
-stringData:
-  secret-key: "REDACTED"
-  bootstrap-password: "REDACTED"
-  bootstrap-email: "admin@blak.local"
----
+# Secrets for blak-idp live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

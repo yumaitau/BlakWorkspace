@@ -1,17 +1,7 @@
 # Blak Sites backend: Outline (team wiki with free OIDC). Replaces Docmost
 # (SSO is enterprise-licence-gated upstream). Docmost manifest parked at
 # adapters/docmost/k3s-reference.yaml. Outline has no local login: OIDC only.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-sites
-  namespace: blak-micro
-type: Opaque
-stringData:
-  secret-key: "REDACTED"
-  utils-secret: "REDACTED"
-  oidc-secret: "REDACTED"
----
+# Secrets for blak-sites live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
