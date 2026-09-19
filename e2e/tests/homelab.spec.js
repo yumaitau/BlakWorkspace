@@ -27,7 +27,7 @@ test.describe('Blak Portal homelab', () => {
     await expect(page.locator('[data-testid="userchip"] .nm')).not.toHaveText('');
 
     await page.locator('[data-testid="waffle"]').click();
-    const flowItem = page.locator('[data-app="flow"]');
+    const flowItem = page.locator('a.appitem[data-app="flow"]');
     await expect(flowItem).toBeVisible();
     await expect(flowItem).toHaveAttribute('href', '/flow');
     await expect(flowItem).not.toHaveClass(/soon/);
