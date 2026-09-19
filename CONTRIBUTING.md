@@ -23,8 +23,14 @@ Use Australian English in human-readable docs. Avoid em dashes. Avoid hype and u
 
 1. Open an issue before large changes.
 2. Keep overlay changes upgrade-safe (prefer configuration over patches).
-3. Run `python scripts/validate-manifest.py` when touching backlog files.
-4. Prefer small pull requests.
+3. Run `python scripts/validate-manifest.py` and `python -m unittest discover -s tests -v`.
+4. Land through pull requests. Merge only when the GitHub Actions `validate` check is green. Do not push commits straight to `main`.
+5. GitHub Actions must never run `terraform apply` or `helmfile apply`. Homelab apply is operator-only.
+6. Playwright e2e (`e2e/`) targets homelab URLs with credentials from the environment, not git. It is not the CI merge gate.
+
+## Security reports
+
+See [SECURITY.md](SECURITY.md). Report vulnerabilities privately; do not file public exploit issues.
 
 ## Code of conduct
 

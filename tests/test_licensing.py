@@ -59,7 +59,7 @@ class TestLicensing(unittest.TestCase):
         self.assertIn("Not enabled in Blak default profiles", notices)
         self.assertIn("Docmost", readme)
         self.assertIn("Blak Knowledge", readme)
-        self.assertIn("Docmost (replaces openDesk XWiki", readme)
+        self.assertIn("Outline", readme)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drive-csp
+  namespace: blak-micro
+data:
+  csp.yaml: |
+    # Blak Drive CSP: upstream defaults plus Blak ID (OIDC) and Blak Docs (Collabora).
+    # Mounted at /etc/opencloud/csp.yaml, referenced via PROXY_CSP_CONFIG_FILE_LOCATION.
+    directives:
+      child-src:
+        - '''self'''
+      connect-src:
+        - '''self'''
+        - 'blob:'
+        - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+        - 'https://update.opencloud.eu/'
+        - 'http://id.homelab.local/'
+        - 'https://id.homelab.local/'
+        - 'http://docs.homelab.local/'
+        - 'https://docs.homelab.local/'
+      default-src:
+        - '''none'''
+      font-src:
+        - '''self'''
+      frame-ancestors:
+        - '''self'''
+      frame-src:
+        - '''self'''
+        - 'blob:'
+        - 'https://embed.diagrams.net/'
+        - 'http://docs.homelab.local/'
+        - 'https://docs.homelab.local/'
+        - 'http://id.homelab.local/'
+        - 'https://id.homelab.local/'
+      img-src:
+        - '''self'''
+        - 'data:'
+        - 'blob:'
+        - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+        - 'http://docs.homelab.local/'
+        - 'https://docs.homelab.local/'
+        - 'http://id.homelab.local/'
+        - 'https://id.homelab.local/'
+      manifest-src:
+        - '''self'''
+      media-src:
+        - '''self'''
+      object-src:
+        - '''self'''
+        - 'blob:'
+      script-src:
+        - '''self'''
+        - '''unsafe-inline'''
+        - 'http://id.homelab.local/'
+        - 'https://id.homelab.local/'
+      style-src:
+        - '''self'''
+        - '''unsafe-inline'''

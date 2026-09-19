@@ -8,7 +8,7 @@ CI in this repository runs `python scripts/validate-manifest.py` and unit tests 
 | --- | --- | --- | --- |
 | Identity | Nubus/Keycloak admin, LDAP bind | Local/sealed, never committed | External secret store / CSI |
 | App DB | Postgres, MariaDB passwords | Bundled generator, not in git | Operator-managed; injected |
-| Object storage | S3 keys for Nextcloud/OpenProject/Docmost | MinIO-style local | Cloud IAM roles preferred over static keys |
+| Object storage | S3 keys for Drive/Docmost | Floci local | Cloud IAM roles preferred over static keys |
 | SMTP / push | Mail relay, APNs | Disabled or dummy | External secret |
 | OIDC clients | Client secrets | Generated in cluster | External secret; do not rename IDs casually |
 | Backup encryption | Restores keys | Documented in BW-012 | Split from cluster admin |

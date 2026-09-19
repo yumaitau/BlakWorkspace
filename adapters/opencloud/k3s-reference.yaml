@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blak-drive
+  namespace: blak-micro
+type: Opaque
+stringData:
+  admin-password: "REDACTED"
+  jwt-secret: "REDACTED"
+  machine-key: "REDACTED"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ocis-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 20Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencloud
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: opencloud } }
+  template:
+    metadata: { labels: { app: opencloud } }
+    spec:
+      initContainers:
+        - name: init
+          image: opencloudeu/opencloud:latest
+          command: ["/bin/sh", "-c"]
+          args: ["if [ -f /etc/opencloud/opencloud.yaml ]; then echo init-skipped-config-exists; else opencloud init --insecure true; echo init-done; fi; ls -la /etc/opencloud"]
+          env:
+            - { name: OCIS_URL, value: https://drive.homelab.local }
+            - { name: PROXY_HTTP_ADDR, value: "0.0.0.0:9200" }
+            - { name: IDM_ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: blak-drive, key: admin-password } } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/ocis }
+            - { name: data, mountPath: /etc/opencloud, subPath: config }
+      containers:
+        - name: opencloud
+          image: opencloudeu/opencloud:latest
+          args: ["server"]
+          ports: [{ containerPort: 9200 }]
+          env:
+            - { name: OCIS_URL, value: https://drive.homelab.local }
+            - { name: PROXY_HTTP_ADDR, value: "0.0.0.0:9200" }
+            - { name: OCIS_LOG_LEVEL, value: debug }
+            - { name: OCIS_INSECURE, value: "true" }
+            - { name: IDM_ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: blak-drive, key: admin-password } } }
+            - { name: OCIS_JWT_SECRET, valueFrom: { secretKeyRef: { name: blak-drive, key: jwt-secret } } }
+            - { name: OCIS_MACHINE_AUTH_API_KEY, valueFrom: { secretKeyRef: { name: blak-drive, key: machine-key } } }
+            - { name: OCIS_CONFIG_DIR, value: /var/lib/ocis/config }
+            - { name: OCIS_BASE_DATA_PATH, value: /var/lib/ocis }
+          readinessProbe: { tcpSocket: { port: 9200 }, initialDelaySeconds: 30, periodSeconds: 15 }
+          livenessProbe: { tcpSocket: { port: 9200 }, initialDelaySeconds: 90, periodSeconds: 30 }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/ocis }
+            - { name: data, mountPath: /etc/opencloud, subPath: config }
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: ocis-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drive
+  namespace: blak-micro
+spec:
+  selector: { app: opencloud }
+  ports: [{ name: http, port: 9200, targetPort: 9200 }]

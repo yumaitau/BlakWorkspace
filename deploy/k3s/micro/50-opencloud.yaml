@@ -1,0 +1,99 @@
+# Blak Drive backend: OpenCloud (default). See docs/runbooks/homelab-micro.md.
+# Follows upstream opencloud-compose conventions:
+# - entrypoint runs `opencloud init || true; opencloud server`
+# - ONLY IDM_ADMIN_PASSWORD is set; all other secrets are init-generated.
+#   Never set internal LDAP/service passwords via env (breaks IDM bolt-store bind).
+# - PROXY_TLS=false (plain HTTP pod :9200, TLS terminated at Traefik edge)
+# - PROXY_ENABLE_BASIC_AUTH=true (WebDAV/desktop clients)
+# - COLLABORA_DOMAIN points at Blak Docs (browser + server reachable via hostAlias)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blak-drive
+  namespace: blak-micro
+type: Opaque
+stringData:
+  admin-password: "REDACTED"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencloud-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 20Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencloud
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: opencloud } }
+  template:
+    metadata: { labels: { app: opencloud } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [docs.homelab.local, id.homelab.local]
+      containers:
+        - name: opencloud
+          image: opencloudeu/opencloud-rolling:7.5.0
+          command: ["/bin/sh", "-c", "opencloud init || true; opencloud server"]
+          ports: [{ containerPort: 9200 }]
+          resources:
+            requests: { cpu: "1", memory: 2Gi }
+            limits: { cpu: "4", memory: 8Gi }
+          env:
+            - { name: OC_URL, value: https://drive.homelab.local }
+            - { name: OC_LOG_LEVEL, value: info }
+            - { name: OC_INSECURE, value: "true" }
+            - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
+            - { name: PROXY_HTTP_ADDR, value: "0.0.0.0:9200" }
+            - { name: PROXY_TLS, value: "false" }
+            - { name: PROXY_ENABLE_BASIC_AUTH, value: "true" }
+            - { name: IDM_ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: blak-drive, key: admin-password } } }
+            - { name: COLLABORA_DOMAIN, value: https://docs.homelab.local }
+            - { name: OC_OIDC_ISSUER, value: https://id.homelab.local/application/o/opencloud/ }
+            - { name: OC_EXCLUDE_RUN_SERVICES, value: idp }
+            - { name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD, value: jwt }
+            - { name: PROXY_OIDC_REWRITE_WELLKNOWN, value: "true" }
+            - { name: PROXY_USER_OIDC_CLAIM, value: preferred_username }
+            - { name: PROXY_USER_CS3_CLAIM, value: username }
+            - { name: PROXY_AUTOPROVISION_ACCOUNTS, value: "true" }
+            - { name: PROXY_AUTOPROVISION_CLAIM_USERNAME, value: preferred_username }
+            - { name: PROXY_AUTOPROVISION_CLAIM_EMAIL, value: email }
+            - { name: GRAPH_USERNAME_MATCH, value: none }
+            - { name: GRAPH_LDAP_SERVER_WRITE_ENABLED, value: "true" }
+            - { name: PROXY_ROLE_ASSIGNMENT_DRIVER, value: default }
+            - { name: PROXY_CSP_CONFIG_FILE_LOCATION, value: /etc/opencloud/csp.yaml }
+            - { name: WEB_ASSET_THEMES_PATH, value: /etc/opencloud/themes }
+            - { name: WEB_UI_THEME_PATH, value: /themes/blak/theme.json }
+          readinessProbe: { tcpSocket: { port: 9200 }, initialDelaySeconds: 40, periodSeconds: 15 }
+          livenessProbe: { tcpSocket: { port: 9200 }, initialDelaySeconds: 120, periodSeconds: 30 }
+          volumeMounts:
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+            - { name: data, mountPath: /var/lib/opencloud }
+            - { name: data, mountPath: /etc/opencloud, subPath: config }
+            - { name: csp, mountPath: /etc/opencloud/csp.yaml, subPath: csp.yaml }
+            - { name: theme, mountPath: /etc/opencloud/themes/blak/theme.json, subPath: theme.json }
+            - { name: theme, mountPath: /etc/opencloud/themes/blak/assets/logo.svg, subPath: logo.svg }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: opencloud-data } }
+        - name: ca
+          configMap: { name: blak-ca }
+        - name: csp
+          configMap: { name: drive-csp }
+        - name: theme
+          configMap: { name: drive-theme }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drive
+  namespace: blak-micro
+spec:
+  selector: { app: opencloud }
+  ports: [{ name: http, port: 9200, targetPort: 9200 }]

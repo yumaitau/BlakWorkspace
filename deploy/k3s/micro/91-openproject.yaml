@@ -1,0 +1,70 @@
+# Blak Projects backend: OpenProject Community Edition.
+# OIDC via Authentik (CE supports OpenID Connect providers, configured in
+# Administration → Authentication after first admin login; provider below).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blak-projects
+  namespace: blak-micro
+type: Opaque
+stringData:
+  secret-key-base: "REDACTED"
+  oidc-secret: "REDACTED"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openproject-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openproject
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: openproject } }
+  template:
+    metadata: { labels: { app: openproject } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [id.homelab.local]
+      containers:
+        - name: openproject
+          image: openproject/openproject:15
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-password } } }
+            - { name: DATABASE_URL, value: 'postgresql://blak:$(POSTGRES_PASSWORD)@postgres/openproject' }
+            - { name: SECRET_KEY_BASE, valueFrom: { secretKeyRef: { name: blak-projects, key: secret-key-base } } }
+            - { name: OPENPROJECT_HOST__NAME, value: projects.homelab.local }
+            - { name: OPENPROJECT_HTTPS, value: "false" }
+            - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
+            - { name: OIDC_SECRET, valueFrom: { secretKeyRef: { name: blak-projects, key: oidc-secret } } }
+            - { name: OPENPROJECT_OPENID__CONNECT, value: '{"blak-id":{"display_name":"Blak ID","identifier":"329123d1066dff2ced9bab3fdbbc8f4c","secret":"$(OIDC_SECRET)","issuer":"https://id.homelab.local/application/o/openproject/","scope":"openid profile email","limit_self_registration":true}}' }
+          readinessProbe: { httpGet: { path: /health_check, port: 8080 }, initialDelaySeconds: 240, periodSeconds: 30 }
+          livenessProbe: { httpGet: { path: /health_check, port: 8080 }, initialDelaySeconds: 420, periodSeconds: 60 }
+          resources:
+            requests: { cpu: "1", memory: 2Gi }
+            limits: { cpu: "4", memory: 8Gi }
+          volumeMounts:
+            - { name: data, mountPath: /var/openproject/assets }
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: openproject-data } }
+        - name: ca
+          configMap: { name: blak-ca }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: projects
+  namespace: blak-micro
+spec:
+  selector: { app: openproject }
+  ports: [{ name: http, port: 8080, targetPort: 8080 }]

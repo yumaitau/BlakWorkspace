@@ -1,15 +1,16 @@
 # Architecture decision records
 
-- [ADR-001](ADR-001.md) — Upstream release and overlay strategy
-- [ADR-002](ADR-002.md) — Deployment isolation model
-- [ADR-003](ADR-003.md) — Identity and federation baseline
-- [ADR-004](ADR-004.md) — Licensing boundary
-- [ADR-005](ADR-005.md) — Production storage and backup
-- [ADR-006](ADR-006.md) — Branding approach
-- [ADR-007](ADR-007.md) — Indigenous governance boundary
-- [ADR-008](ADR-008.md) — Regional data flows
-- [ADR-009](ADR-009.md) — Optional component profiles
-- [ADR-010](ADR-010.md) — Docmost for Blak Knowledge
-- [ADR-011](ADR-011.md) — Hermes as opt-in sovereign AI runtime
-- [ADR-012](ADR-012.md) — Sites as aggregation layer with provider interfaces
-- [ADR-013](ADR-013.md) — Terraform + Helm standup for K3s and EKS
+- [ADR-001](ADR-001.md) — Upstream release and overlay strategy (historical, pre-pivot)
+- [ADR-002](ADR-002.md) — Deployment isolation model (historical)
+- [ADR-003](ADR-003.md) — Identity and federation baseline (superseded by ADR-014 for new work)
+- [ADR-004](ADR-004.md) — Licensing boundary (retained)
+- [ADR-005](ADR-005.md) — Production storage and backup (amended by platform data layer)
+- [ADR-006](ADR-006.md) — Branding approach (retained, moves into Portal theme package)
+- [ADR-007](ADR-007.md) — Indigenous governance boundary (retained)
+- [ADR-008](ADR-008.md) — Regional data flows (retained)
+- [ADR-009](ADR-009.md) — Optional component profiles (superseded by docs/architecture/profiles.md)
+- [ADR-010](ADR-010.md) — Docmost for Blak Knowledge (retained, now Blak Sites engine)
+- [ADR-011](ADR-011.md) — Hermes as opt-in sovereign AI runtime (evolves into Blak AI Gateway)
+- [ADR-012](ADR-012.md) — Sites as aggregation layer with provider interfaces (retained, generalised in adapters.md)
+- [ADR-013](ADR-013.md) — Terraform + Helm standup for K3s and EKS (amended: Compose first, K3s optional)
+- [ADR-014](ADR-014.md) — Pivot from openDesk distribution to modular Blak platform (authoritative)

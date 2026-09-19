@@ -13,7 +13,7 @@ Historical openDesk defaults are not Blak defaults. XWiki is **not** an enabled 
 | Projects | Overlay intent | OpenProject | BW-035 |
 | Mail/Calendar | Off | OX optional | BW-033 |
 | Admin / SSO | Nubus | Nubus | BW-019 |
-| Flow | Reserved | n/a | BW-052 |
+| Flow | Live | Blak Flow engine | BW-052; Drive + Sites connectors |
 | AI / document search | Off | **Hermes** (opt-in) | Blak Hermes; default off; ADR-011 / BW-053 / BW-056 |
 
 Residual XWiki mentions in this repository are historical, migration, or "not enabled" statements.

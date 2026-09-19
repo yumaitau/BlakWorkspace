@@ -1,0 +1,180 @@
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: insecure
+  namespace: blak-micro
+spec:
+  insecureSkipVerify: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: portal
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`portal.homelab.local`)
+      kind: Rule
+      services:
+        - name: portal
+          port: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-provider-slug
+  namespace: blak-micro
+spec:
+  replacePathRegex:
+    regex: "^/application/o/[^/]+/(.*)"
+    replacement: "/application/o/$1"
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: idp
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`id.homelab.local`)
+      kind: Rule
+      priority: 10
+      services:
+        - name: authentik-server
+          port: 9000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: idp-oauth
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`id.homelab.local`) && PathRegexp(`^/application/o/[^/]+/(authorize|token|userinfo)/`)
+      kind: Rule
+      priority: 100
+      middlewares:
+        - name: strip-provider-slug
+      services:
+        - name: authentik-server
+          port: 9000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: drive
+  namespace: blak-micro
+spec:
+  entryPoints: [websecure]
+  tls: {}
+  routes:
+    - match: Host(`drive.homelab.local`)
+      kind: Rule
+      services:
+        - name: drive
+          port: 9200
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: docs-home
+  namespace: blak-micro
+spec:
+  # Blak Docs has no standalone login: editing sessions inherit Blak Drive SSO
+  # via WOPI. Send the bare domain to Drive; admins can still reach the CODE
+  # admin console (basic auth, CODE-internal) at /browser/dist/admin/admin.html.
+  redirectRegex:
+    regex: "^https?://docs\\.homelab\\.local/$"
+    replacement: "https://drive.homelab.local/"
+    permanent: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: docs-home
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`docs.homelab.local`) && Path(`/`)
+      kind: Rule
+      priority: 100
+      middlewares:
+        - name: docs-home
+      services:
+        - name: docs
+          port: 9980
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: docs
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`docs.homelab.local`)
+      kind: Rule
+      priority: 10
+      services:
+        - name: docs
+          port: 9980
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hermes
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`hermes.homelab.local`)
+      kind: Rule
+      services:
+        - name: hermes
+          port: 8080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: chat
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`chat.homelab.local`)
+      kind: Rule
+      services:
+        - name: chat
+          port: 8065
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: projects
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`projects.homelab.local`)
+      kind: Rule
+      services:
+        - name: projects
+          port: 8080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sites
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`sites.homelab.local`)
+      kind: Rule
+      services:
+        - name: sites
+          port: 3000
