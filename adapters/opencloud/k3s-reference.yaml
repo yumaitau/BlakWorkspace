@@ -1,14 +1,4 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-drive
-  namespace: blak-micro
-type: Opaque
-stringData:
-  admin-password: "OcAdmin-ChangeMe-7f3a9c2e5b1d48"
-  jwt-secret: "6QKUlMUVs1O05TUR0jrhYdiqbRgDuLzbYeDztF3EXP8"
-  machine-key: "dohY86PV4rnv0jJTyaaqwUL8M4KRqiEYuh_uJAmKXgs"
----
+# Secrets for blak-drive live in-cluster. Never commit stringData literals.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
