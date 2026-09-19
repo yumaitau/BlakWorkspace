@@ -16,7 +16,7 @@ Prefer overlay files, not a fork of upstream app source. Keys below are the docu
 
 - Per-app theming coverage is incomplete until BW-016.
 - Null colours in the stub are intentional; do not invent a palette.
-- Patching Element/Nextcloud/Collabora source for colours is out of scope (`upstream:patch` if ever unavoidable).
+- Patching Element/Collabora source for colours is out of scope (`upstream:patch` if ever unavoidable).
 - Image digests for theme sidecars are not vendored.
 
 ## Upgrade

@@ -1,31 +1,31 @@
 # Blak Workspace product contract
 
-**Maturity: seed.** This document is the product contract for the Blak Workspace overlay distributed by Yuma IT. It is not a production service description and does not implement the full suite.
+**Maturity: seed.** This document is the product contract for the Blak Workspace overlay distributed by Yuma IT, plus the platform pivot (ADR-014). It is not a production service description and does not implement the full suite.
 
 ## What it is
 
 Blak Workspace is an Indigenous-branded digital workplace suite distributed as branding, configuration, deploy automation, documentation, and carefully scoped extensions on [openDesk](https://docs.opendesk.eu/operations/introduction/) (ZenDiS). User-facing labels use Blak product names. Internal chart names, Helm release names, OIDC client IDs, and application identifiers stay as upstream defines them.
 
-openDesk is provided by ZenDiS GmbH. Overlay materials in this repository are Apache-2.0; upstream components keep their own licences. See [NOTICE](../NOTICE), [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md), and [docs/adr/](adr/README.md).
+Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS behind adapters. Base = Portal + Identity + Drive + Docs + Sites + Search + Admin + Audit. No mail, no Jitsi, no OpenProject by default. Original Blak code Apache-2.0 where possible; upstream keeps own licences. See [NOTICE](../NOTICE), [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md), and [docs/adr/](adr/README.md).
 
 ## Naming map (labels only)
 
 | Blak label | Upstream component |
 | --- | --- |
 | Blak Workspace | openDesk suite |
-| Blak Drive | Nextcloud |
+| Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
 | Blak Notes | Notes |
-| Blak Chat | Element |
-| Blak Meet | Jitsi |
-| Blak Mail and Calendar | OX App Suite (optional, if licensed) |
-| Blak Knowledge | Docmost (replaces openDesk XWiki in Blak defaults; see BW-055) |
-| Blak Projects | OpenProject |
-| Blak Admin | Nubus admin / portal admin surfaces |
-| Blak Flow | Reserved for later |
-| Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off) |
+| Blak Chat | Element (optional; Matrix-lighter / Mattermost evaluated, behind ChatProvider) |
+| Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
+| Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
+| Blak Knowledge | Outline (team wiki with free OIDC; replaced Docmost, whose SSO is licence-gated) |
+| Blak Projects | OpenProject (legacy default; pivot prefers Plane optional via ProjectProvider) |
+| Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
+| Blak Flow | Blak Flow engine (in-workspace automation; Drive + Sites connectors) |
+| Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off; evolves into Blak AI Gateway) |
 
-Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels.
+Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels. Do not rename upstream internal identifiers.
 
 ## In scope
 
@@ -34,6 +34,7 @@ Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to matc
 - Operator documentation and architecture decision records
 - GitHub backlog and seed tooling
 - Carefully scoped extensions that do not break upgrades
+- Pivot additions: Portal, adapters, gateway/search/notifications/audit services; Compose (Micro/Small) + K3s/Helm (Business/Enterprise) with same containers; OIDC-first, permission-aware search/AI, central audit with SIEM export
 
 ## Non-goals
 
@@ -43,7 +44,8 @@ Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to matc
 - Relicensing upstream openDesk components as Apache-2.0
 - Deploying paid production infrastructure from this seed
 - Renaming upstream internal identifiers
+- Shipping every app because it exists; Phase 1 is Portal + Identity + Drive + Docs + Sites + Search + Admin + Audit + Flow only
 
 ## Decisions
 
-Foundational decisions live in [docs/adr/](adr/README.md) (ADR-001 through ADR-009). Working defaults live in [docs/assumptions.md](assumptions.md). The upstream pin lives in [docs/upstream-baseline.md](upstream-baseline.md).
+Foundational decisions live in [docs/adr/](adr/README.md) (ADR-001 through ADR-009, extended to ADR-014). Working defaults live in [docs/assumptions.md](assumptions.md). The upstream pin lives in [docs/upstream-baseline.md](upstream-baseline.md). Pivot: [docs/architecture/platform-overview.md](architecture/platform-overview.md), [docs/architecture/adapters.md](architecture/adapters.md), [docs/architecture/profiles.md](architecture/profiles.md).

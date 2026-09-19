@@ -1,0 +1,84 @@
+# Blak Sites backend: Outline (team wiki with free OIDC). Replaces Docmost
+# (SSO is enterprise-licence-gated upstream). Docmost manifest parked at
+# adapters/docmost/k3s-reference.yaml. Outline has no local login: OIDC only.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blak-sites
+  namespace: blak-micro
+type: Opaque
+stringData:
+  secret-key: "dbdead808a4fe5daaf2e06146bb0d958ec6987ae2fd6efa72eb1c4c720a4db64"
+  utils-secret: "ad7359ab461ebb2fe55b9641e7fc4405020f89863dbcfef3d9ad53b3f4c11f5a"
+  oidc-secret: "b3pB2kyigMfo_nHqwU9WYYKC3ExKro1NFnNGMABAQ5o"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: outline-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outline
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: outline } }
+  template:
+    metadata: { labels: { app: outline } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [id.homelab.local]
+      containers:
+        - name: outline
+          image: outlinewiki/outline:latest
+          ports: [{ containerPort: 3000 }]
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          env:
+            - { name: NODE_ENV, value: production }
+            - { name: SECRET_KEY, valueFrom: { secretKeyRef: { name: blak-sites, key: secret-key } } }
+            - { name: UTILS_SECRET, valueFrom: { secretKeyRef: { name: blak-sites, key: utils-secret } } }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-password } } }
+            - { name: DATABASE_URL, value: 'postgres://blak:$(POSTGRES_PASSWORD)@postgres:5432/outline' }
+            - { name: PGSSLMODE, value: disable }
+            - { name: REDIS_URL, value: 'redis://valkey:6379' }
+            - { name: URL, value: 'https://sites.homelab.local' }
+            - { name: PORT, value: "3000" }
+            - { name: FILE_STORAGE, value: local }
+            - { name: FILE_STORAGE_LOCAL_ROOT_DIR, value: /var/lib/outline/data }
+            - { name: FORCE_HTTPS, value: "false" }
+            - { name: OIDC_CLIENT_ID, value: 4ae92bf697cbba8fd1641a305e63a269 }
+            - { name: OIDC_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-sites, key: oidc-secret } } }
+            - { name: OIDC_AUTH_URI, value: https://id.homelab.local/application/o/outline/authorize/ }
+            - { name: OIDC_TOKEN_URI, value: https://id.homelab.local/application/o/outline/token/ }
+            - { name: OIDC_USERINFO_URI, value: https://id.homelab.local/application/o/outline/userinfo/ }
+            - { name: OIDC_USERNAME_CLAIM, value: preferred_username }
+            - { name: OIDC_DISPLAY_NAME, value: 'Blak ID' }
+            - { name: OIDC_SCOPES, value: 'openid profile email' }
+            - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
+          readinessProbe: { httpGet: { path: /_health, port: 3000 }, initialDelaySeconds: 90, periodSeconds: 15 }
+          livenessProbe: { httpGet: { path: /_health, port: 3000 }, initialDelaySeconds: 180, periodSeconds: 30 }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/outline/data }
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: outline-data } }
+        - name: ca
+          configMap: { name: blak-ca }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sites
+  namespace: blak-micro
+spec:
+  selector: { app: outline }
+  ports: [{ name: http, port: 3000, targetPort: 3000 }]

@@ -70,7 +70,7 @@ def branding_coverage(root: Path) -> list[dict]:
     rows = []
     for label in _named_labels((root / NAMING_REL).read_text(encoding="utf-8")):
         tile = by_label.get(label)
-        if label in {"Blak Workspace", "Blak Flow"}:
+        if label == "Blak Workspace":
             status = "suite-or-reserved"
         elif tile is None:
             status = "gap"

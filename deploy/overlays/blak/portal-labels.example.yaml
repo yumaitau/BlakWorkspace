@@ -22,6 +22,8 @@ portal:
       label: "Blak Projects"
     - id: nubus-admin
       label: "Blak Admin"
+    - id: flow
+      label: "Blak Flow"
     - id: hermes
       label: "Blak Hermes"
       enabled: false

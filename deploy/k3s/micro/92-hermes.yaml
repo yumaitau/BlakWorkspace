@@ -1,0 +1,104 @@
+# Blak Hermes (opt-in AI assistant): Ollama (local CPU inference) + Open WebUI
+# with OIDC login via Blak ID. No GPU on homelab yet; small models only.
+# DGX Spark / GPU node drops in as OLLAMA_HOST override later.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blak-hermes
+  namespace: blak-micro
+type: Opaque
+stringData:
+  oidc-secret: "z0LsIW3Pyt7hnCNIVJS-qQWVwbOqs2-07Ahg0b8dLR4"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 20Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webui-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 5Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ollama } }
+  template:
+    metadata: { labels: { app: ollama } }
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports: [{ containerPort: 11434 }]
+          resources:
+            requests: { cpu: "2", memory: 4Gi }
+            limits: { cpu: "6", memory: 12Gi }
+          volumeMounts: [{ name: data, mountPath: /root/.ollama }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: ollama-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: blak-micro
+spec:
+  selector: { app: ollama }
+  ports: [{ port: 11434, targetPort: 11434 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: hermes } }
+  template:
+    metadata: { labels: { app: hermes } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [id.homelab.local]
+      containers:
+        - name: webui
+          image: ghcr.io/open-webui/open-webui:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: OLLAMA_BASE_URL, value: http://ollama:11434 }
+            - { name: WEBUI_NAME, value: 'Blak Hermes' }
+            - { name: ENABLE_SIGNUP, value: "false" }
+            - { name: ENABLE_LOGIN_FORM, value: "false" }
+            - { name: ENABLE_OAUTH_SIGNUP, value: "true" }
+            - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "true" }
+            - { name: OAUTH_CLIENT_ID, value: openwebui }
+            - { name: OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-hermes, key: oidc-secret } } }
+            - { name: OPENID_PROVIDER_URL, value: http://id.homelab.local/application/o/hermes/.well-known/openid-configuration }
+            - { name: OAUTH_PROVIDER_NAME, value: 'Blak ID' }
+          readinessProbe: { httpGet: { path: /, port: 8080 }, initialDelaySeconds: 60, periodSeconds: 15 }
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          volumeMounts: [{ name: data, mountPath: /app/backend/data }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: webui-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes
+  namespace: blak-micro
+spec:
+  selector: { app: hermes }
+  ports: [{ port: 8080, targetPort: 8080 }]

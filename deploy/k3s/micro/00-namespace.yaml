@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blak-micro
+  labels:
+    app.kubernetes.io/part-of: blak-workspace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blak-micro
+  namespace: blak-micro

@@ -1,0 +1,14 @@
+# Traefik default TLS certificate = Blak mkcert wildcard (homelab LAN).
+# Lets every IngressRoute serve proper TLS on websecure with no per-route secret,
+# while plain HTTP keeps working on web for in-cluster traffic.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: blak-wildcard

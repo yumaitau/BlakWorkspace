@@ -1,0 +1,91 @@
+# Blak Cloud Emulator: Floci (MIT, LocalStack-compatible) — S3 + SQS/SNS/DynamoDB/
+# Lambda/Cognito and ~100 AWS-shaped services on :4566. In-process services only
+# (no docker.sock under k3s). Persistent state on PVC. Future: S3 primary storage
+# for Drive, queues/workflows for Automate.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: floci
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: floci } }
+  template:
+    metadata: { labels: { app: floci } }
+    spec:
+      containers:
+        - name: floci
+          image: floci/floci:latest
+          ports: [{ containerPort: 4566 }]
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "2", memory: 2Gi }
+          env:
+            - { name: FLOCI_PORT, value: "4566" }
+            - { name: FLOCI_STORAGE_MODE, value: persistent }
+            - { name: FLOCI_STORAGE_PERSISTENT_PATH, value: /app/data }
+          readinessProbe: { httpGet: { path: /_localstack/health, port: 4566 }, initialDelaySeconds: 20, periodSeconds: 15 }
+          livenessProbe: { httpGet: { path: /_localstack/health, port: 4566 }, initialDelaySeconds: 60, periodSeconds: 30 }
+          volumeMounts: [{ name: data, mountPath: /app/data }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: floci-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: floci
+  namespace: blak-micro
+spec:
+  selector: { app: floci }
+  ports: [{ name: aws, port: 4566, targetPort: 4566 }]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: floci-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: meilisearch } }
+  template:
+    metadata: { labels: { app: meilisearch } }
+    spec:
+      containers:
+        - name: meilisearch
+          image: getmeili/meilisearch:v1.12
+          ports: [{ containerPort: 7700 }]
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          env:
+            - { name: MEILI_MASTER_KEY, valueFrom: { secretKeyRef: { name: blak-core, key: meili-master-key } } }
+            - { name: MEILI_ENV, value: development }
+          readinessProbe: { httpGet: { path: /health, port: 7700 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          volumeMounts: [{ name: data, mountPath: /meili_data }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: meili-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: blak-micro
+spec:
+  selector: { app: meilisearch }
+  ports: [{ port: 7700, targetPort: 7700 }]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meili-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 5Gi } }

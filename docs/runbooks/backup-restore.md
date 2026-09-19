@@ -6,7 +6,7 @@ Do not claim tested DR until a rehearsal actually runs (BW-045 on eval). Do not 
 
 From [docs/architecture/storage.md](../architecture/storage.md):
 
-1. PostgreSQL (Nubus, Nextcloud, Element, OpenProject, Notes, Docmost when enabled)
+1. PostgreSQL (Authentik, OpenCloud, Docmost, Meilisearch when enabled)
 2. MariaDB (only if optional OX is on)
 3. S3-compatible buckets (Drive, Projects, Knowledge, media)
 4. LDAP / identity artefacts required to bind users after restore
