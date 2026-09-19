@@ -17,14 +17,14 @@ test.describe('Blak Portal homelab', () => {
     await page.goto('/');
     await page.getByRole('link', { name: /Sign in with Blak ID/i }).click();
     await page.waitForURL(/id\.homelab\.local/, { timeout: 30_000 });
-    const uid = page.locator('input[name="uidField"], input[name="username"], input[autocomplete="username"]').first();
+    const uid = page.getByRole('textbox').first();
     await uid.waitFor({ state: 'visible' });
     await uid.fill(user);
-    await page.getByRole('button', { name: /continue|log in|sign in/i }).click();
-    const pw = page.locator('input[name="password"], input[type="password"]').first();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    const pw = page.getByRole('textbox', { name: /password/i });
     await pw.waitFor({ state: 'visible' });
     await pw.fill(password);
-    await page.getByRole('button', { name: /continue|log in|sign in/i }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
     await page.waitForURL((url) => url.hostname === 'portal.homelab.local' && url.pathname !== '/login' && url.pathname !== '/callback', { timeout: 30_000 });
     await expect(page.locator('[data-testid="userchip"]')).toBeVisible();
     await expect(page.locator('[data-testid="userchip"] .nm')).not.toHaveText('');
