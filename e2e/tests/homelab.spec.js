@@ -16,19 +16,18 @@ test.describe('Blak Portal homelab', () => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
     await page.goto('/');
     await page.getByRole('link', { name: /Sign in with Blak ID/i }).click();
-    await page.waitForLoadState('domcontentloaded');
-    const uid = page.locator('input[name="uidField"], input[name="username"], input#id_uid_field, input[type="text"]').first();
-    const pw = page.locator('input[name="password"], input[type="password"]').first();
-    await uid.waitFor({ state: 'visible' });
-    await uid.fill(user);
-    await pw.fill(password);
-    await page.locator('button[type="submit"], button:has-text("Log in"), button:has-text("Sign in")').first().click();
-    await page.waitForURL(/portal\.homelab\.local/, { timeout: 30_000 });
+    await page.waitForURL(/id\.homelab\.local/, { timeout: 30_000 });
+    await page.getByRole('textbox', { name: /email or username/i }).fill(user);
+    await page.getByRole('button', { name: /log in/i }).click();
+    await page.getByRole('textbox', { name: /password/i }).waitFor({ state: 'visible' });
+    await page.getByRole('textbox', { name: /password/i }).fill(password);
+    await page.getByRole('button', { name: /continue/i }).click();
+    await page.waitForURL((url) => url.hostname === 'portal.homelab.local' && url.pathname !== '/login' && url.pathname !== '/callback', { timeout: 30_000 });
     await expect(page.locator('[data-testid="userchip"]')).toBeVisible();
     await expect(page.locator('[data-testid="userchip"] .nm')).not.toHaveText('');
 
     await page.locator('[data-testid="waffle"]').click();
-    const flowItem = page.locator('[data-app="flow"]');
+    const flowItem = page.locator('a.appitem[data-app="flow"]');
     await expect(flowItem).toBeVisible();
     await expect(flowItem).toHaveAttribute('href', '/flow');
     await expect(flowItem).not.toHaveClass(/soon/);
