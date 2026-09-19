@@ -112,13 +112,18 @@ class TestSitesSearchAuditProviders(unittest.TestCase):
     def test_search_never_returns_unreadable(self):
         store = SitesStore()
         store.create_site("site-owner", "board", "Board", "department", "ada")
+        self.assertEqual(store.sites["board"].members, {"ada": "site-owner"})
         store.save_page("site-owner", "board", "home", "Secret page", [{"type": "richtext", "text": "x"}])
         store.publish_page("site-owner", "board", "home")
         store.put_document_metadata("site-owner", "board", "doc-9", {"title": "Secret doc"})
         store.add_list("site-owner", "board", "secret-list", {"n": "text"})
-        self.assertTrue(store.search("reader", "board", "secret"))
-        self.assertEqual(store.search("anonymous", "board", "secret"), [])
-        self.assertEqual(store.search("stranger", "board", "home"), [])
+        hits = store.search("ada", "board", "secret")
+        self.assertEqual({h["type"] for h in hits}, {"page", "document", "list"})
+        self.assertEqual(store.search("eve", "board", "secret"), [])
+        self.assertEqual(store.search("reader", "board", "secret"), [])
+        self.assertEqual(store.search("site-owner", "board", "secret"), [])
+        store.set_member("site-admin", "board", "bob", "reader")
+        self.assertTrue(store.search("bob", "board", "secret"))
 
     def test_provider_deep_links(self):
         self.assertEqual(deep_link("knowledge"), "docmost")
