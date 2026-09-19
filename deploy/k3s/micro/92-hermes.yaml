@@ -1,15 +1,7 @@
 # Blak Hermes (opt-in AI assistant): Ollama (local CPU inference) + Open WebUI
 # with OIDC login via Blak ID. No GPU on homelab yet; small models only.
 # DGX Spark / GPU node drops in as OLLAMA_HOST override later.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-hermes
-  namespace: blak-micro
-type: Opaque
-stringData:
-  oidc-secret: "z0LsIW3Pyt7hnCNIVJS-qQWVwbOqs2-07Ahg0b8dLR4"
----
+# Secrets for blak-hermes live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

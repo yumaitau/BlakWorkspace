@@ -1,16 +1,7 @@
 # Blak Projects backend: OpenProject Community Edition.
 # OIDC via Authentik (CE supports OpenID Connect providers, configured in
 # Administration → Authentication after first admin login; provider below).
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blak-projects
-  namespace: blak-micro
-type: Opaque
-stringData:
-  secret-key-base: "op-SK-c9f2a1e47b3d4c5a8e6f7a1b3c5d9e2f4a6b8c1d3e5f7a9b1c3d5e7f9a2b4"
-  oidc-secret: "BJCEJrM7QB9C5h6d-AaoFEq1cMErPl1uYsy-rQpMDc8"
----
+# Secrets for blak-projects live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
