@@ -2,7 +2,7 @@ pilot:
   status: not-run
   operatorDocs: secrets,backup-restore,hermes,notes-knowledge
   ossFiles: LICENSE,NOTICE,THIRD_PARTY_NOTICES.md
-  blakFlow: reserved
+  blakFlow: live
   aiDefault: off
   aiDefault: disabled
   fleetIsolation: one-org-per-deployment

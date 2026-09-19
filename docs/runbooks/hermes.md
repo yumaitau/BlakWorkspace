@@ -13,7 +13,7 @@ Default profiles keep Hermes **disabled**. Enable only with the eval sketch `dep
 
 ## Search
 
-Hermes searches only the corpus flags that are true: Drive (Nextcloud), Docs (Collabora-on-Drive), Knowledge (Docmost). Unauthorised users must not read hits via UI or API. There is no eval-cluster smoke in this seed.
+Hermes searches only the corpus flags that are true: Drive (OpenCloud), Docs (Collabora-on-Drive), Knowledge (Docmost). Unauthorised users must not read hits via UI or API. There is no eval-cluster smoke in this seed.
 
 ## Backup
 

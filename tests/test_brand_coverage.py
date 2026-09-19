@@ -32,9 +32,10 @@ class TestBrandCoverage(unittest.TestCase):
         self.assertEqual(knowledge["tile_id"], "docmost")
         self.assertNotEqual(knowledge["tile_id"], "xwiki")
 
-    def test_reserved_flow_is_not_a_gap(self):
+    def test_live_flow_has_tile(self):
         flow = next(r for r in branding_coverage(ROOT) if r["label"] == "Blak Flow")
-        self.assertEqual(flow["status"], "suite-or-reserved")
+        self.assertEqual(flow["status"], "tile")
+        self.assertEqual(flow["tile_id"], "flow")
 
 
 if __name__ == "__main__":

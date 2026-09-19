@@ -1,0 +1,86 @@
+# Blak Drive theme for OpenCloud (ConfigMap). Mounted at /etc/opencloud/themes/blak/.
+# Served same-origin; referenced via WEB_UI_THEME_PATH=/themes/blak/theme.json.
+# Sources: deploy/k3s/micro/blak-theme/.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drive-theme
+  namespace: blak-micro
+data:
+  theme.json: |
+    {
+      "common": {
+        "name": "Blak Drive",
+        "slogan": "Your work. Your workspace.",
+        "logo": "themes/blak/assets/logo.svg",
+        "urls": {
+          "accessDeniedHelp": "",
+          "imprint": "",
+          "privacy": ""
+        }
+      },
+      "clients": {
+        "android": {},
+        "desktop": {},
+        "ios": {},
+        "web": {
+          "defaults": {
+            "logo": "themes/blak/assets/logo.svg",
+            "favicon": "themes/blak/assets/logo.svg",
+            "slogan": "Your work. Your workspace."
+          },
+          "themes": [
+            {
+              "isDark": true,
+              "label": "Blak Dark",
+              "designTokens": {
+                "roles": {
+                  "primary": "#D65B2E",
+                  "onPrimary": "#FFF4E5",
+                  "primaryContainer": "#8E3525",
+                  "onPrimaryContainer": "#F4EBDD",
+                  "secondary": "#21818A",
+                  "onSecondary": "#FFFFFF",
+                  "secondaryContainer": "#14565E",
+                  "onSecondaryContainer": "#F4EBDD",
+                  "tertiary": "#D68B2C",
+                  "onTertiary": "#0B1112",
+                  "tertiaryContainer": "#B97524",
+                  "onTertiaryContainer": "#0B1112",
+                  "error": "#D35B48",
+                  "onError": "#0B1112",
+                  "errorContainer": "#8E3525",
+                  "onErrorContainer": "#F4EBDD",
+                  "background": "#101819",
+                  "onBackground": "#F4EBDD",
+                  "surface": "#172123",
+                  "onSurface": "#F4EBDD",
+                  "surfaceVariant": "#29393A",
+                  "onSurfaceVariant": "#B8B5AA",
+                  "outline": "#455456",
+                  "outlineVariant": "#263436",
+                  "shadow": "#000000",
+                  "scrim": "#000000",
+                  "inverseSurface": "#F4EBDD",
+                  "inverseOnSurface": "#101819",
+                  "inversePrimary": "#D65B2E",
+                  "primaryFixed": "#E5A447",
+                  "onPrimaryFixed": "#0B1112",
+                  "surfaceDim": "#0B1112",
+                  "surfaceBright": "#1B292B",
+                  "surfaceContainerLowest": "#0B1112",
+                  "surfaceContainerLow": "#101819",
+                  "surfaceContainer": "#152022",
+                  "surfaceContainerHigh": "#1B292B",
+                  "surfaceContainerHighest": "#29393A",
+                  "chrome": "#D65B2E",
+                  "onChrome": "#FFF4E5"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  logo.svg: |
+    <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="#0B1112"/><rect x="14" y="14" width="68" height="68" rx="14" fill="#D65B2E"/><text x="48" y="64" font-family="system-ui,sans-serif" font-size="44" font-weight="700" fill="#FFF4E5" text-anchor="middle">B</text><rect x="26" y="72" width="44" height="4" rx="2" fill="#E5A447"/></svg>

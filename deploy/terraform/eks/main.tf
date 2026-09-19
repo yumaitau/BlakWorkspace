@@ -55,10 +55,14 @@ module "eks" {
 
   eks_managed_node_groups = {
     default = {
+      # Single right-sized node: the openDesk eval suite needs ~8-10 vCPU / 20-26 GiB
+      # of pod requests in aggregate, so one 8 vCPU / 32 GiB node is the smallest
+      # single-node config that actually schedules the whole suite. Smaller nodes
+      # just leave half the pods Pending. Kept at 1 node to minimise throwaway cost.
       instance_types = ["m6i.2xlarge"]
-      min_size       = 2
-      max_size       = 4
-      desired_size   = 2
+      min_size       = 1
+      max_size       = 2
+      desired_size   = 1
     }
   }
 

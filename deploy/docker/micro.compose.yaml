@@ -1,0 +1,34 @@
+name: blak-micro
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: blak
+      POSTGRES_PASSWORD: blak-dev-only
+      POSTGRES_DB: portal
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U blak"], interval: 10s, retries: 5 }
+  valkey:
+    image: valkey/valkey:7-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes: [valkeydata:/data]
+  floci:
+    image: floci/floci:latest
+    environment: { FLOCI_STORAGE_MODE: persistent, FLOCI_STORAGE_PERSISTENT_PATH: /app/data }
+    volumes: [flocidata:/app/data]
+    ports: ["4566:4566"]
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment: { MEILI_MASTER_KEY: blak-dev-only, MEILI_ENV: development }
+    volumes: [meilidata:/meili_data]
+    ports: ["7700:7700"]
+  nats:
+    image: nats:2-alpine
+    command: ["-js"]
+    ports: ["4222:4222", "8222:8222"]
+  portal:
+    build: ../../apps/portal
+    environment: { PORT: 3000 }
+    ports: ["3000:3000"]
+    depends_on: [postgres, valkey, floci, meilisearch, nats]
+volumes: { pgdata: {}, valkeydata: {}, flocidata: {}, meilidata: {} }

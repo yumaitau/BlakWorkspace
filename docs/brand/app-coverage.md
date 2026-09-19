@@ -6,7 +6,7 @@ Audit of user-facing Blak labels versus the portal overlay. Source of truth is `
 
 1. List Blak labels from the naming map.
 2. Match portal tiles by label.
-3. Suite name (Blak Workspace) and reserved Blak Flow need no tile.
+3. Suite name (Blak Workspace) needs no tile. Blak Flow is a live portal tile (`id: flow`).
 4. Disabled tiles (OX, Hermes, Sites) count as covered-but-off, not gaps.
 
 ## Expected gaps
@@ -14,6 +14,6 @@ Audit of user-facing Blak labels versus the portal overlay. Source of truth is `
 None for named products with a tile. Remaining hook gaps (not product tiles):
 
 - Keycloak login theme still upstream-default until brand tokens exist
-- Per-app CSS inside Element/Nextcloud/Collabora is out of scope (no source patches)
+- Per-app CSS inside Element/Collabora is out of scope (no source patches)
 
 Run: `python -c "from pathlib import Path; import sys; sys.path.insert(0,'scripts'); from blak_brand import coverage_gaps; print(coverage_gaps(Path('.')))"`

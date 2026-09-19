@@ -1,0 +1,58 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "components": [
+    {
+      "type": "library",
+      "name": "openDesk deployment (Helmfile)"
+    },
+    {
+      "type": "library",
+      "name": "Chat"
+    },
+    {
+      "type": "library",
+      "name": "Notes"
+    },
+    {
+      "type": "library",
+      "name": "Diagrams"
+    },
+    {
+      "type": "library",
+      "name": "Files"
+    },
+    {
+      "type": "library",
+      "name": "Groupware"
+    },
+    {
+      "type": "library",
+      "name": "Knowledge"
+    },
+    {
+      "type": "library",
+      "name": "Knowledge (openDesk default, not Blak default)"
+    },
+    {
+      "type": "library",
+      "name": "Portal and IAM"
+    },
+    {
+      "type": "library",
+      "name": "Projects"
+    },
+    {
+      "type": "library",
+      "name": "Meet"
+    },
+    {
+      "type": "library",
+      "name": "Weboffice"
+    },
+    {
+      "type": "library",
+      "name": "Sovereign AI runtime"
+    }
+  ]
+}

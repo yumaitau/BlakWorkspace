@@ -5,7 +5,7 @@ Labels only. Do not rename Helm releases, chart names, or OIDC client IDs withou
 | Blak label | Upstream component | Internal ID (do not rename) |
 | --- | --- | --- |
 | Blak Workspace | openDesk suite | openDesk / helmfile releases as upstream |
-| Blak Drive | Nextcloud | nextcloud |
+| Blak Drive | OpenCloud | opencloud |
 | Blak Docs | Collabora | collabora |
 | Blak Notes | Notes | notes |
 | Blak Chat | Element | element / synapse |
@@ -14,7 +14,7 @@ Labels only. Do not rename Helm releases, chart names, or OIDC client IDs withou
 | Blak Knowledge | Docmost (not XWiki) | docmost |
 | Blak Projects | OpenProject | openproject |
 | Blak Admin | Nubus admin / portal admin | nubus |
-| Blak Flow | Reserved for later | n/a |
+| Blak Flow | Blak Flow engine | flow |
 | Blak Hermes | Hermes agent (Yuma-packaged `companyos-hermes`) | hermes |
 | Blak Sites | Sites (overlay aggregation layer) | sites |
 

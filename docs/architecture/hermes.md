@@ -32,7 +32,7 @@ When `hermes.enabled` **and** `hermes.documentSearch` are true, Hermes may index
 
 | Flag | Blak store | Upstream |
 | --- | --- | --- |
-| `corpusDrive` | Blak Drive | Nextcloud |
+| `corpusDrive` | Blak Drive | OpenCloud |
 | `corpusDocs` | Blak Docs | Collabora (files live on Drive) |
 | `corpusKnowledge` | Blak Knowledge | Docmost |
 

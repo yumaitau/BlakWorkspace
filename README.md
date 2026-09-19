@@ -1,5 +1,7 @@
 # Blak Workspace
 
+![Blak Workspace banner — Our People. Our Data. A Stronger Tomorrow. Sovereign · Open · Together.](brand/banner.png)
+
 Indigenous-branded digital workplace suite by Yuma IT, distributed as branding, configuration, deploy automation, documentation, and carefully scoped extensions on [openDesk](https://docs.opendesk.eu/operations/introduction/) (ZenDiS).
 
 **Maturity: seed.** This repository is a project seed with backlog, architecture decisions, and overlay stubs. It is not a production deployment and does not implement the full suite.
@@ -28,16 +30,16 @@ Blak Workspace helps Australian organisations run a coherent digital workplace e
 | Blak label | Upstream component |
 | --- | --- |
 | Blak Workspace | openDesk suite |
-| Blak Drive | Nextcloud |
+| Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
 | Blak Notes | Notes |
 | Blak Chat | Element |
 | Blak Meet | Jitsi |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed) |
-| Blak Knowledge | Docmost (replaces openDesk XWiki in Blak defaults) |
+| Blak Knowledge | Outline (team wiki, OIDC via Blak ID) |
 | Blak Projects | OpenProject |
 | Blak Admin | Nubus admin / portal admin surfaces |
-| Blak Flow | Reserved for later |
+| Blak Flow | Blak Flow engine |
 | Blak Hermes | Hermes agent runtime (opt-in sovereign AI / document search; default off) |
 
 Internal chart and application IDs are not renamed.
@@ -45,10 +47,21 @@ Internal chart and application IDs are not renamed.
 ## Quick start
 
 1. Read the [product contract](docs/product-contract.md), [docs/assumptions.md](docs/assumptions.md), and [docs/upstream-baseline.md](docs/upstream-baseline.md).
-2. Review ADRs under [docs/adr/](docs/adr/).
+2. Review ADRs under [docs/adr/](docs/adr/) — pivot: [ADR-014](docs/adr/ADR-014.md). Platform: [platform-overview](docs/architecture/platform-overview.md), [adapters](docs/architecture/adapters.md), [profiles](docs/architecture/profiles.md).
 3. Validate backlog: `python scripts/validate-manifest.py`
 4. Dry-run GitHub seed: `python scripts/seed-github.py --dry-run`
 5. Explore deploy stubs under [deploy/](deploy/) (do not apply production). Eval intent: [deploy/profiles/eval/](deploy/profiles/eval/) and [deploy/PREREQS.md](deploy/PREREQS.md). Local K3s: [deploy/terraform](deploy/terraform/README.md).
+6. Micro pivot: Compose `deploy/docker/micro.compose.yaml`; K3s `deploy/k3s/micro/`; Portal stub `apps/portal/`.
+
+## Homelab Micro (deployed 2026-09-19)
+
+Single-node K3s v1.36.4 on `homelab` (Ubuntu 26.04, x86_64), namespace `blak-micro`. Portal image built on homelab (`blak-portal:micro`) and imported via `k3s ctr images import`. Full runbook: [docs/runbooks/homelab-micro.md](docs/runbooks/homelab-micro.md).
+
+Live and e2e-verified: Portal launcher with Blak ID login gate (scripted SSO loop to
+user chip), Authentik branded "Blak ID", OpenCloud files (WebDAV upload → public share
+→ byte-identical download) with external OIDC to Blak ID, Collabora discovery +
+WOPI wiring, Blak Sites on Outline (team wiki, OIDC via Blak ID — replaced Docmost,
+whose SSO is licence-gated), Floci S3 round-trip.
 
 ## Upstream baseline
 

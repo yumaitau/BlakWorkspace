@@ -9,16 +9,16 @@ from repo import exists, read
 
 NAMING = {
     "Blak Workspace": "openDesk",
-    "Blak Drive": "Nextcloud",
+    "Blak Drive": "OpenCloud",
     "Blak Docs": "Collabora",
     "Blak Notes": "Notes",
     "Blak Chat": "Element",
     "Blak Meet": "Jitsi",
     "Blak Mail and Calendar": "OX App Suite",
-    "Blak Knowledge": "Docmost",
+    "Blak Knowledge": "Outline",
     "Blak Projects": "OpenProject",
     "Blak Admin": "Nubus",
-    "Blak Flow": "Reserved",
+    "Blak Flow": "Blak Flow engine",
     "Blak Hermes": "Hermes",
 }
 
@@ -58,8 +58,7 @@ class TestProductContract(unittest.TestCase):
             self.assertIn(label, readme, label)
         pairs = _table_pairs(contract)
         self.assertIn("Blak Knowledge", pairs)
-        self.assertIn("Docmost", pairs["Blak Knowledge"])
-        self.assertNotEqual(pairs["Blak Knowledge"].split("(")[0].strip(), "XWiki")
+        self.assertIn("Outline", pairs["Blak Knowledge"])
 
     def test_non_goals_include_m365_and_fake_certs(self):
         text = read("docs/product-contract.md")

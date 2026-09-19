@@ -32,9 +32,9 @@ class TestBrandTokens(unittest.TestCase):
         from repo import ROOT
 
         names = {p.name for p in (ROOT / "brand").iterdir() if p.is_file()}
-        self.assertEqual(names, {"tokens.json", "PROVENANCE.md"})
+        self.assertEqual(names, {"tokens.json", "PROVENANCE.md", "banner.png"})
         for path in (ROOT / "brand").rglob("*"):
-            if path.suffix.lower() in {".png", ".svg", ".jpg", ".ai"}:
+            if path.suffix.lower() in {".png", ".svg", ".jpg", ".ai"} and path.name != "banner.png":
                 self.fail(f"unexpected asset {path}")
 
 

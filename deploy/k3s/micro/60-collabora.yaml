@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collabora
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: collabora } }
+  template:
+    metadata: { labels: { app: collabora } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [drive.homelab.local]
+      containers:
+        - name: code
+          image: collabora/code:latest
+          ports: [{ containerPort: 9980 }]
+          resources:
+            requests: { cpu: "1", memory: 2Gi }
+            limits: { cpu: "4", memory: 6Gi }
+          env:
+            - { name: domain, value: 'drive\.homelab\.local|drive' }
+            - { name: server_name, value: docs.homelab.local }
+            - { name: extra_params, value: '--o:ssl.enable=false --o:ssl.termination=true' }
+            - { name: username, value: admin }
+            - { name: password, value: CollabAdmin-ChangeMe-4d8f1a }
+            - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
+          volumeMounts:
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+          readinessProbe: { httpGet: { path: /hosting/discovery, port: 9980 }, initialDelaySeconds: 30, periodSeconds: 15 }
+          livenessProbe: { httpGet: { path: /hosting/discovery, port: 9980 }, initialDelaySeconds: 90, periodSeconds: 30 }
+      volumes:
+        - name: ca
+          configMap: { name: blak-ca }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs
+  namespace: blak-micro
+spec:
+  selector: { app: collabora }
+  ports: [{ name: http, port: 9980, targetPort: 9980 }]
