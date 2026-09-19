@@ -1,0 +1,10 @@
+# Sites overlay. Default off until pilot acceptance. Do not invent an image digest.
+sites:
+  enabled: false
+  allowPublicForms: false
+  identityProvider: nubus
+  protocol: oidc
+  fileProvider: nextcloud
+  knowledgeProvider: docmost
+  searchTrimAcl: true
+  aiDefault: disabled

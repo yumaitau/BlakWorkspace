@@ -1,0 +1,9 @@
+# Foundation chart values. Image tag is TBD; do not invent a digest.
+# platforms is a comma list so the overlay parser keeps it as a string.
+name: blak-sites
+platforms: linux/amd64,linux/arm64
+image: ghcr.io/yumaitau/blak-sites
+imageTag: TBD
+identityProvider: nubus
+egress:
+  mandatory: false

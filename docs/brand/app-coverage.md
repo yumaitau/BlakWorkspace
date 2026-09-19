@@ -7,7 +7,7 @@ Audit of user-facing Blak labels versus the portal overlay. Source of truth is `
 1. List Blak labels from the naming map.
 2. Match portal tiles by label.
 3. Suite name (Blak Workspace) and reserved Blak Flow need no tile.
-4. Disabled tiles (OX, Hermes) count as covered-but-off, not gaps.
+4. Disabled tiles (OX, Hermes, Sites) count as covered-but-off, not gaps.
 
 ## Expected gaps
 

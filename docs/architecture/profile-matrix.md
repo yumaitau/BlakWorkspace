@@ -18,5 +18,7 @@ Promotion from eval to staging or prod is a **human gate**. No CI job in this re
 | `knowledge.xwiki` | false | false | false |
 | `knowledge.docmost` | false until BW-055 pin | false until BW-055 pin | false until BW-055 pin |
 | Dual-enable XWiki + Docmost | Forbidden | Forbidden | Forbidden |
+| Sites (`sites.enabled`) | false | false | false |
+| Sites public forms | false | false | false |
 
 Stubs: `deploy/profiles/eval/values.yaml`, `deploy/profiles/staging/values.yaml`, `deploy/profiles/prod/values.yaml`.

@@ -16,6 +16,7 @@ Labels only. Do not rename Helm releases, chart names, or OIDC client IDs withou
 | Blak Admin | Nubus admin / portal admin | nubus |
 | Blak Flow | Reserved for later | n/a |
 | Blak Hermes | Hermes agent (Yuma-packaged `companyos-hermes`) | hermes |
+| Blak Sites | Sites (overlay aggregation layer) | sites |
 
 Blak Knowledge maps to **Docmost**, not XWiki. See BW-055. Do not enable both in default profiles. Do not show an XWiki portal tile as Blak Knowledge.
 
@@ -31,3 +32,4 @@ Apply labels via `deploy/overlays/blak/portal-labels.example.yaml` using upstrea
 - [ ] Confirm OIDC client IDs unchanged
 - [ ] Re-read legal/support surfaces so Docmost/openDesk attribution remains visible
 - [ ] Confirm Blak Hermes tile stays off unless `hermes.enabled` is opted in
+- [ ] Confirm Blak Sites tile stays off unless `sites.enabled` is opted in

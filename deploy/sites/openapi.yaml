@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: Blak Sites API
+  version: 0.1.0
+  description: >
+    Same membership and list operations as the Sites UI. Callers authenticate
+    with Nubus OIDC. Server-side permission checks apply even if a control is
+    hidden in the frontend. Public/anonymous forms stay off.
+servers:
+  - url: /api/v1
+paths:
+  /sites:
+    post:
+      operationId: createSite
+      summary: Create a templated Site
+      security:
+        - nubusOidc: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, title, template]
+              properties:
+                slug: { type: string }
+                title: { type: string }
+                template: { type: string }
+      responses:
+        "201": { description: Created }
+        "403": { description: Unauthorized }
+  /sites/{slug}/members:
+    post:
+      operationId: addMember
+      summary: Add or change a Site member role
+      security:
+        - nubusOidc: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user, memberRole]
+              properties:
+                user: { type: string }
+                memberRole: { type: string }
+      responses:
+        "200": { description: Updated }
+        "403": { description: Unauthorized }
+  /sites/{slug}/lists:
+    post:
+      operationId: createList
+      summary: Create a list (same store as the UI)
+      security:
+        - nubusOidc: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, fields]
+              properties:
+                name: { type: string }
+                fields: { type: object }
+      responses:
+        "201": { description: Created }
+        "403": { description: Unauthorized }
+  /sites/{slug}/lists/{name}/items:
+    post:
+      operationId: createListItem
+      summary: Create a list item (same store as the UI)
+      security:
+        - nubusOidc: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201": { description: Created }
+        "403": { description: Unauthorized }
+components:
+  securitySchemes:
+    nubusOidc:
+      type: openIdConnect
+      openIdConnectUrl: /.well-known/openid-configuration

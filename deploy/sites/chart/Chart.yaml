@@ -1,0 +1,6 @@
+apiVersion: v2
+name: blak-sites
+description: Blak Sites foundation chart. Image tag is TBD; do not invent a digest.
+type: application
+version: 0.1.0
+appVersion: "TBD"

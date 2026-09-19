@@ -21,3 +21,9 @@ hermes:
   corpusDrive: false
   corpusDocs: false
   corpusKnowledge: false
+sites:
+  enabled: false
+  allowPublicForms: false
+  identityProvider: nubus
+  fileProvider: nextcloud
+  knowledgeProvider: docmost
