@@ -10,4 +10,4 @@ Stubs for adapting upstream openDesk Helmfile deployments with a Blak overlay.
 
 ## Warning
 
-Do not apply production infrastructure from this seed. Eval may be exercised later under explicit owner approval. No paid AU cloud resources are provisioned by these stubs alone.
+Do not apply production infrastructure from this seed. Eval K3s may be applied by an operator via [terraform](terraform/README.md) (ADR-013). GitHub Actions never runs terraform apply. No paid AU cloud resources are provisioned unless `allow_paid_cloud` is set on the EKS root.

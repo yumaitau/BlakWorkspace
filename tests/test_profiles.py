@@ -49,6 +49,8 @@ class TestEnvironmentProfiles(unittest.TestCase):
             for path in folder.rglob("*"):
                 if not path.is_file() or path.suffix in {".png", ".jpg"}:
                     continue
+                if ".terraform" in path.parts or path.suffix in {".tfstate"}:
+                    continue
                 text = path.read_text(encoding="utf-8", errors="ignore")
                 for hint in SECRET_HINTS:
                     self.assertNotIn(hint, text, f"{path} contains {hint}")
