@@ -10,7 +10,7 @@ const PORTAL = 'https://portal.workspace.example.com';
 test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another owner', async ({ page, browser, playwright }) => {
   test.setTimeout(600000);
   const knowledge = await privateKnowledge(playwright);
-  const crm = await playwright.request.newContext({ baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
+  const crm = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
   const exporter = await playwright.request.newContext({ ...publicNetworkOptions, baseURL: PORTAL, ignoreHTTPSErrors: true, extraHTTPHeaders: { authorization: 'Bearer ' + knowledge.account.sources.draw.token } });
   const other = await browser.newContext({ ...publicNetworkOptions, ignoreHTTPSErrors: true });
   await other.addCookies([{ name: 'blak_session', value: session('hermes-other-' + Date.now()), url: PORTAL }]);

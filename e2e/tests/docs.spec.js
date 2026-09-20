@@ -7,7 +7,7 @@ const {syncAccount,serviceURL}=require('../helpers/sync');
 test('Blak Docs opens, edits and saves a real Drive document with themed chrome',async({page,playwright})=>{
  test.setTimeout(150000);
  const source=syncAccount().sources.drive;
- const drive=await playwright.request.newContext({baseURL:serviceURL('drive',9200),extraHTTPHeaders:{authorization:'Basic '+Buffer.from(source.username+':'+source.password).toString('base64')}});
+ const drive=await playwright.request.newContext({proxy:undefined,baseURL:serviceURL('drive',9200),extraHTTPHeaders:{authorization:'Basic '+Buffer.from(source.username+':'+source.password).toString('base64')}});
  const drives=await (await drive.get('/graph/v1.0/drives')).json();
  const personal=drives.value.find(item=>item.driveType==='personal');expect(personal).toBeTruthy();
  const name='blak-docs-e2e-'+crypto.randomBytes(5).toString('hex')+'.odt';

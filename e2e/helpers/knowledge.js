@@ -4,7 +4,7 @@ const { expect } = require('@playwright/test');
 const { syncAccount, serviceURL } = require('./sync');
 async function privateKnowledge(playwright) {
   const account = syncAccount();
-  const client = await playwright.request.newContext({ baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
+  const client = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
   async function collection(label) {
     const response = await client.get('/api/v1/knowledge/');
     expect(response.ok()).toBeTruthy();
