@@ -80,20 +80,26 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
     responseId = submissionData.data.submissions.submissions.find(s => JSON.stringify(s.answers).includes(marker)).id;
     syncNow();
     expect(await knowledge.query('Forms', marker)).toContain(marker);
+    expect(await knowledge.query('Forms', 'What should we improve?')).toContain('What should we improve?');
     await page.screenshot({
       path: test.info().outputPath("forms-submission.png"),
       fullPage: true,
     });
   } finally {
     if (respondent) await respondent.close();
-    const result = await page.request.post(FORMS + "/graphql", {
-      timeout: 10000,
-      data: {
-        query: "mutation($input:FormDetailInput!){deleteForm(input:$input)}",
-        variables: { input: { formId } },
-      },
-    });
-    expect((await result.json()).errors).toBeUndefined();
+    // HeyForm only permanently deletes forms already moved to trash.
+    for (const operation of ['moveFormToTrash', 'deleteForm']) {
+      const result = await page.request.post(FORMS + "/graphql", {
+        timeout: 10000,
+        data: {
+          query: `mutation($input:FormDetailInput!){${operation}(input:$input)}`,
+          variables: { input: { formId } },
+        },
+      });
+      const data = await result.json();
+      expect(data.errors).toBeUndefined();
+      expect(data.data[operation]).toBe(true);
+    }
     syncNow();
     const remaining = await knowledge.files('Forms');
     expect(remaining).not.toContain(indexedName('forms', formId));
