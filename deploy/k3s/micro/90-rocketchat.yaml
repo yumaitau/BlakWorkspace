@@ -39,7 +39,8 @@ spec:
             requests: { cpu: 250m, memory: 512Mi }
             limits: { cpu: "1", memory: 2Gi }
           readinessProbe:
-            exec: { command: ["mongosh", "--quiet", "--eval", "db.adminCommand({ping:1})"] }
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
             initialDelaySeconds: 15
             periodSeconds: 10
           volumeMounts: [{ name: data, mountPath: /data/db }]
@@ -64,6 +65,7 @@ spec:
               set -e
               until mongosh --host mongo --quiet --eval 'db.adminCommand({ping:1})'; do sleep 2; done
               mongosh --host mongo --quiet --eval 'try { rs.status() } catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"mongo:27017"}]}) }'
+              echo rs_ok
 ---
 apiVersion: v1
 kind: Service
@@ -81,9 +83,11 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
-  selector: { matchLabels: { app: chat } }
+  selector:
+    matchLabels: { app: chat }
   template:
-    metadata: { labels: { app: chat } }
+    metadata:
+      labels: { app: chat }
     spec:
       hostAliases:
         - ip: 10.43.169.184
@@ -91,47 +95,80 @@ spec:
       containers:
         - name: rocketchat
           image: rocketchat/rocket.chat:7.9.3
-          ports: [{ containerPort: 3000 }]
+          ports:
+            - containerPort: 3000
           env:
-            - { name: ROOT_URL, value: https://chat.homelab.local }
-            - { name: PORT, value: "3000" }
-            - { name: MONGO_URL, value: mongodb://mongo:27017/rocketchat?replicaSet=rs0 }
-            - { name: MONGO_OPLOG_URL, value: mongodb://mongo:27017/local?replicaSet=rs0 }
-            - { name: OVERWRITE_SETTING_Show_Setup_Wizard, value: completed }
-            - { name: OVERWRITE_SETTING_Accounts_ShowFormLogin, value: "false" }
-            - { name: ADMIN_EMAIL, value: admin@blak.local }
-            - { name: ADMIN_USERNAME, value: akadmin }
+            - name: ROOT_URL
+              value: https://chat.homelab.local
+            - name: PORT
+              value: "3000"
+            - name: MONGO_URL
+              value: "mongodb://mongo:27017/rocketchat?replicaSet=rs0"
+            - name: MONGO_OPLOG_URL
+              value: "mongodb://mongo:27017/local?replicaSet=rs0"
+            - name: OVERWRITE_SETTING_Show_Setup_Wizard
+              value: completed
+            - name: OVERWRITE_SETTING_Accounts_ShowFormLogin
+              value: "false"
+            - name: ADMIN_EMAIL
+              value: admin@blak.local
+            - name: ADMIN_USERNAME
+              value: akadmin
             - name: ADMIN_PASS
-              valueFrom: { secretKeyRef: { name: blak-chat, key: admin-password } }
-            - { name: Accounts_OAuth_Custom-Blakid, value: "true" }
-            - { name: Accounts_OAuth_Custom-Blakid-url, value: https://id.homelab.local/application/o }
-            - { name: Accounts_OAuth_Custom-Blakid-token_path, value: /token/ }
-            - { name: Accounts_OAuth_Custom-Blakid-identity_path, value: /userinfo/ }
-            - { name: Accounts_OAuth_Custom-Blakid-authorize_path, value: /authorize/ }
-            - { name: Accounts_OAuth_Custom-Blakid-scope, value: "openid email profile" }
-            - { name: Accounts_OAuth_Custom-Blakid-button_label_text, value: Sign in with Blak ID }
-            - { name: Accounts_OAuth_Custom-Blakid-login_style, value: redirect }
-            - { name: Accounts_OAuth_Custom-Blakid-token_sent_via, value: payload }
-            - { name: Accounts_OAuth_Custom-Blakid-identity_token_sent_via, value: payload }
-            - { name: Accounts_OAuth_Custom-Blakid-username_field, value: preferred_username }
-            - { name: Accounts_OAuth_Custom-Blakid-email_field, value: email }
-            - { name: Accounts_OAuth_Custom-Blakid-name_field, value: name }
-            - { name: Accounts_OAuth_Custom-Blakid-merge_users, value: "true" }
+              valueFrom:
+                secretKeyRef: { name: blak-chat, key: admin-password }
+            - name: Accounts_OAuth_Custom-Blakid
+              value: "true"
+            - name: Accounts_OAuth_Custom-Blakid-url
+              value: https://id.homelab.local/application/o
+            - name: Accounts_OAuth_Custom-Blakid-token_path
+              value: /token/
+            - name: Accounts_OAuth_Custom-Blakid-identity_path
+              value: /userinfo/
+            - name: Accounts_OAuth_Custom-Blakid-authorize_path
+              value: /authorize/
+            - name: Accounts_OAuth_Custom-Blakid-scope
+              value: "openid email profile"
+            - name: Accounts_OAuth_Custom-Blakid-button_label_text
+              value: Sign in with Blak ID
+            - name: Accounts_OAuth_Custom-Blakid-login_style
+              value: redirect
+            - name: Accounts_OAuth_Custom-Blakid-token_sent_via
+              value: payload
+            - name: Accounts_OAuth_Custom-Blakid-identity_token_sent_via
+              value: payload
+            - name: Accounts_OAuth_Custom-Blakid-username_field
+              value: preferred_username
+            - name: Accounts_OAuth_Custom-Blakid-email_field
+              value: email
+            - name: Accounts_OAuth_Custom-Blakid-name_field
+              value: name
+            - name: Accounts_OAuth_Custom-Blakid-merge_users
+              value: "true"
             - name: Accounts_OAuth_Custom-Blakid-id
               value: rocketchat
             - name: Accounts_OAuth_Custom-Blakid-secret
-              valueFrom: { secretKeyRef: { name: blak-chat, key: oidc-secret } }
-            - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
+              valueFrom:
+                secretKeyRef: { name: blak-chat, key: oidc-secret }
+            - name: NODE_EXTRA_CA_CERTS
+              value: /certs/rootCA.pem
           resources:
             requests: { cpu: 500m, memory: 1Gi }
             limits: { cpu: "2", memory: 4Gi }
-          readinessProbe: { httpGet: { path: /api/info, port: 3000 }, initialDelaySeconds: 60, periodSeconds: 15 }
-          livenessProbe: { httpGet: { path: /api/info, port: 3000 }, initialDelaySeconds: 180, periodSeconds: 30 }
+          readinessProbe:
+            httpGet: { path: /api/info, port: 3000 }
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: { path: /api/info, port: 3000 }
+            initialDelaySeconds: 180
+            periodSeconds: 30
           volumeMounts:
             - { name: data, mountPath: /app/uploads }
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
       volumes:
-        - { name: data, persistentVolumeClaim: { claimName: rocketchat-data } }
+        - name: data
+          persistentVolumeClaim: { claimName: rocketchat-data }
         - name: ca
           configMap: { name: blak-ca }
 ---
