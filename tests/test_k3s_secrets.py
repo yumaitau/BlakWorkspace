@@ -27,7 +27,8 @@ SECRET_FILES = (
     "deploy/k3s/micro/50-opencloud.yaml",
     "deploy/k3s/micro/60-collabora.yaml",
     "deploy/k3s/micro/70-outline.yaml",
-    "deploy/k3s/micro/91-openproject.yaml",
+    "deploy/k3s/micro/90-rocketchat.yaml",
+    "deploy/k3s/micro/91-kaneo.yaml",
     "deploy/k3s/micro/92-hermes.yaml",
     "deploy/k3s/micro/10-data-events.yaml",
 )

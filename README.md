@@ -33,11 +33,11 @@ Blak Workspace helps Australian organisations run a coherent digital workplace e
 | Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
 | Blak Notes | Notes |
-| Blak Chat | Element |
+| Blak Chat | Rocket.Chat |
 | Blak Meet | Jitsi |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed) |
 | Blak Knowledge | Outline (team wiki, OIDC via Blak ID) |
-| Blak Projects | OpenProject |
+| Blak Projects | Kaneo |
 | Blak Admin | Nubus admin / portal admin surfaces |
 | Blak Flow | Blak Flow engine |
 | Blak Hermes | Hermes agent runtime (opt-in sovereign AI / document search; default off) |

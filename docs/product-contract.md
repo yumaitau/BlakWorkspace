@@ -16,11 +16,11 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
 | Blak Notes | Notes |
-| Blak Chat | Element (optional; Matrix-lighter / Mattermost evaluated, behind ChatProvider) |
+| Blak Chat | Rocket.Chat (OIDC via Blak ID; openDesk seed still documents Element) |
 | Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
 | Blak Knowledge | Outline (team wiki with free OIDC; replaced Docmost, whose SSO is licence-gated) |
-| Blak Projects | OpenProject (legacy default; pivot prefers Plane optional via ProjectProvider) |
+| Blak Projects | Kaneo (OIDC via Blak ID; openDesk seed still documents OpenProject) |
 | Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
 | Blak Flow | Blak Flow engine (in-workspace automation; Drive + Sites connectors) |
 | Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off; evolves into Blak AI Gateway) |

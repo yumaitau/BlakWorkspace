@@ -43,8 +43,8 @@ Works on and off LAN (WireGuard transport + valid TLS, no warnings).
 | Collabora | http://docs.homelab.local/hosting/discovery | CODE, `COLLABORA_DOMAIN` wired (`/` redirects to Drive; admin console is CODE basic-auth at `/browser/dist/admin/admin.html`) |
 | Blak Sites | http://sites.homelab.local | Outline, OIDC-only login via Blak ID |
 | Blak Flow | https://portal.homelab.local/flow | Portal-owned; Blak ID session; My flows / Create / Activity |
-| Blak Chat | (not live) | Mattermost Team cannot do OIDC without Enterprise licence — demoted from waffle |
-| Blak Projects | (not live) | OpenProject CE SSO plugins are Enterprise-licenced — demoted from waffle |
+| Blak Chat | https://chat.homelab.local | Rocket.Chat Community, custom OAuth to Blak ID |
+| Blak Projects | https://projects.homelab.local | Kaneo, custom OIDC to Blak ID |
 | Blak Hermes | http://hermes.homelab.local | Open WebUI + Ollama (qwen2.5:1.5b), OIDC via Blak ID |
 
 White-label rule: Blak names up front, "Powered by X" underneath.
@@ -84,8 +84,8 @@ Passwords live in cluster secrets, not git. Create missing secrets with
 - Portal/Blak ID login: Authentik `akadmin` (`blak-idp` / `bootstrap-password`)
 - Blak Drive admin: `admin` (`blak-drive` / `admin-password`)
 - Blak Sites: Outline, OIDC-only (no local accounts exist); first login enrols `akadmin`
-- Blak Chat: Mattermost local accounts (SSO needs Enterprise licence) — not advertised live
-- Blak Projects: OpenProject local accounts (SSO plugins Enterprise-licenced) — not advertised live
+- Blak Chat: Rocket.Chat via Blak ID (`blak-chat` OIDC secret)
+- Blak Projects: Kaneo via Blak ID (`blak-kaneo` OIDC secret)
 - Collabora admin console: `admin` (`blak-docs` / `admin-password`)
 
 ## Verified end-to-end (2026-09-19)
