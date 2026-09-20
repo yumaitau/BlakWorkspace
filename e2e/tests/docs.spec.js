@@ -22,6 +22,7 @@ test('Blak Docs opens, edits and saves a real Drive document with themed chrome'
   await expect(editor.locator('#document-container')).toBeVisible({timeout:60000});
   await expect(editor.locator('html')).toHaveAttribute('data-blak-app','docs');
   await expect(editor.locator('#toolbar-up')).toBeVisible();
+  await expect.poll(()=>editor.locator('body').evaluate(el=>getComputedStyle(el).getPropertyValue('--color-main-background').trim())).toBe(require('../../apps/portal/theme').tokens.dark.surface);
   const welcome=editor.frameLocator('iframe[title="Welcome Dialogue"]');
   await editor.locator('iframe[title="Welcome Dialogue"]').waitFor({timeout:5000}).catch(()=>{});
   if(await editor.locator('iframe[title="Welcome Dialogue"]').isVisible())await welcome.getByRole('button',{name:'Close',exact:true}).click();
