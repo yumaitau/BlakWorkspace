@@ -1,4 +1,4 @@
-"""SSO gate: unauthenticated Home/Flow go to Blak ID; every live app has an OIDC client."""
+"""SSO gate: unauthenticated Home/Flow go to Blak ID; live apps declare their authentication mode."""
 
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ class TestSsoGate(unittest.TestCase):
         self.assertNotIn("terraform apply", workflow)
         self.assertNotIn("helmfile apply", workflow)
 
-    def test_every_live_app_lists_oidc_client(self):
+    def test_live_apps_declare_sso_or_explicit_crm_password_exception(self):
         raw = subprocess.check_output(
             ["node", "-e", "console.log(JSON.stringify(require('./apps/portal/catalog.js').APPS))"],
             cwd=str(ROOT),
@@ -149,7 +149,11 @@ class TestSsoGate(unittest.TestCase):
         apps = json.loads(raw)
         live = [a for a in apps if a.get("status") == "live"]
         self.assertGreaterEqual(len(live), 6)
-        missing = [a["id"] for a in live if not a.get("oidcClient")]
+        crm = next(a for a in live if a["id"] == "crm")
+        self.assertEqual(crm["authentication"], "password")
+        self.assertIn("separate login", crm["desc"])
+        self.assertIn("requires a licence", crm["backend"])
+        missing = [a["id"] for a in live if a["id"] != "crm" and not a.get("oidcClient")]
         self.assertEqual(missing, [])
         flow = next(a for a in live if a["id"] == "flow")
         self.assertEqual(flow["oidcClient"], "blak-portal")

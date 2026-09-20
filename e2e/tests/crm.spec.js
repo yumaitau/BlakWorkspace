@@ -12,7 +12,26 @@ async function login(page) {
   await page.getByPlaceholder("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(/\/objects\//);
-  await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.body).getPropertyValue("--t-accent-accent9").trim())).toBe("#D65B2E");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        getComputedStyle(document.body)
+          .getPropertyValue("--t-accent-accent9")
+          .trim(),
+      ),
+    )
+    .toBe("#D65B2E");
+}
+async function saveName(page, name) {
+  const saved = page.waitForResponse((response) => {
+    const body = response.request().postData() || "";
+    return body.includes("mutation") && body.includes(name);
+  });
+  await page.getByPlaceholder("Name", { exact: true }).fill(name);
+  await page.getByPlaceholder("Name", { exact: true }).press("Tab");
+  const response = await saved;
+  expect(response.ok()).toBeTruthy();
+  expect((await response.json()).errors).toBeUndefined();
 }
 test("CRM requires authentication", async ({ page }) => {
   await page.goto(CRM);
@@ -36,15 +55,13 @@ for (const [type, section] of [
       .filter({ visible: true })
       .first()
       .click();
-    await page.getByPlaceholder("Name", { exact: true }).fill(name);
-    await page.getByPlaceholder("Name", { exact: true }).press("Tab");
+    await saveName(page, name);
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
     await page.reload();
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
     await page.getByRole("link", { name, exact: true }).click();
     await page.getByRole("heading", { name, exact: true }).click();
-    await page.getByPlaceholder("Name", { exact: true }).fill(updated);
-    await page.getByPlaceholder("Name", { exact: true }).press("Tab");
+    await saveName(page, updated);
     await page.reload();
     await expect(
       page.getByText(updated, { exact: true }).first(),
@@ -72,9 +89,19 @@ test("CRM people persist and can be deleted", async ({ page }) => {
     .filter({ visible: true })
     .first()
     .click();
+  const saved = page.waitForResponse((r) => {
+    const body = r.request().postData() || "";
+    return (
+      body.includes("mutation") &&
+      body.includes(name) &&
+      body.includes("lastName") &&
+      body.includes("Test")
+    );
+  });
   await page.getByPlaceholder(/irst name/).fill(name);
   await page.getByPlaceholder(/ast name/).fill("Test");
   await page.getByPlaceholder(/ast name/).press("Tab");
+  expect((await (await saved).json()).errors).toBeUndefined();
   await expect(
     page.getByText(name + " Test", { exact: true }).first(),
   ).toBeVisible();

@@ -25,7 +25,15 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
   await expect(
     page.getByText("Blak Workspace", { exact: true }).first(),
   ).toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--hf-brand").trim())).toBe("214,91,46");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--hf-brand")
+          .trim(),
+      ),
+    )
+    .toBe("214,91,46");
   await page.locator('a[href*="/project/"]').first().click();
   await page.getByRole("button", { name: "Create Form", exact: true }).click();
   await page.getByText("Start from scratch", { exact: true }).click();
