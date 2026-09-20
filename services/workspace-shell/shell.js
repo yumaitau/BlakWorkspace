@@ -65,7 +65,7 @@
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
     const title=app.name + (app.backend ? ' · ' + app.backend : '');
-    if (document.title!==title) document.title=title;
+    if (app.id!=='portal' && document.title!==title) document.title=title;
 
   }
   if(app.id==='projects') {
