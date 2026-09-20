@@ -1,0 +1,68 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+}
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.app[data-theme="light"] {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+header,
+nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-strong);
+}
+header a {
+  color: var(--info);
+}
+header span {
+  font-size: 12px;
+  flex: 1;
+}
+button,
+input,
+select {
+  font: inherit;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px;
+  max-width: 100%;
+}
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--sand-50);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+main {
+  flex: 1;
+  min-height: 0;
+}
+main > section {
+  padding: 24px;
+}
+output {
+  font-size: 13px;
+}
+.excalidraw {
+  --color-primary: var(--primary);
+  --color-primary-darker: var(--earth-600);
+  --color-primary-darkest: var(--earth-700);
+  --color-primary-light: var(--sand-200);
+}

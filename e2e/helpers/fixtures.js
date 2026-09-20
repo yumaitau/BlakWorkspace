@@ -12,6 +12,8 @@ const test=base.extend({
   signedIn:async({page,context,baseURL,account},use)=>{
     await context.addCookies([{name:'blak_session',value:session(account,'E2E Tester'),url:baseURL,httpOnly:true,sameSite:'Lax'}]);
     await use(page);
+    const drawings=await context.request.get('/api/draw');
+    if(drawings.ok())for(const board of await drawings.json())await context.request.delete('/api/draw/'+board.id,{data:{revision:board.revision}});
     const response=await context.request.get('/flow');
     const ids=[...new Set([...(await response.text()).matchAll(/href="\/flow\/([a-f0-9]{16})"/g)].map(match=>match[1]))];
     for(const id of ids)await context.request.post(`/flow/${id}/delete`);

@@ -22,6 +22,11 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Portal regression tests
         run: node --test apps/portal/test/*.test.js
+      - name: Build Draw frontend
+        working-directory: apps/portal/draw
+        run: |
+          npm ci --ignore-scripts
+          npm run build
       - name: Hermes sync tests
         run: python -m unittest discover -s services/hermes-sync -p 'test_*.py' -v
       - name: Check generated app themes

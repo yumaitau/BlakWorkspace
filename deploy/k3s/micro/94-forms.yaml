@@ -1,0 +1,233 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: forms-cache-data
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: forms-data
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forms-cache
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forms-cache
+  template:
+    metadata:
+      labels:
+        app: forms-cache
+    spec:
+      containers:
+      - name: forms-cache
+        image: valkey/valkey:7.2-alpine
+        imagePullPolicy: IfNotPresent
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 256Mi
+        ports:
+        - containerPort: 6379
+        args:
+        - --appendonly
+        - 'yes'
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: forms-cache-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forms-cache
+  namespace: blak-micro
+spec:
+  selector:
+    app: forms-cache
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forms
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forms
+  template:
+    metadata:
+      labels:
+        app: forms
+    spec:
+      containers:
+      - name: forms
+        image: heyform/community-edition@sha256:0758992b3539a83b5ce3df5ad3e1efabc92dec4d46e05c40bbad37381fad69b4
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: APP_HOMEPAGE_URL
+          value: https://forms.homelab.local
+        - name: APP_DISABLE_REGISTRATION
+          value: 'true'
+        - name: OIDC_ALLOW_PROVISIONING
+          value: 'true'
+        - name: OIDC_DISPLAY_NAME
+          value: Blak ID
+        - name: OIDC_ISSUER
+          value: https://id.homelab.local/application/o/blak-forms/
+        - name: OIDC_CLIENT_AUTH_METHOD
+          value: client_secret_post
+        - name: OIDC_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: blak-forms
+              key: client-id
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blak-forms
+              key: oidc-secret
+        - name: SESSION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blak-forms
+              key: session-key
+        - name: FORM_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blak-forms
+              key: encryption-key
+        - name: MONGO_URI
+          value: mongodb://mongo:27017/heyform
+        - name: REDIS_HOST
+          value: forms-cache
+        - name: REDIS_PORT
+          value: '6379'
+        - name: NODE_EXTRA_CA_CERTS
+          value: /certs/rootCA.pem
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 1Gi
+        ports:
+        - containerPort: 9157
+        volumeMounts:
+        - name: data
+          mountPath: /app/packages/server/static/upload
+        - name: ca
+          mountPath: /certs/rootCA.pem
+          subPath: rootCA.pem
+        - name: frontend
+          mountPath: /app/packages/server/view
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9157
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: forms-data
+      - name: ca
+        configMap:
+          name: blak-ca
+      - name: frontend
+        emptyDir: {}
+      - name: themes
+        configMap:
+          name: blak-app-themes
+      hostAliases:
+      - ip: 10.43.169.184
+        hostnames:
+        - id.homelab.local
+      initContainers:
+      - name: workspace-theme
+        image: heyform/community-edition@sha256:0758992b3539a83b5ce3df5ad3e1efabc92dec4d46e05c40bbad37381fad69b4
+        command:
+        - sh
+        - -ec
+        args:
+        - 'cp -R /app/packages/server/view/. /workspace/
+
+          node -e ''const fs=require("fs");const p="/workspace/index.html";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("</head>","<style>"+fs.readFileSync("/theme/forms.css","utf8")+"</style></head>"))''
+
+          '
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        volumeMounts:
+        - name: frontend
+          mountPath: /workspace
+        - name: themes
+          mountPath: /theme
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forms
+  namespace: blak-micro
+spec:
+  selector:
+    app: forms
+  ports:
+  - port: 9157
+    targetPort: 9157
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: forms
+  namespace: blak-micro
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`forms.homelab.local`)
+    services:
+    - name: forms
+      port: 9157
+  tls:
+    secretName: blak-wildcard
