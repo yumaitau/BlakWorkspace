@@ -1,5 +1,8 @@
 "use strict";
 const { test, expect } = require("@playwright/test");
+// Twenty loads a large frontend bundle; allow 30 seconds for a cold homelab render.
+test.use({ actionTimeout: 30000 });
+test.describe.configure({ timeout: 120000 });
 const CRM = "https://crm.homelab.local";
 async function login(page) {
   const password = process.env.BLAK_CRM_PASSWORD;
@@ -35,7 +38,9 @@ async function saveName(page, name) {
 }
 test("CRM requires authentication", async ({ page }) => {
   await page.goto(CRM);
-  await expect(page.getByPlaceholder("Email", { exact: true })).toBeVisible();
+  await expect(page.getByPlaceholder("Email", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
   await expect(page.getByText("All Companies", { exact: true })).toHaveCount(0);
 });
 for (const [type, section] of [
@@ -45,7 +50,7 @@ for (const [type, section] of [
   test(`CRM ${type}: login, create, persist, update and delete`, async ({
     page,
   }) => {
-    page.setDefaultTimeout(20000);
+    page.setDefaultTimeout(30000);
     await login(page);
     await page.getByRole("link", { name: section, exact: true }).click();
     const name = "E2E " + type + " " + Date.now(),
@@ -56,16 +61,20 @@ for (const [type, section] of [
       .first()
       .click();
     await saveName(page, name);
-    await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(name, { exact: true }).first()).toBeVisible({
+      timeout: 30000,
+    });
     await page.reload();
-    await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(name, { exact: true }).first()).toBeVisible({
+      timeout: 30000,
+    });
     await page.getByRole("link", { name, exact: true }).click();
     await page.getByRole("heading", { name, exact: true }).click();
     await saveName(page, updated);
     await page.reload();
-    await expect(
-      page.getByText(updated, { exact: true }).first(),
-    ).toBeVisible();
+    await expect(page.getByText(updated, { exact: true }).first()).toBeVisible({
+      timeout: 30000,
+    });
     await page.screenshot({
       path: test.info().outputPath("crm-company.png"),
       fullPage: true,
@@ -74,13 +83,16 @@ for (const [type, section] of [
       .getByText(updated, { exact: true })
       .first()
       .click({ button: "right" });
-    await page.getByText("Delete " + type, { exact: true }).click();
+    await page
+      .getByText("Delete " + type, { exact: true })
+      .locator("xpath=../../../..")
+      .click();
     await expect(page.getByText(updated, { exact: true })).toHaveCount(0);
     await page.reload();
     await expect(page.getByText(updated, { exact: true })).toHaveCount(0);
   });
 test("CRM people persist and can be deleted", async ({ page }) => {
-  page.setDefaultTimeout(20000);
+  page.setDefaultTimeout(30000);
   await login(page);
   await page.getByRole("link", { name: "People", exact: true }).click();
   const name = "E2EPerson" + Date.now();
@@ -104,14 +116,17 @@ test("CRM people persist and can be deleted", async ({ page }) => {
   expect((await (await saved).json()).errors).toBeUndefined();
   await expect(
     page.getByText(name + " Test", { exact: true }).first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30000 });
   await page.reload();
   await expect(
     page.getByRole("link", { name: name + " Test", exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30000 });
   await page
     .getByRole("link", { name: name + " Test", exact: true })
     .click({ button: "right" });
-  await page.getByText("Delete Person", { exact: true }).click();
+  await page
+    .getByText("Delete Person", { exact: true })
+    .locator("xpath=../../../..")
+    .click();
   await expect(page.getByText(name + " Test", { exact: true })).toHaveCount(0);
 });
