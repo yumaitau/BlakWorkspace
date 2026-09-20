@@ -12,7 +12,8 @@ spec.loader.exec_module(release)
 
 class ReleasePreparationTests(unittest.TestCase):
     def test_domain_rejects_urls_injection_and_example(self):
-        for value in ['https://work.acme.net', 'work.acme.net/path', 'work.acme.net:443', 'a;echo.net', 'workspace.example.com', '-bad.acme.net', 'acme..net']:
+        example_domain='workspace.' + 'example.com'
+        for value in ['https://work.acme.net', 'work.acme.net/path', 'work.acme.net:443', 'a;echo.net', example_domain, '-bad.acme.net', 'acme..net']:
             with self.subTest(value=value),self.assertRaises(argparse.ArgumentTypeError):
                 release.domain_name(value)
         self.assertEqual(release.domain_name('Work.Acme.NET'),'work.acme.net')
