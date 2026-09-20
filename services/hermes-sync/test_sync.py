@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 spec=importlib.util.spec_from_file_location('sync',Path(__file__).with_name('sync.py'))
 sync=importlib.util.module_from_spec(spec);spec.loader.exec_module(sync)
 class FakeHermes:
@@ -62,6 +63,7 @@ class WorkspaceDataTests(unittest.TestCase):
                 self_test.assertEqual(method,'GET')
                 if 'channels.list.joined' in path:return {'channels':[{'_id':'room','name':'team'}],'total':1}
                 if 'groups.list' in path:return {'groups':[],'total':0}
+                if 'im.list' in path:return {'ims':[],'total':0}
                 if 'channels.history' in path:return {'messages':[{'_id':'1','msg':'Hello workspace','ts':'now','u':{'username':'ada'}},{'_id':'2','msg':'joined','t':'uj'}]}
                 raise AssertionError('Unexpected endpoint '+path)
         self_test=self
@@ -76,6 +78,86 @@ class WorkspaceDataTests(unittest.TestCase):
                 return {'data':{'columns':[{'name':'Todo','tasks':[{'id':str(page),'title':'Task '+str(page)}]}],'plannedTasks':[],'archivedTasks':[{'title':'Hidden'}]},'pagination':{'totalPages':2}}
         docs=sync.project_documents(Projects())
         self.assertEqual(len(docs),1);self.assertIn(b'Task 2',docs[0]['content']);self.assertNotIn(b'Hidden',docs[0]['content'])
+
+
+class NewWorkspaceSourcesTests(unittest.TestCase):
+    def test_failed_source_does_not_block_others_and_detaches_from_model(self):
+        class Hermes:
+            def json(self, method, path):
+                if path == '/api/v1/auths/': return {'id':'owner'}
+                return {'user_id':'owner', 'access_grants':[]}
+        mapping={'owner_id':'owner', 'hermes':{'base':'https://hermes.example'},
+                 'sources':{'forms':{'base':'https://forms.example'}, 'draw':{'base':'https://portal.example'}}}
+        state={name:{'collection':name, 'files':{}} for name in mapping['sources']}
+        with patch.object(sync, 'API', return_value=Hermes()), \
+             patch.object(sync, 'forms_documents', side_effect=RuntimeError('offline')), \
+             patch.object(sync, 'portal_documents', return_value=[]) as reader, \
+             patch.object(sync, 'ensure_workspace_model') as model:
+            with self.assertRaises(RuntimeError): sync.sync_mapping(mapping, state, lambda:None)
+            reader.assert_called_once()
+            self.assertEqual(set(model.call_args.args[2]), {'draw'})
+            self.assertIn('last_error', state['forms'])
+            self.assertIn('last_success', state['draw'])
+
+    def test_crm_requires_matching_identity_before_reading_any_records(self):
+        class Source:
+            expected_user='alice@example.test'
+            def json(self, method, path):
+                self_test.assertEqual(path, '/api/method/frappe.auth.get_logged_user')
+                return {'message': 'bob@example.test'}
+        self_test=self
+        with self.assertRaises(ValueError): sync.crm_documents(Source())
+
+    def test_crm_record_pagination_and_content(self):
+        class Source:
+            expected_user='alice@example.test'; public_base='https://crm.example'
+            def json(self, method, path):
+                if 'get_logged_user' in path: return {'message':self.expected_user}
+                if '/CRM%20Lead?' in path:
+                    offset=int(sync.urllib.parse.parse_qs(sync.urllib.parse.urlsplit(path).query)['limit_start'][0])
+                    return {'data':[{'name':str(i),'modified':'now'} for i in range(100)] if offset==0 else []}
+                if '?' in path:return {'data':[]}
+                return {'data':{'name':path.rsplit('/',1)[-1], 'first_name':'Workspace lead'}}
+        docs=sync.crm_documents(Source())
+        self.assertEqual(len(docs),100)
+        self.assertIn(b'Workspace lead',docs[0]['content'])
+
+    def test_forms_errors_never_become_successful_empty_listing(self):
+        class Source:
+            def json(self,*args):return {'errors':[{'message':'Forbidden'}], 'data':{'teams':[]}}
+        with self.assertRaises(RuntimeError):sync.graphql(Source(),'{teams{id}}')
+
+    def test_forms_paginate_responses_and_exclude_password_settings(self):
+        class Source:
+            expected_user='alice@example.test'; public_base='https://forms.example'
+            def json(self, method, path, data):
+                query=data['query']; values=data['variables'].get('input',{})
+                self_test.assertNotIn('password',query)
+                if 'userDetail' in query:return {'data':{'userDetail':{'email':self.expected_user}}}
+                if 'teams{' in query:return {'data':{'teams':[{'id':'t','name':'Team','projects':[{'id':'p','name':'Project'}]}]}}
+                if 'forms(' in query:return {'data':{'forms':[{'id':'f','name':'Survey'}]}}
+                if 'formDetail' in query:return {'data':{'formDetail':{'id':'f','name':'Survey','fields':[]}}}
+                page=values['page']; count=30 if page==1 else 1
+                return {'data':{'submissions':{'total':31,'submissions':[{'id':str((page-1)*30+i),'answers':[{'value':'answer'}]} for i in range(count)]}}}
+        self_test=self
+        docs=sync.forms_documents(Source())
+        self.assertEqual(len(docs),32)
+        self.assertIn(b'answer',docs[-1]['content'])
+
+    def test_portal_export_cannot_be_mapped_to_another_owner(self):
+        class Source:
+            expected_user='alice'
+            def json(self,*args):return {'owner':'bob','documents':[]}
+        with self.assertRaises(ValueError):sync.portal_documents(Source(),'draw')
+
+    def test_storage_pagination_and_document_paths(self):
+        class Source:
+            def request(self, method, path):
+                if path=='/':return b'<ListAllMyBucketsResult><Buckets><Bucket><Name>work</Name></Bucket></Buckets></ListAllMyBucketsResult>'
+                if 'continuation-token' not in path:return b'<ListBucketResult><Contents><Key>one.txt</Key><Size>3</Size><ETag>1</ETag></Contents><IsTruncated>true</IsTruncated><NextContinuationToken>next</NextContinuationToken></ListBucketResult>'
+                return b'<ListBucketResult><Contents><Key>two.pdf</Key><Size>5</Size><ETag>2</ETag></Contents><IsTruncated>false</IsTruncated></ListBucketResult>'
+        docs=sync.storage_documents(Source())
+        self.assertEqual([d['path'] for d in docs],['/work/one.txt','/work/two.pdf'])
 
 if __name__ == "__main__":
     unittest.main()

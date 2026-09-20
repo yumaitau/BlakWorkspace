@@ -61,8 +61,12 @@ const formsCSS = `:root{${formsPalette(tokens.light)}}.dark{${formsPalette(t)}}
 body{font-family:Inter,system-ui,sans-serif}
 :focus-visible{outline-color:${t.focus}!important}
 `;
-// Twenty exposes semantic CSS variables; retain its native light/dark surfaces.
-const crmCSS = `:root,body{--t-accent-accent9:${t.primary}!important;--t-accent-accent10:${t['primary-hover']}!important;--t-accent-accent11:${t['earth-600']}!important;--t-border-color-blue:${t.focus}!important}
+// Frappe UI retains native light/dark contrast; share workspace action and focus colours.
+const crmCSS = `${tokenCSS}
+body{font-family:Inter,system-ui,sans-serif}
+:root{--blak-crm-accent:${t.primary}}
+.btn-primary,.bg-surface-gray-7{background-color:${t.primary}!important;color:${t['sand-50']}!important}
+.btn-primary:hover,.bg-surface-gray-7:hover{background-color:${t['primary-hover']}!important}
 :focus-visible{outline-color:${t.focus}!important}
 `;
 const data={'hermes.css':hermesCSS,'chat.css':chatCSS,'projects.css':kaneoCSS,'forms.css':formsCSS,'crm.css':crmCSS};

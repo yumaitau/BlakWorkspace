@@ -31,6 +31,8 @@ spec:
           configMap: { name: blak-ca }
         - name: flow-store
           persistentVolumeClaim: { claimName: portal-flow-data }
+        - name: knowledge-export
+          secret: { secretName: blak-portal-exports, optional: true }
       containers:
         - name: portal
           image: blak-portal:micro
@@ -41,6 +43,7 @@ spec:
             limits: { cpu: "1", memory: 1Gi }
           env:
             - { name: PORT, value: "3000" }
+            - { name: KNOWLEDGE_EXPORT_ACCOUNTS, value: /exports/accounts.json }
             - { name: FLOW_STORE, value: /data/blak-flow.json }
             - { name: OIDC_ISSUER, value: https://id.homelab.local/application/o/blak-portal }
             - { name: OIDC_AUTH_URL, value: https://id.homelab.local/application/o/authorize/ }
@@ -55,6 +58,7 @@ spec:
           volumeMounts:
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
             - { name: flow-store, mountPath: /data }
+            - { name: knowledge-export, mountPath: /exports, readOnly: true }
           readinessProbe: { httpGet: { path: /api/health, port: 3000 }, initialDelaySeconds: 5, periodSeconds: 10 }
           livenessProbe: { httpGet: { path: /api/health, port: 3000 }, initialDelaySeconds: 15, periodSeconds: 20 }
 ---

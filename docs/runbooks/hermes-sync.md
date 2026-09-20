@@ -2,9 +2,11 @@
 
 The `hermes-workspace-sync` CronJob runs every five minutes in `blak-micro`.
 It reads the configured account's accessible Drive/Docs files, published Knowledge
-pages, joined Chat channels, private groups, and Projects boards/tasks. Direct
-messages, archived pages/tasks, unsupported file formats, and files over 20 MiB
-are excluded. This is a per-account replica, not a public organisation-wide index.
+pages, joined Chat channels, private groups and direct conversations, Projects
+boards/tasks, CRM records and activities, Forms questions/responses, Draw boards,
+Flow definitions/run status and Cloud files. Archived pages/tasks, unsupported
+file formats and files over 20 MiB are excluded. Images/audio/video are not
+transcribed; embedded drawing images and infrastructure secrets are not indexed. This is a per-account replica, not a public organisation-wide index.
 
 Each source has a private Hermes knowledge collection. The **Blak Workspace**
 model attaches those collections to local `qwen2.5:1.5b` inference. Select that
@@ -13,7 +15,9 @@ content normally appears within five minutes plus processing time. Source access
 is evaluated during each run; this is eventual sync, not request-time source ACL
 checking. Do not share these private collections or the model: the worker refuses
 shared collections and models. Disabled/revoked source credentials fail the job
-and retain the previous private snapshot until access is repaired.
+while other sources continue. Failed sources are detached from the private
+workspace model until repaired; their previous private collection snapshot is
+retained for recovery.
 
 ## Credentials and ownership
 
@@ -50,6 +54,15 @@ own mapping and credentials; their private documents are not copied by this one.
   or expired; a 401 makes the job fail visibly. The worker performs only reads.
 - Projects uses the owner's API key (one-year expiry). This upstream API does not
   let clients set read-only key permissions; the connector performs only reads.
+- CRM uses the verified owner's Frappe API key and native record permissions.
+- Forms uses that owner's authenticated session; regular reads renew it. Re-enrol
+  if revoked or expired after an outage.
+- Draw/Flow exports use a separate read-only bearer token bound to the portal
+  owner. Requests cannot select another owner. Cloud files use the shared homelab
+  storage service; this is shared workspace storage, not per-user private storage.
+- `node scripts/homelab/connect-hermes-apps.js` enrols these five new sources after
+  matching Hermes, portal and Forms identities. Deployment runs it automatically.
+  Additional people need their own account mapping and source credentials.
 - Hermes API keys must be enabled. Its `WEBUI_SECRET_KEY` comes from
   `blak-hermes/session-secret`, so sessions survive deployment replacement.
 
@@ -81,3 +94,8 @@ private collections, real Drive create/update/delete, idempotence, vector retrie
 local grounded responses, browser chat, and scoped Chat/Projects test data.
 Fixtures use dedicated test documents, a self-only private channel, and a private
 test workspace, then remove their own data and reconcile deletions.
+
+`hermes-apps.spec.js` exercises CRM, Draw, Flow and Cloud create/update/delete,
+private board isolation, read-only exports and a grounded CRM answer.
+`forms.spec.js` verifies published questions and submitted answers reach Hermes
+and disappear after deletion. Run the complete Playwright suite after deployment.

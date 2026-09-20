@@ -1,19 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: crm-cache-data
-  namespace: blak-micro
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crm-db-data
+  name: frappe-db-data
   namespace: blak-micro
 spec:
   accessModes:
@@ -25,19 +13,31 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: crm-data
+  name: frappe-cache-data
   namespace: blak-micro
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frappe-sites
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crm-db
+  name: frappe-db
   namespace: blak-micro
 spec:
   replicas: 1
@@ -45,26 +45,26 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: crm-db
+      app: frappe-db
   template:
     metadata:
       labels:
-        app: crm-db
+        app: frappe-db
     spec:
       containers:
-      - name: crm-db
-        image: postgres:16-alpine
-        imagePullPolicy: IfNotPresent
+      - name: frappe-db
+        image: mariadb:10.11
+        args:
+        - --character-set-server=utf8mb4
+        - --collation-server=utf8mb4_unicode_ci
         env:
-        - name: POSTGRES_USER
-          value: twenty
-        - name: POSTGRES_DB
-          value: twenty
-        - name: POSTGRES_PASSWORD
+        - name: MARIADB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: blak-crm
+              name: blak-frappe
               key: database-password
+        ports:
+        - containerPort: 3306
         resources:
           requests:
             cpu: 100m
@@ -72,32 +72,34 @@ spec:
           limits:
             cpu: '2'
             memory: 768Mi
-        ports:
-        - containerPort: 5432
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          periodSeconds: 5
         volumeMounts:
         - name: data
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/mysql
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: crm-db-data
+          claimName: frappe-db-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: crm-db
+  name: frappe-db
   namespace: blak-micro
 spec:
   selector:
-    app: crm-db
+    app: frappe-db
   ports:
-  - port: 5432
-    targetPort: 5432
+  - port: 3306
+    targetPort: 3306
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crm-cache
+  name: frappe-cache
   namespace: blak-micro
 spec:
   replicas: 1
@@ -105,45 +107,48 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: crm-cache
+      app: frappe-cache
   template:
     metadata:
       labels:
-        app: crm-cache
+        app: frappe-cache
     spec:
       containers:
-      - name: crm-cache
+      - name: frappe-cache
         image: valkey/valkey:7.2-alpine
-        imagePullPolicy: IfNotPresent
+        args:
+        - --appendonly
+        - 'yes'
         env: []
+        ports:
+        - containerPort: 6379
         resources:
           requests:
             cpu: 100m
             memory: 128Mi
           limits:
             cpu: '2'
-            memory: 256Mi
-        ports:
-        - containerPort: 6379
-        args:
-        - --appendonly
-        - 'yes'
+            memory: 768Mi
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          periodSeconds: 5
         volumeMounts:
         - name: data
           mountPath: /data
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: crm-cache-data
+          claimName: frappe-cache-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: crm-cache
+  name: frappe-cache
   namespace: blak-micro
 spec:
   selector:
-    app: crm-cache
+    app: frappe-cache
   ports:
   - port: 6379
     targetPort: 6379
@@ -151,7 +156,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crm
+  name: frappe-crm
   namespace: blak-micro
 spec:
   replicas: 1
@@ -159,186 +164,241 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: crm
+      app: frappe-crm
   template:
     metadata:
       labels:
-        app: crm
+        app: frappe-crm
     spec:
       containers:
-      - name: crm
-        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
+      - name: backend
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
         imagePullPolicy: IfNotPresent
+        args:
+        - start.sh
         env:
-        - name: NODE_PORT
-          value: '3000'
-        - name: PGPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: blak-crm
-              key: database-password
-        - name: PG_DATABASE_URL
-          value: postgres://twenty:$(PGPASSWORD)@crm-db:5432/twenty
-        - name: REDIS_URL
-          value: redis://crm-cache:6379
-        - name: SERVER_URL
-          value: https://crm.homelab.local
-        - name: STORAGE_TYPE
-          value: local
-        - name: APP_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: blak-crm
-              key: app-secret
-        - name: ENCRYPTION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: blak-crm
-              key: encryption-key
-        - name: TELEMETRY_ENABLED
-          value: 'false'
-        - name: SIGN_IN_PREFILLED
-          value: 'false'
-        - name: IS_MULTIWORKSPACE_ENABLED
-          value: 'false'
-        - name: IS_BILLING_ENABLED
-          value: 'false'
+        - &id001
+          name: REQUESTS_CA_BUNDLE
+          value: /etc/blak-trust/ca.pem
+        - name: GUNICORN_WORKERS
+          value: '2'
+        volumeMounts:
+        - &id002
+          name: sites
+          mountPath: /home/frappe/frappe-bench/sites
+        - &id003
+          name: ca
+          mountPath: /etc/blak-ca
+          readOnly: true
+        - name: trust
+          mountPath: /etc/blak-trust
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 50m
+            memory: 96Mi
           limits:
             cpu: '2'
-            memory: 3Gi
+            memory: 1Gi
         ports:
-        - containerPort: 3000
-        volumeMounts:
-        - name: data
-          mountPath: /app/packages/twenty-server/.local-storage
-        - name: frontend
-          mountPath: /app/packages/twenty-server/dist/front
-        startupProbe:
-          httpGet:
-            path: /healthz
-            port: 3000
-          periodSeconds: 10
-          failureThreshold: 90
+        - containerPort: 8000
         readinessProbe:
           httpGet:
-            path: /healthz
-            port: 3000
+            path: /api/method/ping
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: crm.homelab.local
           periodSeconds: 10
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: crm-data
       - name: frontend
-        emptyDir: {}
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        imagePullPolicy: IfNotPresent
+        args:
+        - nginx-entrypoint.sh
+        env:
+        - *id001
+        - name: BACKEND
+          value: 127.0.0.1:8000
+        - name: SOCKETIO
+          value: 127.0.0.1:9000
+        - name: FRAPPE_SITE_NAME_HEADER
+          value: crm.homelab.local
+        - name: UPSTREAM_REAL_IP_ADDRESS
+          value: 127.0.0.1
+        - name: UPSTREAM_REAL_IP_HEADER
+          value: X-Forwarded-For
+        - name: UPSTREAM_REAL_IP_RECURSIVE
+          value: 'off'
+        volumeMounts:
+        - *id002
+        - *id003
+        - name: trust
+          mountPath: /etc/blak-trust
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: '2'
+            memory: 256Mi
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /api/method/ping
+            port: 8080
+          periodSeconds: 10
+      - name: websocket
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        imagePullPolicy: IfNotPresent
+        args:
+        - node
+        - apps/frappe/socketio.js
+        env:
+        - *id001
+        volumeMounts:
+        - *id002
+        - *id003
+        - name: trust
+          mountPath: /etc/blak-trust
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: '2'
+            memory: 256Mi
+        ports:
+        - containerPort: 9000
+      - name: worker
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        imagePullPolicy: IfNotPresent
+        args:
+        - bench
+        - worker
+        - --queue
+        - short,default,long
+        env:
+        - *id001
+        volumeMounts:
+        - *id002
+        - *id003
+        - name: trust
+          mountPath: /etc/blak-trust
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: '2'
+            memory: 768Mi
+      - name: scheduler
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        imagePullPolicy: IfNotPresent
+        args:
+        - bench
+        - schedule
+        env:
+        - *id001
+        volumeMounts:
+        - *id002
+        - *id003
+        - name: trust
+          mountPath: /etc/blak-trust
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: '2'
+            memory: 256Mi
+      volumes:
+      - name: sites
+        persistentVolumeClaim:
+          claimName: frappe-sites
+      - name: ca
+        configMap:
+          name: blak-ca
+      - name: setup
+        configMap:
+          name: blak-frappe-setup
       - name: themes
         configMap:
           name: blak-app-themes
+      - name: trust
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+      hostAliases:
+      - ip: 10.43.169.184
+        hostnames:
+        - id.homelab.local
       initContainers:
-      - name: workspace-theme
-        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
-        command:
-        - sh
-        - -ec
-        args:
-        - 'cp -R /app/packages/twenty-server/dist/front/. /workspace/
-
-          node -e ''const fs=require("fs");const p="/workspace/index.html";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("</head>","<style>"+fs.readFileSync("/theme/crm.css","utf8")+"</style></head>"))''
-
-          '
-        resources:
-          requests:
-            cpu: 100m
-            memory: 64Mi
-          limits:
-            cpu: 500m
-            memory: 256Mi
-        volumeMounts:
-        - name: frontend
-          mountPath: /workspace
-        - name: themes
-          mountPath: /theme
-          readOnly: true
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: crm-worker
-  namespace: blak-micro
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: crm-worker
-  template:
-    metadata:
-      labels:
-        app: crm-worker
-    spec:
-      containers:
-      - name: crm-worker
-        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
+      - name: configure
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
         imagePullPolicy: IfNotPresent
+        args:
+        - bash
+        - -ec
+        - cat /etc/ssl/certs/ca-certificates.crt /etc/blak-ca/rootCA.pem > /etc/blak-trust/ca.pem;
+          env/bin/python /setup/setup.py; cp /themes/crm.css sites/crm.homelab.local/public/files/blak-crm.css
         env:
-        - name: NODE_PORT
-          value: '3000'
-        - name: PGPASSWORD
+        - *id001
+        - name: DB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: blak-crm
+              name: blak-frappe
               key: database-password
-        - name: PG_DATABASE_URL
-          value: postgres://twenty:$(PGPASSWORD)@crm-db:5432/twenty
-        - name: REDIS_URL
-          value: redis://crm-cache:6379
-        - name: SERVER_URL
-          value: https://crm.homelab.local
-        - name: STORAGE_TYPE
-          value: local
-        - name: APP_SECRET
+        - name: ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: blak-crm
-              key: app-secret
-        - name: ENCRYPTION_KEY
+              name: blak-frappe
+              key: admin-password
+        - name: OIDC_CLIENT_ID
           valueFrom:
             secretKeyRef:
-              name: blak-crm
-              key: encryption-key
-        - name: TELEMETRY_ENABLED
-          value: 'false'
-        - name: SIGN_IN_PREFILLED
-          value: 'false'
-        - name: IS_MULTIWORKSPACE_ENABLED
-          value: 'false'
-        - name: IS_BILLING_ENABLED
-          value: 'false'
-        - name: DISABLE_DB_MIGRATIONS
-          value: 'true'
-        - name: DISABLE_CRON_JOBS_REGISTRATION
-          value: 'true'
+              name: blak-frappe
+              key: client-id
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blak-frappe
+              key: oidc-secret
+        - name: CRM_USERS
+          valueFrom:
+            secretKeyRef:
+              name: blak-frappe
+              key: users.json
+        volumeMounts:
+        - *id002
+        - *id003
+        - name: setup
+          mountPath: /setup
+          readOnly: true
+        - name: themes
+          mountPath: /themes
+          readOnly: true
+        - name: trust
+          mountPath: /etc/blak-trust
         resources:
           requests:
             cpu: 100m
-            memory: 128Mi
+            memory: 256Mi
           limits:
             cpu: '2'
             memory: 2Gi
-        volumeMounts:
-        - name: data
-          mountPath: /app/packages/twenty-server/.local-storage
-        command:
-        - yarn
-        - worker:prod
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: crm-data
+      enableServiceLinks: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frappe-crm
+  namespace: blak-micro
+spec:
+  selector:
+    app: frappe-crm
+  ports:
+  - port: 8080
+    targetPort: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -347,10 +407,10 @@ metadata:
   namespace: blak-micro
 spec:
   selector:
-    app: crm
+    app: frappe-crm
   ports:
   - port: 3000
-    targetPort: 3000
+    targetPort: 8080
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
