@@ -25,6 +25,11 @@ function App() {
   const [theme, setTheme] = useState(
     localStorage.getItem("blak-theme") || "dark",
   );
+  useEffect(() => {
+    const change = event => setTheme(event.detail);
+    window.addEventListener('blak-theme-change', change);
+    return () => window.removeEventListener('blak-theme-change', change);
+  }, []);
   const scene = useRef(null),
     lastSaved = useRef(""),
     initialising = useRef(false);
@@ -84,6 +89,8 @@ function App() {
             const next = theme === "dark" ? "light" : "dark";
             setTheme(next);
             localStorage.setItem("blak-theme", next);
+            document.documentElement.dataset.theme = next;
+            document.cookie = `blak-theme=${next}; Domain=homelab.local; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
           }}
         >
           Switch theme

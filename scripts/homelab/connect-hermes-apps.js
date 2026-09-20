@@ -42,6 +42,9 @@ async function main() {
     const session = (await context.cookies('https://portal.homelab.local')).find(c => c.name === 'blak_session');
     const identity = JSON.parse(Buffer.from(session.value.split('.')[0], 'base64url').toString());
     if (identity.email !== hermes.email || !identity.sub) throw new Error('Portal and Hermes identities differ');
+    mapping.portal_owner = identity.sub;
+    mapping.credential_metadata ||= {};
+    const checkedAt = Math.floor(Date.now()/1000);
     stage = 'Forms sign-in';
     await page.goto('https://forms.homelab.local');
     await page.getByRole('button', { name: 'Blak ID', exact: true }).click();
@@ -52,6 +55,8 @@ async function main() {
     const cookies = await context.cookies('https://forms.homelab.local');
     mapping.sources.forms = { base: 'http://forms:9157', public_base: 'https://forms.homelab.local', expected_user: hermes.email,
       headers: { Cookie: cookies.map(c => c.name + '=' + c.value).join('; ') } };
+    const expires=cookies.map(cookie=>cookie.expires).filter(value=>value>0);
+    if(expires.length)mapping.credential_metadata.forms={...mapping.credential_metadata.forms,expires_at:Math.min(...expires)};
     const token = mapping.sources.draw?.token || crypto.randomBytes(40).toString('base64url');
     for (const source of ['draw', 'flow']) mapping.sources[source] = { base: 'http://portal:3000', public_base: 'https://portal.homelab.local', token, expected_user: identity.sub };
     const exporters = JSON.parse(secret('blak-portal-exports')['accounts.json'] || '[]').filter(a => a.owner !== identity.sub);
@@ -63,6 +68,7 @@ async function main() {
     mapping.sources.crm = { base: 'http://crm:3000', public_base: 'https://crm.homelab.local', expected_user: hermes.email,
       headers: { Authorization: 'token ' + crm.api_key + ':' + crm.api_secret } };
     mapping.sources.storage = { base: 'http://floci:4566', public_base: 'https://portal.homelab.local/cloud' };
+    for (const source of ['forms','draw','flow','crm','storage']) mapping.credential_metadata[source] = { ...mapping.credential_metadata[source], checked_at: checkedAt };
     save('blak-hermes-sync', { 'accounts.json': JSON.stringify(config) });
     stage = 'portal credential projection';
     const portalIP = kube(['get', 'service', 'portal', '-o', 'jsonpath={.spec.clusterIP}']);

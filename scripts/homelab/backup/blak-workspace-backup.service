@@ -1,0 +1,10 @@
+[Unit]
+Description=Encrypted consistent Blak Workspace backup
+After=k3s.service
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/blak-backup/workspace-backup.py snapshot
+ExecStopPost=/usr/bin/python3 /opt/blak-backup/workspace-backup.py recover
+TimeoutStartSec=30min
+TimeoutStopSec=3h

@@ -29,6 +29,8 @@ jobs:
           npm run build
       - name: Hermes sync tests
         run: python -m unittest discover -s services/hermes-sync -p 'test_*.py' -v
+      - name: Backup failure regression tests
+        run: python -m unittest discover -s scripts/homelab/backup -p 'test_*.py' -v
       - name: Check generated app themes
         run: node scripts/brand/generate.js --check
       - name: Generate SBOM

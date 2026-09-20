@@ -47,7 +47,12 @@ spec:
             - { name: PROXY_TLS, value: "false" }
             - { name: PROXY_ENABLE_BASIC_AUTH, value: "true" }
             - { name: IDM_ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: blak-drive, key: admin-password } } }
-            - { name: COLLABORA_DOMAIN, value: https://docs.homelab.local }
+            - { name: OC_ADD_RUN_SERVICES, value: collaboration }
+            - { name: COLLABORATION_APP_NAME, value: BlakDocs }
+            - { name: COLLABORATION_APP_PRODUCT, value: Collabora }
+            - { name: COLLABORATION_APP_ADDR, value: https://docs.homelab.local }
+            - { name: COLLABORATION_WOPI_SRC, value: https://drive.homelab.local }
+            - { name: COLLABORATION_HTTP_ADDR, value: "0.0.0.0:9300" }
             - { name: OC_OIDC_ISSUER, value: https://id.homelab.local/application/o/opencloud/ }
             - { name: OC_EXCLUDE_RUN_SERVICES, value: idp }
             - { name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD, value: jwt }
@@ -90,4 +95,4 @@ metadata:
   namespace: blak-micro
 spec:
   selector: { app: opencloud }
-  ports: [{ name: http, port: 9200, targetPort: 9200 }]
+  ports: [{ name: http, port: 9200, targetPort: 9200 }, { name: wopi, port: 9300, targetPort: 9300 }]

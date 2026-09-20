@@ -1,0 +1,7 @@
+[Unit]
+Description=Weekly Blak Workspace recovery drill
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00 Australia/Sydney
+Persistent=false
+[Install]
+WantedBy=timers.target

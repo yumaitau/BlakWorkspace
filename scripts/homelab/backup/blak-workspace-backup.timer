@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily Blak Workspace backup (brief maintenance window)
+[Timer]
+OnCalendar=*-*-* 03:30:00 Australia/Sydney
+Persistent=false
+[Install]
+WantedBy=timers.target

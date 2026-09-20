@@ -57,6 +57,7 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
+  strategy: { type: Recreate }
   selector: { matchLabels: { app: hermes } }
   template:
     metadata: { labels: { app: hermes } }
@@ -64,6 +65,14 @@ spec:
       hostAliases:
         - ip: 10.43.169.184
           hostnames: [id.homelab.local]
+      initContainers:
+        - name: trust-blak-id
+          image: ghcr.io/open-webui/open-webui@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
+          command: [python, -c]
+          args: ["import certifi; from pathlib import Path; Path('/trusted/ca.pem').write_bytes(Path(certifi.where()).read_bytes()+b'\\n'+Path('/blak/rootCA.pem').read_bytes())"]
+          volumeMounts:
+            - { name: ca, mountPath: /blak, readOnly: true }
+            - { name: trusted-ca, mountPath: /trusted }
       containers:
         - name: webui
           image: ghcr.io/open-webui/open-webui@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
@@ -79,16 +88,21 @@ spec:
             - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "true" }
             - { name: OAUTH_CLIENT_ID, value: openwebui }
             - { name: OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-hermes, key: oidc-secret } } }
-            - { name: OPENID_PROVIDER_URL, value: http://id.homelab.local/application/o/hermes/.well-known/openid-configuration }
+            - { name: OPENID_PROVIDER_URL, value: https://id.homelab.local/application/o/hermes/.well-known/openid-configuration }
+            - { name: SSL_CERT_FILE, value: /trusted/ca.pem }
+            - { name: REQUESTS_CA_BUNDLE, value: /trusted/ca.pem }
             - { name: OAUTH_PROVIDER_NAME, value: 'Blak ID' }
           readinessProbe: { httpGet: { path: /, port: 8080 }, initialDelaySeconds: 60, periodSeconds: 15 }
           resources:
             requests: { cpu: 500m, memory: 1Gi }
             limits: { cpu: "2", memory: 4Gi }
           volumeMounts:
+            - { name: trusted-ca, mountPath: /trusted, readOnly: true }
             - { name: data, mountPath: /app/backend/data }
             - { name: themes, mountPath: /app/build/static/custom.css, subPath: hermes.css, readOnly: true }
       volumes:
+        - { name: ca, configMap: { name: blak-ca } }
+        - { name: trusted-ca, emptyDir: {} }
         - { name: data, persistentVolumeClaim: { claimName: webui-data } }
         - { name: themes, configMap: { name: blak-app-themes } }
 ---

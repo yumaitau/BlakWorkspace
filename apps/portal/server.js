@@ -379,6 +379,22 @@ async function handleRequest(req, res) {
     } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
     return;
   }
+  if (url.pathname === '/welcome') {
+    if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
+    res.setHeader('content-type','text/html; charset=utf-8');
+    res.end(shell(user,'home','Getting started',`<h1>Your Blak workspace</h1><p>One Blak ID opens your workspace apps. Manage your sign-in through Blak ID; you do not need separate app passwords.</p><ol><li><a href="https://drive.homelab.local">Add your files to Drive</a> and open documents with Blak Docs.</li><li><a href="https://crm.homelab.local/login?redirect-to=/crm">Create your first CRM lead</a>, then track contacts, organisations and deals.</li><li><a href="https://projects.homelab.local">Create a project workspace</a> and plan tasks with your team.</li><li><a href="https://forms.homelab.local">Build a form</a> or <a href="/draw">draw a diagram</a>.</li><li><a href="/sync">Check your Hermes connections</a>, then select the Blak Workspace model in Hermes.</li></ol><p>Use the Blak Workspace button in any app to switch products, return home or change your shared theme. Private files and drawings stay scoped to their owner.</p>`));return;
+  }
+  if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
+    res.setHeader('cache-control','no-store');
+    if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
+    if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+    const health = require('./sync-health').healthFor(user.sub, process.env.SYNC_HEALTH_FILE);
+    if (url.pathname === '/api/sync-health') { res.setHeader('content-type','application/json'); res.end(JSON.stringify(health)); return; }
+    const rows = health.sources.map(source => `<tr><th scope="row">${esc(source.label)}</th><td>${esc(source.status)}</td><td>${source.last_success ? esc(new Date(source.last_success*1000).toISOString().replace('T',' ').slice(0,19))+' UTC' : 'Not yet synced'}</td><td>${source.documents}</td><td>${source.expires_at ? esc(new Date(source.expires_at*1000).toISOString().slice(0,10)) : 'Not reported by source'}</td></tr>`).join('');
+    const warning = !health.enrolled ? health.message : health.healthy ? 'Your connected sources are up to date.' : 'Some sources need attention. Answers may omit unavailable or outdated content.';
+    res.setHeader('content-type','text/html; charset=utf-8');
+    res.end(shell(user,'hermes','Hermes sync status',`<h1>Hermes sync status</h1><p role="status">${esc(warning)}</p><p>Private to your account. Sync runs every five minutes. More than 15 minutes without success is marked stale.</p><div style="overflow-x:auto"><table><caption>Connected sources</caption><thead><tr><th>Source</th><th>Status</th><th>Last success</th><th>Documents</th><th>Credential expiry</th></tr></thead><tbody>${rows}</tbody></table></div><h2>Connect or repair a source</h2><p>Ask your workspace administrator to enrol credentials belonging to your account. Never send passwords or API keys through chat. Revoked credentials need renewal; expiry dates are shown where supplied.</p><p><a href="https://hermes.homelab.local">Open Hermes</a> and select <strong>Blak Workspace</strong> to use your connected sources.</p>`)); return;
+  }
   if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
     res.setHeader('content-type', 'application/json');
     res.setHeader('cache-control', 'no-store');
