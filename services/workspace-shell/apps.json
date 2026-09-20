@@ -1,0 +1,80 @@
+[
+  {
+    "id": "portal",
+    "name": "Workspace",
+    "url": "https://portal.homelab.local/",
+    "backend": "Blak Workspace by Yuma IT"
+  },
+  {
+    "id": "forms",
+    "name": "Blak Forms",
+    "url": "https://forms.homelab.local/",
+    "backend": "Powered by HeyForm"
+  },
+  {
+    "id": "draw",
+    "name": "Blak Draw",
+    "url": "https://portal.homelab.local/draw",
+    "backend": "Powered by Excalidraw"
+  },
+  {
+    "id": "crm",
+    "name": "Blak CRM",
+    "url": "https://crm.homelab.local/login?redirect-to=/crm",
+    "backend": "Powered by Frappe CRM"
+  },
+  {
+    "id": "drive",
+    "name": "Blak Drive",
+    "url": "https://drive.homelab.local/",
+    "backend": "Powered by OpenCloud"
+  },
+  {
+    "id": "docs",
+    "name": "Blak Docs",
+    "url": "https://drive.homelab.local/",
+    "backend": "Powered by Collabora (WOPI via Drive SSO)"
+  },
+  {
+    "id": "chat",
+    "name": "Blak Chat",
+    "url": "https://chat.homelab.local/",
+    "backend": "Powered by Rocket.Chat"
+  },
+  {
+    "id": "sites",
+    "name": "Blak Knowledge",
+    "url": "https://sites.homelab.local/",
+    "backend": "Powered by Outline"
+  },
+  {
+    "id": "projects",
+    "name": "Blak Projects",
+    "url": "https://projects.homelab.local/",
+    "backend": "Powered by Kaneo"
+  },
+  {
+    "id": "flow",
+    "name": "Blak Flow",
+    "url": "https://portal.homelab.local/flow",
+    "backend": "Powered by Blak Flow engine"
+  },
+  {
+    "id": "hermes",
+    "name": "Blak Hermes",
+    "url": "https://hermes.homelab.local/",
+    "backend": "Powered by Open WebUI + Ollama"
+  },
+  {
+    "id": "search",
+    "name": "Blak Search",
+    "url": "https://portal.homelab.local/search",
+    "backend": "Powered by Meilisearch"
+  },
+  {
+    "id": "storage",
+    "name": "Blak Cloud",
+    "url": "https://portal.homelab.local/cloud",
+    "backend": "Powered by Floci"
+  }
+]

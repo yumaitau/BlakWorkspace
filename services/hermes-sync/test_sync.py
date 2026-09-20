@@ -159,5 +159,17 @@ class NewWorkspaceSourcesTests(unittest.TestCase):
         docs=sync.storage_documents(Source())
         self.assertEqual([d['path'] for d in docs],['/work/one.txt','/work/two.pdf'])
 
+class HealthPublicationTests(unittest.TestCase):
+    def test_health_contains_no_credentials_or_document_identifiers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            file=Path(directory)/'health.json'
+            mapping={'name':'account','portal_owner':'alice','sources':{'crm':{'token':'secret'}},'credential_metadata':{'crm':{'expires_at':500}}}
+            state={'account':{'crm':{'last_success':100,'files':{'sensitive-record-id':{'file_id':'private'}}}}}
+            sync.publish_health({'accounts':[mapping]},state,file)
+            text=file.read_text()
+            self.assertNotIn('secret',text);self.assertNotIn('sensitive-record-id',text);self.assertNotIn('private',text)
+            record=sync.json.loads(text)['accounts'][0]['sources'][0]
+            self.assertEqual(record['documents'],1);self.assertEqual(record['expires_at'],500)
+
 if __name__ == "__main__":
     unittest.main()

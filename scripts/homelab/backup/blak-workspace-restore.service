@@ -1,0 +1,8 @@
+[Unit]
+Description=Isolated Blak Workspace restore verification
+After=docker.service
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/blak-backup/workspace-backup.py restore-drill
+TimeoutStartSec=30min

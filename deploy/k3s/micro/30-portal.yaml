@@ -27,6 +27,8 @@ spec:
         - ip: 10.43.169.184
           hostnames: [id.homelab.local]
       volumes:
+        - name: sync-health
+          persistentVolumeClaim: { claimName: hermes-sync-state }
         - name: ca
           configMap: { name: blak-ca }
         - name: flow-store
@@ -42,6 +44,7 @@ spec:
             requests: { cpu: 250m, memory: 256Mi }
             limits: { cpu: "1", memory: 1Gi }
           env:
+            - { name: SYNC_HEALTH_FILE, value: /sync-health/health.json }
             - { name: PORT, value: "3000" }
             - { name: KNOWLEDGE_EXPORT_ACCOUNTS, value: /exports/accounts.json }
             - { name: FLOW_STORE, value: /data/blak-flow.json }
@@ -56,6 +59,7 @@ spec:
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           volumeMounts:
+            - { name: sync-health, mountPath: /sync-health, readOnly: true }
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
             - { name: flow-store, mountPath: /data }
             - { name: knowledge-export, mountPath: /exports, readOnly: true }

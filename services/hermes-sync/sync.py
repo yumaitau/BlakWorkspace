@@ -473,6 +473,25 @@ def ensure_workspace_model(hermes, owner, state, base_model):
         hermes.json('POST', '/api/v1/models/model/update', desired)
 
 
+def publish_health(config, state, file):
+    """Sanitised operational metadata only; no source IDs, content or credentials."""
+    accounts=[]
+    for mapping in config['accounts']:
+        if not mapping.get('portal_owner'): continue
+        sources=[]
+        for name in mapping['sources']:
+            record=state.get(mapping['name'], {}).get(name, {})
+            credential=mapping.get('credential_metadata', {}).get(name, {})
+            sources.append({'name':name, 'label':SOURCE_NAMES[name],
+                            'last_success':record.get('last_success'),
+                            'last_error':bool(record.get('last_error')),
+                            'documents':len(record.get('files', {})),
+                            'expires_at':credential.get('expires_at'),
+                            'credential_checked_at':record.get('last_success') or credential.get('checked_at')})
+        accounts.append({'portal_owner':mapping['portal_owner'], 'sources':sources})
+    save_state(file, {'generated_at':int(time.time()), 'accounts':accounts})
+
+
 def main():
     config = json.loads(Path(os.environ.get('SYNC_CONFIG', '/config/accounts.json')).read_text())
     state_file = Path(os.environ.get('SYNC_STATE', '/data/state.json'))
@@ -489,7 +508,10 @@ def main():
         name = mapping['name']
         try:
             account_state = state.setdefault(name, {})
-            result = sync_mapping(mapping, account_state, lambda: save_state(state_file, state))
+            def checkpoint():
+                save_state(state_file, state)
+                publish_health(config, state, state_file.with_name('health.json'))
+            result = sync_mapping(mapping, account_state, checkpoint)
             LOG.info('Sync complete account=%s counts=%s', name, json.dumps(result))
         except Exception as error:
             # HTTPError bodies, credentials and document contents never reach logs.
