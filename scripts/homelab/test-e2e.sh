@@ -31,7 +31,7 @@ BROWSER_CONTAINER=$(docker run -d --rm --init --shm-size=1g --memory=6g --cpus=4
   "${HOSTS[@]}" -p 127.0.0.1::3000 \
   -v "$ROOT/e2e/node_modules:/work/node_modules:ro" -w /work \
   "$IMAGE" node node_modules/playwright/cli.js run-server --host 0.0.0.0 --port 3000)
-trap 'docker stop --time 5 "$BROWSER_CONTAINER" >/dev/null' EXIT
+trap 'docker stop --time 5 "$BROWSER_CONTAINER" >/dev/null 2>&1 || true' EXIT
 BROWSER_PORT=$(docker inspect --format '{{(index (index .NetworkSettings.Ports "3000/tcp") 0).HostPort}}' "$BROWSER_CONTAINER")
 export PLAYWRIGHT_WS_ENDPOINT="ws://127.0.0.1:$BROWSER_PORT/"
 for attempt in $(seq 1 30); do
