@@ -41,6 +41,7 @@
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Switch app');
   for(const item of apps.filter(a=>a.id!=='portal')) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
   panel.append(nav);
+  const welcome=document.createElement('a');welcome.href='https://portal.homelab.local/welcome';welcome.textContent='Getting started with Blak';welcome.style.display='block';panel.append(welcome);
   const health=document.createElement('a');health.href='https://portal.homelab.local/sync';health.textContent='Hermes sync status';health.style.display='block';panel.append(health);
   const toggle=document.createElement('button');toggle.id='theme';toggle.type='button';toggle.addEventListener('click',()=>apply(mode==='dark'?'light':'dark',true));panel.append(toggle);
   const footer=document.createElement('div');footer.className='footer';footer.textContent=app.backend;panel.append(footer);

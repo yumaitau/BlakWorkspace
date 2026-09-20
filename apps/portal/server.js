@@ -379,6 +379,11 @@ async function handleRequest(req, res) {
     } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
     return;
   }
+  if (url.pathname === '/welcome') {
+    if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
+    res.setHeader('content-type','text/html; charset=utf-8');
+    res.end(shell(user,'home','Getting started',`<h1>Your Blak workspace</h1><p>One Blak ID opens your workspace apps. Manage your sign-in through Blak ID; you do not need separate app passwords.</p><ol><li><a href="https://drive.homelab.local">Add your files to Drive</a> and open documents with Blak Docs.</li><li><a href="https://crm.homelab.local/login?redirect-to=/crm">Create your first CRM lead</a>, then track contacts, organisations and deals.</li><li><a href="https://projects.homelab.local">Create a project workspace</a> and plan tasks with your team.</li><li><a href="https://forms.homelab.local">Build a form</a> or <a href="/draw">draw a diagram</a>.</li><li><a href="/sync">Check your Hermes connections</a>, then select the Blak Workspace model in Hermes.</li></ol><p>Use the Blak Workspace button in any app to switch products, return home or change your shared theme. Private files and drawings stay scoped to their owner.</p>`));return;
+  }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');
     if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
