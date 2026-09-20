@@ -78,6 +78,8 @@ for old in crm crm-worker; do
     kubectl -n "$NS" scale "deploy/$old" --replicas=0
   fi
 done
+(cd e2e && npm ci --ignore-scripts)
+node scripts/homelab/connect-hermes-apps.js
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do
   kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=900s
 done

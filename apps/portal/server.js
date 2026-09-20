@@ -368,6 +368,17 @@ async function handleRequest(req, res) {
     res.end(JSON.stringify({ status: 'ok', service: 'blak-portal', version: '0.3.0' }));
     return;
   }
+  if (url.pathname.startsWith('/api/knowledge-export/')) {
+    res.setHeader('content-type', 'application/json');
+    res.setHeader('cache-control', 'no-store');
+    try {
+      if (req.method !== 'GET') throw Object.assign(new Error('Read only'), { status: 405 });
+      const exporter = require('./knowledge-export');
+      const owner = exporter.exportOwner(req.headers.authorization, process.env.KNOWLEDGE_EXPORT_ACCOUNTS);
+      res.end(JSON.stringify({ owner, documents: exporter.documents(url.pathname.slice('/api/knowledge-export/'.length), owner, drawStore, flowStore) }));
+    } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
+    return;
+  }
   if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
     res.setHeader('content-type', 'application/json');
     res.setHeader('cache-control', 'no-store');
