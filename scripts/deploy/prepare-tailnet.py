@@ -28,7 +28,8 @@ def configure(root,host,address):
                 text=text.replace(scheme+'://'+app+'.'+domain,origin)
             # Browser URL predicates must compare ports when all apps share a hostname.
             if 'e2e' in path.relative_to(root).parts or path.name=='shell.js' or path.name=='connect-hermes-apps.js':
-                text=text.replace("'"+app+'.'+domain+"'", "'"+origin.removeprefix('https://')+"'")
+                for quote in ("'", '"'):
+                    text=text.replace(quote+app+'.'+domain+quote, quote+origin.removeprefix('https://')+quote)
                 text=text.replace(app+'.'+domain.replace('.',r'\.'), origin.removeprefix('https://').replace('.',r'\.'))
                 text=text.replace((app+'.'+domain).replace('.',r'\.'),origin.removeprefix('https://').replace('.',r'\.'))
                 text=text.replace('.hostname','.host')
