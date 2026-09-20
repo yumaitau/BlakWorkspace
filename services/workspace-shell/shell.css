@@ -33,3 +33,4 @@ html[data-blak-app=crm]{--surface-gray-1:var(--blak-surface);--surface-gray-2:va
 html[data-blak-app=crm] button.bg-ink-gray-9{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
 html[data-blak-app=crm] .bg-surface-sidebar{background-color:var(--blak-surface-base)!important}
 html[data-blak-app=chat] .rcx-sidebar--main :is(a,button,span,div){color:var(--blak-text-primary)}
+html[data-blak-app=drive] #oc-topbar{background-color:var(--blak-surface-base);color:var(--blak-text-primary)}
