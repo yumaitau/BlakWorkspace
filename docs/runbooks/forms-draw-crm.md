@@ -30,7 +30,7 @@ For rollback, apply `scripts/homelab/rollback/twenty.yaml`, wait for `crm` and `
 
 ## Acceptance checks
 
-Run `scripts/homelab/test-e2e.sh` on homelab. It obtains existing operator credentials from Kubernetes, installs the locked Playwright version and runs the full suite. Forms tests use the first workspace project, publish only a temporary test survey, submit a synthetic answer anonymously, verify it and delete the form. CRM tests use uniquely named synthetic records. Draw tests use isolated signed test identities and clean their own boards.
+Run `scripts/homelab/test-e2e.sh` on homelab. It obtains existing operator credentials from Kubernetes, installs the locked Playwright version and runs the full suite. Forms tests use the first workspace project, publish only a temporary test survey, submit a synthetic answer anonymously, verify it and delete the form. CRM tests use uniquely named synthetic records: browser creation and conversion, authenticated API updates/deletes, persisted browser views, shared portal identity, logout and anonymous denial. The setup includes a metadata override to keep Contact names visible with CRM 1.84 and Framework 15. Draw tests use isolated signed test identities and clean their own boards.
 
 Credentials, storage state, Playwright traces and screenshots may include sensitive session data. Keep evidence private; never commit auth state or raw traces.
 

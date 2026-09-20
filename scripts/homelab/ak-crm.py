@@ -19,7 +19,7 @@ provider, _ = OAuth2Provider.objects.get_or_create(name='Blak CRM', defaults={
 })
 provider.property_mappings.set(ScopeMapping.objects.filter(scope_name__in=['openid', 'profile', 'email']))
 Application.objects.update_or_create(slug='blak-crm', defaults={
-    'name': 'Blak CRM', 'provider': provider, 'meta_launch_url': 'https://crm.homelab.local/crm',
+    'name': 'Blak CRM', 'provider': provider, 'meta_launch_url': 'https://crm.homelab.local/login?redirect-to=/crm',
     'open_in_new_tab': True,
 })
 group, created = Group.objects.get_or_create(name='Blak CRM users')
