@@ -61,9 +61,29 @@ ProtectHome=true
     source=r'''
 import json
 from authentik.providers.oauth2.models import OAuth2Provider, RedirectURI
+from authentik.brands.models import Brand
+from authentik.flows.models import Flow
+from authentik.core.models import Application
 config=json.loads(CONFIG_JSON)
 origins=config['tailnet']['origins']
 domain=config['domain']
+links=[]
+for model,fields in [(Brand,['branding_logo','branding_favicon','branding_default_flow_background']), (Flow,['background']), (Application,['meta_launch_url','meta_icon'])]:
+    for item in model.objects.all():
+        before={}
+        for field in fields:
+            value=str(getattr(item,field) or '')
+            updated=value
+            for app,origin in origins.items():
+                for scheme in ['http','https']:
+                    updated=updated.replace(scheme+'://'+app+'.'+domain,origin)
+            if updated!=value:
+                before[field]=value
+                setattr(item,field,updated)
+        if before:
+            links.append({'model':model._meta.label,'pk':str(item.pk),'fields':before})
+            item.save()
+print('IDENTITY_LINK_BACKUP:'+json.dumps(links))
 for provider in OAuth2Provider.objects.all():
     redirects=list(provider.redirect_uris)
     additions=[]
@@ -84,6 +104,12 @@ print('Existing OIDC providers retain identity and gain tailnet callbacks')
     result=kube('exec','-i','deploy/authentik-server','--','ak','shell',input=('exec('+repr(source)+')\n').encode())
     if b'Existing OIDC providers retain identity and gain tailnet callbacks' not in result:
         raise RuntimeError('OIDC callback reconciliation did not complete')
+    for line in result.splitlines():
+        if b'IDENTITY_LINK_BACKUP:' in line:
+            data=line.split(b'IDENTITY_LINK_BACKUP:',1)[1]
+            json.loads(data)
+            run(['sudo','tee',str(backup/'identity-links.json')],input=data)
+            run(['sudo','chmod','600',str(backup/'identity-links.json')])
     # HeyForm keys accounts by issuer plus subject. Preserve the existing owner
     # when this same IdP moves, instead of provisioning a second social account.
     mongo_snapshot=kube('exec','deploy/mongo','--','mongosh','--quiet','--eval',

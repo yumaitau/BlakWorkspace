@@ -67,6 +67,7 @@ def configure(root,host,address):
                 for container in spec['containers']:
                     for env in container.get('env',[]):
                         if env['name']=='domain':env['value']=re.escape(host)+'|drive'
+                        if env['name']=='server_name':env['value']=origins['docs'].removeprefix('https://')
         if changed:path.write_text(yaml.safe_dump_all(documents,sort_keys=False))
     metadata['tailnet']={'host':host,'address':address,'origins':origins,'ports':PORTS}
     (root/'.deployment.json').write_text(json.dumps(metadata,indent=2)+'\n')
