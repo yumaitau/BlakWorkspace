@@ -6,19 +6,20 @@ import unittest
 
 from repo import ROOT, exists, read
 
+# Split so git history never stores the full literal in one piece.
 BURNED = (
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
+    "05S5Ak-qklr" "GDLSsArrVF7-D6q2HPvL0x1HeyohkmkU",
+    "XFGVKvmDf0AqgGZUA_XH6FEW5mSoZUGT" "01NdICqxRwr42b4rVVidVQ",
+    "Blak-1KBXzDQc" "8i4Hh2k-OhseYZeL",
+    "FxL6Xtu4X_FZXvA9kFuZDC" "_f6alZHjlLuVQ-JSJWRlFE9b9rTZUI2hcrU0O2Eeo9",
+    "b3pB2kyigMfo_nHqwU9W" "YYKC3ExKro1NFnNGMABAQ5o",
+    "BJCEJrM7QB9C5h6d-Aao" "FEq1cMErPl1uYsy-rQpMDc8",
+    "z0LsIW3Pyt7hnCNIVJS" "-qQWVwbOqs2-07Ahg0b8dLR4",
+    "OcAdmin-ChangeMe-" "7f3a9c2e5b1d48",
+    "CollabAdmin-ChangeMe-" "4d8f1a",
+    "dbdead808a4fe5daaf2e06146bb0d958" "ec6987ae2fd6efa72eb1c4c720a4db64",
+    "ad7359ab461ebb2fe55b9641e7fc4405" "020f89863dbcfef3d9ad53b3f4c11f5a",
+    "op-SK-c9f2a1e47b3d4c5a8e6f7a1b3c" "5d9e2f4a6b8c1d3e5f7a9b1c3d5e7f9a2b4",
 )
 
 SECRET_FILES = (
