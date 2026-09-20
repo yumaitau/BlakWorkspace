@@ -44,6 +44,8 @@ def main():
     parser.add_argument('--domain', required=True, type=domain_name)
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
+    if not hasattr(tarfile, 'data_filter'):
+        parser.error('Python 3.12 or newer is required for safe archive extraction')
     repo = Path(__file__).resolve().parents[2]
     if args.output.resolve().is_relative_to(repo):
         parser.error('Output must be outside the source checkout')

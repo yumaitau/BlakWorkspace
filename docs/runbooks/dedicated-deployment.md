@@ -6,7 +6,7 @@ live endpoints. Namespace and volume names remain stable to preserve existing da
 
 ## Prepare a release
 
-From a clean, committed checkout, choose the actual base domain:
+Using Python 3.12 or newer from a clean, committed checkout, choose the actual base domain:
 
 ```sh
 python3 scripts/deploy/prepare-release.py --domain workspace.yourcompany.com --output /srv/blak-release
