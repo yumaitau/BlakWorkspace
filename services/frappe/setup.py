@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 import subprocess
 
-SITE = 'crm.homelab.local'
-BRAND_LOGO = 'https://portal.homelab.local/brand/logo.svg'
+SITE = 'crm.workspace.example.com'
+BRAND_LOGO = 'https://portal.workspace.example.com/brand/logo.svg'
 SITES = Path('/home/frappe/frappe-bench/sites')
 common = SITES / 'common_site_config.json'
 config = json.loads(common.read_text()) if common.exists() else {}
@@ -52,9 +52,9 @@ try:
     provider.update({
         'provider_name': 'Blak ID', 'social_login_provider': 'Custom',
         'enable_social_login': 1, 'client_id': os.environ['OIDC_CLIENT_ID'],
-        'client_secret': os.environ['OIDC_CLIENT_SECRET'], 'base_url': 'https://id.homelab.local',
-        'authorize_url': 'https://id.homelab.local/application/o/authorize/', 'access_token_url': 'https://id.homelab.local/application/o/token/',
-        'api_endpoint': 'https://id.homelab.local/application/o/userinfo/',
+        'client_secret': os.environ['OIDC_CLIENT_SECRET'], 'base_url': 'https://id.workspace.example.com',
+        'authorize_url': 'https://id.workspace.example.com/application/o/authorize/', 'access_token_url': 'https://id.workspace.example.com/application/o/token/',
+        'api_endpoint': 'https://id.workspace.example.com/application/o/userinfo/',
         'redirect_url': '/api/method/frappe.integrations.oauth2_logins.custom/blak_id',
         'auth_url_data': json.dumps({'response_type': 'code', 'scope': 'openid profile email'}),
         'user_id_property': 'sub', 'sign_ups': 'Deny',

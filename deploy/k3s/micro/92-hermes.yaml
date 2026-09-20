@@ -1,7 +1,7 @@
 # Blak Hermes (opt-in AI assistant): Ollama (local CPU inference) + Open WebUI
-# with OIDC login via Blak ID. No GPU on homelab yet; small models only.
+# with OIDC login via Blak ID. No GPU on dedicated yet; small models only.
 # DGX Spark / GPU node drops in as OLLAMA_HOST override later.
-# Secrets for blak-hermes live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
+# Secrets for blak-hermes live in-cluster (scripts/deploy/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -64,7 +64,7 @@ spec:
     spec:
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [id.homelab.local]
+          hostnames: [id.workspace.example.com]
       initContainers:
         - name: trust-blak-id
           image: ghcr.io/open-webui/open-webui@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
@@ -88,7 +88,7 @@ spec:
             - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "true" }
             - { name: OAUTH_CLIENT_ID, value: openwebui }
             - { name: OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-hermes, key: oidc-secret } } }
-            - { name: OPENID_PROVIDER_URL, value: https://id.homelab.local/application/o/hermes/.well-known/openid-configuration }
+            - { name: OPENID_PROVIDER_URL, value: https://id.workspace.example.com/application/o/hermes/.well-known/openid-configuration }
             - { name: SSL_CERT_FILE, value: /trusted/ca.pem }
             - { name: REQUESTS_CA_BUNDLE, value: /trusted/ca.pem }
             - { name: OAUTH_PROVIDER_NAME, value: 'Blak ID' }

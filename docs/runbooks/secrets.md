@@ -17,8 +17,8 @@ CI in this repository runs `python scripts/validate-manifest.py` and unit tests 
 
 Upstream GitOps docs warn that pre-rendered manifests can embed secrets. Prefer live Helmfile lookups and external references. Never commit `.env`, `*.secret`, or PEM private keys. See `.gitignore`.
 
-Homelab Micro (`deploy/k3s/micro/`): Opaque secrets are created in-cluster by
-`scripts/homelab/ensure-secrets.sh`. Manifests must not contain `kind: Secret` /
+Dedicated Micro (`deploy/k3s/micro/`): Opaque secrets are created in-cluster by
+`scripts/deploy/ensure-secrets.sh`. Manifests must not contain `kind: Secret` /
 `stringData` password literals. OIDC client secrets are generated in the cluster
 and patched into Authentik providers; they are never committed.
 

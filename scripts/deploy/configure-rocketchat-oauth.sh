@@ -2,7 +2,7 @@
 # Create Rocket.Chat custom OAuth (Blak ID) via the in-pod admin API.
 # Uses ADMIN_PASS already in the chat container. Never prints secrets.
 set -euo pipefail
-export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/blak-homelab-ts.yaml}"
+# Uses the selected kubectl context or KUBECONFIG.
 NS="${NS:-blak-micro}"
 kubectl -n "$NS" exec deploy/chat -- node -e '
 const http=require("http");
@@ -23,7 +23,7 @@ function req(method,path,body,headers){
   const secret=process.env["Accounts_OAuth_Custom-Blakid-secret"];
   const sets=[
     ["Accounts_OAuth_Custom-Blakid", true],
-    ["Accounts_OAuth_Custom-Blakid-url", "https://id.homelab.local/application/o"],
+    ["Accounts_OAuth_Custom-Blakid-url", "https://id.workspace.example.com/application/o"],
     ["Accounts_OAuth_Custom-Blakid-token_path", "/token/"],
     ["Accounts_OAuth_Custom-Blakid-identity_path", "/userinfo/"],
     ["Accounts_OAuth_Custom-Blakid-authorize_path", "/authorize/"],

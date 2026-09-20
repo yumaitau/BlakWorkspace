@@ -207,7 +207,7 @@ spec:
             port: 8000
             httpHeaders:
             - name: Host
-              value: crm.homelab.local
+              value: crm.workspace.example.com
           periodSeconds: 10
       - name: frontend
         image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
@@ -221,7 +221,7 @@ spec:
         - name: SOCKETIO
           value: 127.0.0.1:9000
         - name: FRAPPE_SITE_NAME_HEADER
-          value: crm.homelab.local
+          value: crm.workspace.example.com
         - name: UPSTREAM_REAL_IP_ADDRESS
           value: 127.0.0.1
         - name: UPSTREAM_REAL_IP_HEADER
@@ -331,7 +331,7 @@ spec:
       hostAliases:
       - ip: 10.43.169.184
         hostnames:
-        - id.homelab.local
+        - id.workspace.example.com
       initContainers:
       - name: configure
         image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
@@ -340,7 +340,7 @@ spec:
         - bash
         - -ec
         - cat /etc/ssl/certs/ca-certificates.crt /etc/blak-ca/rootCA.pem > /etc/blak-trust/ca.pem;
-          env/bin/python /setup/setup.py; cp /themes/crm.css sites/crm.homelab.local/public/files/blak-crm.css
+          env/bin/python /setup/setup.py; cp /themes/crm.css sites/crm.workspace.example.com/public/files/blak-crm.css
         env:
         - *id001
         - name: DB_ROOT_PASSWORD
@@ -422,7 +422,7 @@ spec:
   - websecure
   routes:
   - kind: Rule
-    match: Host(`crm.homelab.local`)
+    match: Host(`crm.workspace.example.com`)
     services:
     - name: crm
       port: 3000

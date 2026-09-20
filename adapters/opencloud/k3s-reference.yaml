@@ -25,7 +25,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args: ["if [ -f /etc/opencloud/opencloud.yaml ]; then echo init-skipped-config-exists; else opencloud init --insecure true; echo init-done; fi; ls -la /etc/opencloud"]
           env:
-            - { name: OCIS_URL, value: https://drive.homelab.local }
+            - { name: OCIS_URL, value: https://drive.workspace.example.com }
             - { name: PROXY_HTTP_ADDR, value: "0.0.0.0:9200" }
             - { name: IDM_ADMIN_PASSWORD, valueFrom: { secretKeyRef: { name: blak-drive, key: admin-password } } }
           volumeMounts:
@@ -37,7 +37,7 @@ spec:
           args: ["server"]
           ports: [{ containerPort: 9200 }]
           env:
-            - { name: OCIS_URL, value: https://drive.homelab.local }
+            - { name: OCIS_URL, value: https://drive.workspace.example.com }
             - { name: PROXY_HTTP_ADDR, value: "0.0.0.0:9200" }
             - { name: OCIS_LOG_LEVEL, value: debug }
             - { name: OCIS_INSECURE, value: "true" }

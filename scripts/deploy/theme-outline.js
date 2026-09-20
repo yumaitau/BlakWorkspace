@@ -8,12 +8,12 @@ const { tokens } = require('../../apps/portal/theme');
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
-    await page.goto('https://sites.homelab.local');
+    await page.goto('https://sites.workspace.example.com');
     await authentikLogin(page);
-    await page.waitForURL(url => url.hostname === 'sites.homelab.local' && !url.pathname.includes('auth'));
+    await page.waitForURL(url => url.hostname === 'sites.workspace.example.com' && !url.pathname.includes('auth'));
     const csrf = (await context.cookies()).find(cookie => /csrfToken$/.test(cookie.name));
     if (!csrf) throw new Error('Missing Outline CSRF token');
-    const response = await context.request.post('https://sites.homelab.local/api/teams.update', {
+    const response = await context.request.post('https://sites.workspace.example.com/api/teams.update', {
       headers: { 'x-csrf-token': csrf.value },
       data: { name: 'Blak Knowledge', preferences: { customTheme: { accent: tokens.dark.primary, accentText: tokens.dark['sand-50'] } } },
     });

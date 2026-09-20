@@ -9,7 +9,7 @@ for item in json.loads(kube('get','ingressroute','-o','json'))['items']:
     changed=False
     for route in routes:
         if route.get('middlewares'): continue
-        if route['match'] in {f'Host(`{host}.homelab.local`)' for host in HOSTS}:
+        if route['match'] in {f'Host(`{host}.workspace.example.com`)' for host in HOSTS}:
             route['services']=[{'name':'workspace-shell','port':8080}]
             changed=True
     if changed:

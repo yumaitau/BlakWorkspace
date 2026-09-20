@@ -182,7 +182,7 @@ spec:
         - name: REDIS_URL
           value: redis://crm-cache:6379
         - name: SERVER_URL
-          value: https://crm.homelab.local
+          value: https://crm.workspace.example.com
         - name: STORAGE_TYPE
           value: local
         - name: APP_SECRET
@@ -297,7 +297,7 @@ spec:
         - name: REDIS_URL
           value: redis://crm-cache:6379
         - name: SERVER_URL
-          value: https://crm.homelab.local
+          value: https://crm.workspace.example.com
         - name: STORAGE_TYPE
           value: local
         - name: APP_SECRET
@@ -362,7 +362,7 @@ spec:
   - websecure
   routes:
   - kind: Rule
-    match: Host(`crm.homelab.local`)
+    match: Host(`crm.workspace.example.com`)
     services:
     - name: crm
       port: 3000

@@ -1,4 +1,4 @@
-# Continuous homelab workspace sync
+# Continuous dedicated workspace sync
 
 The `hermes-workspace-sync` CronJob runs every five minutes in `blak-micro`.
 It reads the configured account's accessible Drive/Docs files, published Knowledge
@@ -32,10 +32,10 @@ Hermes user ID returned by `/api/v1/auths/` for that account's API key.
     "owner_id": "HERMES_USER_ID",
     "hermes": {"base": "http://hermes:8080", "token": "SECRET"},
     "sources": {
-      "drive": {"base": "http://drive:9200", "public_base": "https://drive.homelab.local", "username": "SOURCE_USER", "password": "APP_TOKEN"},
-      "outline": {"base": "http://sites:3000", "public_base": "https://sites.homelab.local", "token": "API_KEY"},
-      "chat": {"base": "http://chat:3000", "public_base": "https://chat.homelab.local", "headers": {"X-Auth-Token": "USER_TOKEN", "X-User-Id": "SOURCE_USER_ID"}},
-      "projects": {"base": "http://projects:5173", "public_base": "https://projects.homelab.local", "headers": {"x-api-key": "API_KEY"}}
+      "drive": {"base": "http://drive:9200", "public_base": "https://drive.workspace.example.com", "username": "SOURCE_USER", "password": "APP_TOKEN"},
+      "outline": {"base": "http://sites:3000", "public_base": "https://sites.workspace.example.com", "token": "API_KEY"},
+      "chat": {"base": "http://chat:3000", "public_base": "https://chat.workspace.example.com", "headers": {"X-Auth-Token": "USER_TOKEN", "X-User-Id": "SOURCE_USER_ID"}},
+      "projects": {"base": "http://projects:5173", "public_base": "https://projects.workspace.example.com", "headers": {"x-api-key": "API_KEY"}}
     }
   }]
 }
@@ -43,7 +43,7 @@ Hermes user ID returned by `/api/v1/auths/` for that account's API key.
 
 Store real values only in the cluster Secret or a mode-600 temporary file; never
 commit them. Use credentials belonging to the same person as the Hermes owner.
-The installed mapping is the homelab `akadmin` account. Other users require their
+The reference mapping uses the bootstrap `akadmin` account. Other users require their
 own mapping and credentials; their private documents are not copied by this one.
 
 - Drive uses an app token, not the user's SSO password. The current token expires
@@ -58,9 +58,9 @@ own mapping and credentials; their private documents are not copied by this one.
 - Forms uses that owner's authenticated session; regular reads renew it. Re-enrol
   if revoked or expired after an outage.
 - Draw/Flow exports use a separate read-only bearer token bound to the portal
-  owner. Requests cannot select another owner. Cloud files use the shared homelab
+  owner. Requests cannot select another owner. Cloud files use the shared deployment
   storage service; this is shared workspace storage, not per-user private storage.
-- `node scripts/homelab/connect-hermes-apps.js` enrols these five new sources after
+- `node scripts/deploy/connect-hermes-apps.js` enrols these five new sources after
   matching Hermes, portal and Forms identities. Deployment runs it automatically.
   Additional people need their own account mapping and source credentials.
 - Hermes API keys must be enabled. Its `WEBUI_SECRET_KEY` comes from
@@ -89,7 +89,7 @@ operator-visible failure signal; no external alert destination is configured.
 
 ## Verification
 
-On homelab, `scripts/homelab/test-e2e.sh hermes.spec.js` tests authentication,
+On the deployment host, `scripts/deploy/test-e2e.sh hermes.spec.js` tests authentication,
 private collections, real Drive create/update/delete, idempotence, vector retrieval,
 local grounded responses, browser chat, and scoped Chat/Projects test data.
 Fixtures use dedicated test documents, a self-only private channel, and a private

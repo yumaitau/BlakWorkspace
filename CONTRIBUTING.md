@@ -25,12 +25,12 @@ Use Australian English in human-readable docs. Avoid em dashes. Avoid hype and u
 2. Keep overlay changes upgrade-safe (prefer configuration over patches).
 3. Run `python scripts/validate-manifest.py` and `python -m unittest discover -s tests -v`.
 4. Land through pull requests. Merge only when the GitHub Actions `validate` check is green. Do not push commits straight to `main`.
-5. GitHub Actions must never run `terraform apply` or `helmfile apply`. Homelab apply is operator-only.
-6. Playwright e2e (`e2e/`) targets homelab URLs with credentials from the environment, not git. It is not the CI merge gate.
+5. GitHub Actions must never run `terraform apply` or `helmfile apply`. Dedicated apply is operator-only.
+6. Playwright e2e (`e2e/`) targets dedicated URLs with credentials from the environment, not git. It is not the CI merge gate.
 
 ## History rewrite (2026-09)
 
-`main` was rewritten with `git filter-repo` to remove homelab OIDC and bootstrap
+`main` was rewritten with `git filter-repo` to remove dedicated OIDC and bootstrap
 literals that had been committed in pull request 135. Re-clone, or
 `git fetch origin && git reset --hard origin/main`. Do not rebase old local
 branches onto the rewritten tip without fetching first.

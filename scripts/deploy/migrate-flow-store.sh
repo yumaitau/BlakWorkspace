@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-time emptyDir -> PVC migration. Pause writes only while taking/copying the snapshot.
-# Run on the homelab host immediately before deploying the persistent portal manifest.
+# Run on the dedicated host immediately before deploying the persistent portal manifest.
 set -euo pipefail
 NS="${NS:-blak-micro}"
 IMAGE="${PORTAL_IMAGE:?set PORTAL_IMAGE to the imported portal image}"

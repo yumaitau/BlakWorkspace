@@ -13,7 +13,7 @@ print('Workspace admin display label configured')
 # Restrict the migration to the known bootstrap identity and uncustomized team icon.
 outline_sql = """BEGIN;
 UPDATE users SET name='Workspace Admin' WHERE email='admin@blak.local' AND name='authentik Default Admin';
-UPDATE teams SET "avatarUrl"='https://sites.homelab.local/_blak/logo.svg'
+UPDATE teams SET "avatarUrl"='https://sites.workspace.example.com/_blak/logo.svg'
  WHERE name='Blak Knowledge' AND ("avatarUrl" IS NULL OR "avatarUrl"='');
 COMMIT;
 """

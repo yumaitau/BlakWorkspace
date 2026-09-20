@@ -50,30 +50,30 @@ class TestPortalShell(unittest.TestCase):
         self.assertEqual(admin["status"], "live")
         self.assertTrue(admin["url"])
 
-    def test_playwright_targets_homelab_portal(self):
+    def test_playwright_targets_dedicated_portal(self):
         self.assertTrue(exists("e2e/playwright.config.js"))
-        self.assertTrue(exists("e2e/tests/homelab.spec.js"))
+        self.assertTrue(exists("e2e/tests/deployment.spec.js"))
         cfg = read("e2e/playwright.config.js")
-        spec = read("e2e/tests/homelab.spec.js")
-        self.assertIn("portal.homelab.local", cfg)
+        spec = read("e2e/tests/deployment.spec.js")
+        self.assertIn("portal.workspace.example.com", cfg)
         self.assertIn("ignoreHTTPSErrors", cfg)
         self.assertIn("Sign in with Blak ID", spec)
         self.assertIn("data-testid=\"waffle\"", spec)
         self.assertIn("data-app=\"flow\"", spec)
         self.assertIn("/flow", spec)
         self.assertIn("run-row", spec)
-        self.assertIn("chat.homelab.local", spec)
-        self.assertIn("projects.homelab.local", spec)
+        self.assertIn("chat.workspace.example.com", spec)
+        self.assertIn("projects.workspace.example.com", spec)
 
     def test_chat_and_projects_are_live_oidc(self):
         data = _fixture()
         chat = next(a for a in data["apps"] if a["id"] == "chat")
         projects = next(a for a in data["apps"] if a["id"] == "projects")
         self.assertEqual(chat["status"], "live")
-        self.assertEqual(chat["url"], "https://chat.homelab.local")
+        self.assertEqual(chat["url"], "https://chat.workspace.example.com")
         self.assertEqual(chat["oidcClient"], "rocketchat")
         self.assertEqual(projects["status"], "live")
-        self.assertEqual(projects["url"], "https://projects.homelab.local")
+        self.assertEqual(projects["url"], "https://projects.workspace.example.com")
         self.assertEqual(projects["oidcClient"], "kaneo")
 
 

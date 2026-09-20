@@ -2,7 +2,7 @@
 
 const { defineConfig } = require('@playwright/test');
 
-const baseURL = process.env.BLAK_E2E_BASE_URL || 'https://portal.homelab.local';
+const baseURL = process.env.BLAK_E2E_BASE_URL || 'https://portal.workspace.example.com';
 
 module.exports = defineConfig({
   testDir: './tests',

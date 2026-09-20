@@ -3,7 +3,7 @@
   'use strict';
   if (document.getElementById('blak-workspace-shell')) return;
   const [apps, tokens] = await Promise.all(['apps','tokens'].map(name => fetch('/_blak/' + name + '.json').then(r => { if (!r.ok) throw Error('Workspace assets unavailable'); return r.json(); })));
-  const app = location.hostname === 'docs.homelab.local' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
+  const app = location.hostname === 'docs.workspace.example.com' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
   if (!app) return;
   const portalURL=apps.find(a=>a.id==='portal').url;
   const root = document.documentElement, cookieName = 'blak-theme';
@@ -25,7 +25,7 @@
     }
     // These native preference keys are cosmetic only. Shared cookie is authoritative.
     try { localStorage.setItem(cookieName,mode); localStorage.setItem('theme',mode); localStorage.setItem('color-scheme',mode); } catch {}
-    if (persist) document.cookie = `${cookieName}=${mode}; Domain=homelab.local; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
+    if (persist) document.cookie = `${cookieName}=${mode}; Domain=workspace.example.com; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
     if(app.id==='sites') {
       try {const settings=JSON.parse(localStorage.getItem('UI_STORE')||'{}');settings.theme=mode;const value=JSON.stringify(settings);localStorage.setItem('UI_STORE',value);window.dispatchEvent(new StorageEvent('storage',{key:'UI_STORE',newValue:value,storageArea:localStorage}));} catch {}
     }

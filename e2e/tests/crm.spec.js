@@ -1,14 +1,14 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const { authentikLogin } = require('../helpers/auth');
-const CRM = 'https://crm.homelab.local';
+const CRM = 'https://crm.workspace.example.com';
 test.use({ viewport: { width: 1440, height: 1000 } });
 test.describe.configure({ timeout: 120000 });
 async function login(page) {
   await page.goto(CRM + '/login?redirect-to=/crm');
   await page.getByRole('link', { name: /Blak ID/ }).click();
   await authentikLogin(page);
-  await page.waitForURL(/crm\.homelab\.local\/crm/);
+  await page.waitForURL(/crm\.workspace\.example\.com\/crm/);
   await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeVisible({ timeout: 30000 });
 }
 test('CRM protects records and offers native Blak ID login', async ({ page, request }) => {
@@ -23,7 +23,7 @@ test('CRM native SSO and shared theme', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--blak-crm-accent').trim())).toBe('#D65B2E');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeVisible();
-  const logo = page.locator('img[src="https://portal.homelab.local/brand/logo.svg"]').first();
+  const logo = page.locator('img[src="https://portal.workspace.example.com/brand/logo.svg"]').first();
   await expect(logo).toBeVisible();
   await expect.poll(() => logo.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.screenshot({ path: test.info().outputPath('frappe-crm.png'), fullPage: true });
@@ -77,13 +77,13 @@ test('CRM lead creation, persistence and conversion to a deal', async ({ page })
   }
 });
 test('CRM reuses portal identity and logout invalidates CRM session', async ({ page }) => {
-  await page.goto('https://portal.homelab.local/login');
+  await page.goto('https://portal.workspace.example.com/login');
   await authentikLogin(page);
-  await page.waitForURL(url => url.hostname === 'portal.homelab.local' && url.pathname === '/');
+  await page.waitForURL(url => url.hostname === 'portal.workspace.example.com' && url.pathname === '/');
   await expect(page.getByText('Blak CRM', { exact: true }).first()).toBeVisible();
   await page.goto(CRM + '/login?redirect-to=/crm');
   await page.getByRole('link', { name: /Blak ID/ }).click();
-  await page.waitForURL(/crm\.homelab\.local\/crm/);
+  await page.waitForURL(/crm\.workspace\.example\.com\/crm/);
   await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeVisible();
   await api(page, 'POST', 'method/logout');
   const denied = await page.request.get(CRM + '/api/resource/CRM%20Lead');

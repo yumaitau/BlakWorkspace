@@ -5,7 +5,7 @@ JSON APIs, file transfers, websocket upgrades and streaming responses retain the
 upstream behaviour. Authentik routes and the Docs-to-Drive redirect are unchanged.
 The shared switcher offers app navigation, workspace home, getting started, sync
 status and a light/dark switch. Its `blak-theme` cookie contains only `light` or
-`dark`, scoped to homelab.local with Secure and SameSite=Lax. No identity or session
+`dark`, scoped to workspace.example.com with Secure and SameSite=Lax. No identity or session
 credential is shared through the theme adapter. Document canvases keep their own
 formatting; app chrome receives the palette.
 
@@ -27,8 +27,8 @@ To add another person, prepare a mode-600 JSON mapping using the schema in
 [hermes-sync.md](hermes-sync.md), then run:
 
 ```sh
-python3 scripts/homelab/enrol-hermes-account.py /private/account.json
-BLAK_SYNC_ACCOUNT=account-name BLAK_E2E_USER=account-user node scripts/homelab/connect-hermes-apps.js
+python3 scripts/deploy/enrol-hermes-account.py /private/account.json
+BLAK_SYNC_ACCOUNT=account-name BLAK_E2E_USER=account-user node scripts/deploy/connect-hermes-apps.js
 ```
 
 Provide the owner's SSO password through the process environment or a private
@@ -42,7 +42,7 @@ external notifications require a separately configured destination.
 
 ## Consistent encrypted backups
 
-On the single-node homelab, `scripts/homelab/backup/install.sh` installs two systemd
+On the single-node deployment, `scripts/deploy/backup/install.sh` installs two systemd
 timers. Daily at 03:30 Australia/Sydney, the backup suspends CronJobs, waits for
 active jobs, records replica counts, stops workspace writers/databases, copies
 all data PVCs and resource/Secret definitions, and restores original replicas.
@@ -55,7 +55,7 @@ Snapshots are AES256-encrypted GPG archives under `/var/backups/blak-workspace`.
 The mode-600 key is provisioned separately at `/etc/blak-backup/key`. Seven complete
 archives are retained. Do not store the only key with the archive. This is local
 recovery protection: copy encrypted archives and escrow the key on a separate
-machine for protection against complete homelab disk loss.
+machine for protection against complete deployment-host disk loss.
 
 Every Sunday at 04:30 an isolated restore drill decrypts the latest archive,
 verifies every file checksum, boots copied PostgreSQL/MariaDB/Mongo data in
@@ -84,7 +84,7 @@ preferences, mobile switcher bounds, reviewed screenshot baselines and axe check
 on new chrome. Native app screenshots are retained privately for manual review;
 third-party accessibility is not represented as universally compliant. Existing
 functional tests continue to cover actual create/update/delete and SSO behaviour.
-Generate baselines on homelab Linux using `--update-snapshots`, review them, commit
+Generate baselines on the deployment host Linux using `--update-snapshots`, review them, commit
 them, then run again without update mode. Never blindly regenerate to hide a diff.
 
 ## Verified integration boundaries
@@ -96,12 +96,12 @@ by digest. `docs.spec.js` uploads a fixture, opens the actual editor, edits it,
 saves it back to Drive, verifies the stored document content and removes it.
 
 Hermes discovery uses HTTPS and a CA bundle that includes both public roots and
-the homelab CA. Using the HTTP discovery URL loses the browser's existing secure
+the deployment CA. Using the HTTP discovery URL loses the browser's existing secure
 Blak ID session and can loop at identification; the cross-app acceptance test
 covers the HTTPS path. Shared navigation isolates its keyboard/click handling
 from upstream app shortcuts, including Escape after mobile focus changes.
 
-On the CPU-only homelab, the deploy configures Hermes to use the original question
+On the CPU-only deployment, the deploy configures Hermes to use the original question
 for retrieval and disables automatic titles, tags and follow-up suggestions.
 These [optional model tasks](https://docs.openwebui.com/features/administration/task-models/)
 otherwise compete with the answer for local inference. Users can name chats
@@ -113,7 +113,7 @@ replicas, then resumes the original CronJob schedules. Mongo has a stable local
 replica identity and a primary-aware readiness probe; it uses Recreate to avoid
 two writers opening its persistent volume during a rollout.
 
-The homelab runner uses the matching official Playwright Docker image and its own
+The dedicated runner uses the matching official Playwright Docker image and its own
 network namespace, preventing host CNI interface changes from aborting browser
 navigation. Only the browser runs in the container; Kubernetes fixtures and credentials
 stay on the host. Its temporary Playwright endpoint binds to loopback only and

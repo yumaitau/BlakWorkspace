@@ -9,7 +9,7 @@ spec:
   resources:
     requests: { storage: 1Gi }
 ---
-# Secrets for blak-portal live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
+# Secrets for blak-portal live in-cluster (scripts/deploy/ensure-secrets.sh). Never commit them.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,7 +25,7 @@ spec:
     spec:
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [id.homelab.local]
+          hostnames: [id.workspace.example.com]
       volumes:
         - name: sync-health
           persistentVolumeClaim: { claimName: hermes-sync-state }
@@ -48,12 +48,12 @@ spec:
             - { name: PORT, value: "3000" }
             - { name: KNOWLEDGE_EXPORT_ACCOUNTS, value: /exports/accounts.json }
             - { name: FLOW_STORE, value: /data/blak-flow.json }
-            - { name: OIDC_ISSUER, value: https://id.homelab.local/application/o/blak-portal }
-            - { name: OIDC_AUTH_URL, value: https://id.homelab.local/application/o/authorize/ }
+            - { name: OIDC_ISSUER, value: https://id.workspace.example.com/application/o/blak-portal }
+            - { name: OIDC_AUTH_URL, value: https://id.workspace.example.com/application/o/authorize/ }
             - { name: OIDC_CLIENT_ID, value: blak-portal }
             - { name: OIDC_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: oidc-secret } } }
-            - { name: OIDC_REDIRECT_URI, value: https://portal.homelab.local/callback }
-            - { name: OIDC_BASE, value: https://id.homelab.local/application/o }
+            - { name: OIDC_REDIRECT_URI, value: https://portal.workspace.example.com/callback }
+            - { name: OIDC_BASE, value: https://id.workspace.example.com/application/o }
             - { name: MEILI_MASTER_KEY, valueFrom: { secretKeyRef: { name: blak-core, key: meili-master-key } } }
             - { name: FLOCI_PORT, value: "4566" }
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }

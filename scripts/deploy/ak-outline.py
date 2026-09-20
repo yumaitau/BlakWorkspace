@@ -3,7 +3,7 @@ from authentik.core.models import Application
 from authentik.crypto.models import CertificateKeyPair
 from authentik.flows.models import Flow
 from authentik.providers.oauth2.models import OAuth2Provider, ScopeMapping, RedirectURI, RedirectURIMatchingMode
-REDIRECTS = [RedirectURI(matching_mode=RedirectURIMatchingMode.STRICT, url="https://sites.homelab.local/auth/oidc.callback")]
+REDIRECTS = [RedirectURI(matching_mode=RedirectURIMatchingMode.STRICT, url="https://sites.workspace.example.com/auth/oidc.callback")]
 auth_flow = Flow.objects.get(slug="default-provider-authorization-implicit-consent")
 inval_flow = Flow.objects.get(slug="default-provider-invalidation-flow")
 key = CertificateKeyPair.objects.first()

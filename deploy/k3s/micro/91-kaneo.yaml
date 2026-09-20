@@ -1,7 +1,7 @@
 # Blak Projects: Kaneo (MIT) with custom OIDC to Blak ID.
 # Image: ghcr.io/usekaneo/kaneo — API+web on :5173. Redirect:
 #   {KANEO_API_URL}/api/auth/oauth2/callback/custom
-# Secrets: blak-kaneo (scripts/homelab/ensure-secrets.sh). Never commit them.
+# Secrets: blak-kaneo (scripts/deploy/ensure-secrets.sh). Never commit them.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -40,7 +40,7 @@ spec:
     spec:
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [id.homelab.local]
+          hostnames: [id.workspace.example.com]
       initContainers:
         - name: workspace-theme
           image: ghcr.io/usekaneo/kaneo@sha256:a85a23996c36166cfcebcb4ee161b40cc62c7b924faf06353684a84d5e84162c
@@ -63,8 +63,8 @@ spec:
           image: ghcr.io/usekaneo/kaneo@sha256:a85a23996c36166cfcebcb4ee161b40cc62c7b924faf06353684a84d5e84162c
           ports: [{ containerPort: 5173 }]
           env:
-            - { name: KANEO_CLIENT_URL, value: https://projects.homelab.local }
-            - { name: KANEO_API_URL, value: https://projects.homelab.local/api }
+            - { name: KANEO_CLIENT_URL, value: https://projects.workspace.example.com }
+            - { name: KANEO_API_URL, value: https://projects.workspace.example.com/api }
             - { name: POSTGRES_HOST, value: postgres }
             - { name: POSTGRES_PORT, value: "5432" }
             - { name: POSTGRES_DB, value: kaneo }
@@ -76,10 +76,10 @@ spec:
             - { name: CUSTOM_OAUTH_AUTO_LOGIN, value: "true" }
             - { name: CUSTOM_OAUTH_CLIENT_ID, value: kaneo }
             - { name: CUSTOM_OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-kaneo, key: oidc-secret } } }
-            - { name: CUSTOM_OAUTH_AUTHORIZATION_URL, value: https://id.homelab.local/application/o/authorize/ }
-            - { name: CUSTOM_OAUTH_TOKEN_URL, value: https://id.homelab.local/application/o/token/ }
-            - { name: CUSTOM_OAUTH_USER_INFO_URL, value: https://id.homelab.local/application/o/userinfo/ }
-            - { name: CUSTOM_OAUTH_DISCOVERY_URL, value: https://id.homelab.local/application/o/kaneo/.well-known/openid-configuration }
+            - { name: CUSTOM_OAUTH_AUTHORIZATION_URL, value: https://id.workspace.example.com/application/o/authorize/ }
+            - { name: CUSTOM_OAUTH_TOKEN_URL, value: https://id.workspace.example.com/application/o/token/ }
+            - { name: CUSTOM_OAUTH_USER_INFO_URL, value: https://id.workspace.example.com/application/o/userinfo/ }
+            - { name: CUSTOM_OAUTH_DISCOVERY_URL, value: https://id.workspace.example.com/application/o/kaneo/.well-known/openid-configuration }
             - { name: CUSTOM_OAUTH_SCOPES, value: "openid,profile,email" }
             - { name: CUSTOM_AUTH_PKCE, value: "true" }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }

@@ -99,7 +99,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: APP_HOMEPAGE_URL
-          value: https://forms.homelab.local
+          value: https://forms.workspace.example.com
         - name: APP_DISABLE_REGISTRATION
           value: 'true'
         - name: OIDC_ALLOW_PROVISIONING
@@ -107,7 +107,7 @@ spec:
         - name: OIDC_DISPLAY_NAME
           value: Blak ID
         - name: OIDC_ISSUER
-          value: https://id.homelab.local/application/o/blak-forms/
+          value: https://id.workspace.example.com/application/o/blak-forms/
         - name: OIDC_CLIENT_AUTH_METHOD
           value: client_secret_post
         - name: OIDC_CLIENT_ID
@@ -176,7 +176,7 @@ spec:
       hostAliases:
       - ip: 10.43.169.184
         hostnames:
-        - id.homelab.local
+        - id.workspace.example.com
       initContainers:
       - name: workspace-theme
         image: heyform/community-edition@sha256:0758992b3539a83b5ce3df5ad3e1efabc92dec4d46e05c40bbad37381fad69b4
@@ -225,7 +225,7 @@ spec:
   - websecure
   routes:
   - kind: Rule
-    match: Host(`forms.homelab.local`)
+    match: Host(`forms.workspace.example.com`)
     services:
     - name: forms
       port: 9157

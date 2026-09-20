@@ -1,6 +1,6 @@
 # Blak Chat: Rocket.Chat Community with custom OAuth (OIDC) to Blak ID.
 # Custom OAuth is Community-licenced (unlike Mattermost Team). Mongo replica set required.
-# Secrets: blak-chat (scripts/homelab/ensure-secrets.sh). Never commit them.
+# Secrets: blak-chat (scripts/deploy/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -97,7 +97,7 @@ spec:
     spec:
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [id.homelab.local]
+          hostnames: [id.workspace.example.com]
       containers:
         - name: rocketchat
           image: rocketchat/rocket.chat:7.9.3
@@ -110,7 +110,7 @@ spec:
             - name: OVERWRITE_SETTING_Site_Name
               value: Blak Chat
             - name: ROOT_URL
-              value: https://chat.homelab.local
+              value: https://chat.workspace.example.com
             - name: PORT
               value: "3000"
             - name: MONGO_URL
@@ -131,7 +131,7 @@ spec:
             - name: Accounts_OAuth_Custom-Blakid
               value: "true"
             - name: Accounts_OAuth_Custom-Blakid-url
-              value: https://id.homelab.local/application/o
+              value: https://id.workspace.example.com/application/o
             - name: Accounts_OAuth_Custom-Blakid-token_path
               value: /token/
             - name: Accounts_OAuth_Custom-Blakid-identity_path

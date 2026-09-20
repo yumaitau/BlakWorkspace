@@ -3,7 +3,7 @@ const { test, expect } = require("@playwright/test");
 const { authentikLogin } = require("../helpers/auth");
 const { syncNow } = require("../helpers/sync");
 const { privateKnowledge, indexedName } = require("../helpers/knowledge");
-const FORMS = "https://forms.homelab.local";
+const FORMS = "https://forms.workspace.example.com";
 test("Forms dashboard requires login", async ({ page }) => {
   await page.goto(FORMS);
   await expect(
@@ -23,7 +23,7 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
   await authentikLogin(page);
   await page.waitForURL(
     (u) =>
-      u.hostname === "forms.homelab.local" &&
+      u.hostname === "forms.workspace.example.com" &&
       u.pathname.startsWith("/workspace/"),
   );
   await expect(

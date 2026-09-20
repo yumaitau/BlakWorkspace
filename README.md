@@ -53,15 +53,19 @@ Internal chart and application IDs are not renamed.
 5. Explore deploy stubs under [deploy/](deploy/) (do not apply production). Eval intent: [deploy/profiles/eval/](deploy/profiles/eval/) and [deploy/PREREQS.md](deploy/PREREQS.md). Local K3s: [deploy/terraform](deploy/terraform/README.md).
 6. Micro pivot: Compose `deploy/docker/micro.compose.yaml`; K3s `deploy/k3s/micro/`; Portal stub `apps/portal/`.
 
-## Homelab Micro (deployed 2026-09-19)
+## Dedicated infrastructure
 
-Single-node K3s v1.36.4 on `homelab` (Ubuntu 26.04, x86_64), namespace `blak-micro`. Portal image built on homelab (`blak-portal:micro`) and imported via `k3s ctr images import`. Full runbook: [docs/runbooks/homelab-micro.md](docs/runbooks/homelab-micro.md).
+Blak Workspace targets production deployment on dedicated infrastructure. The
+verified reference deployment uses single-node K3s; EKS needs an infrastructure
+specific storage, registry, ingress and backup configuration.
 
-Live and e2e-verified: Portal launcher with Blak ID login gate (scripted SSO loop to
-user chip), Authentik branded "Blak ID", OpenCloud files (WebDAV upload → public share
-→ byte-identical download) with external OIDC to Blak ID, Collabora discovery +
-WOPI wiring, Blak Sites on Outline (team wiki, OIDC via Blak ID — replaced Docmost,
-whose SSO is licence-gated), Floci S3 round-trip.
+Prepare a release for your actual domain before building or deploying. Checked-in
+`workspace.example.com` URLs are templates. See the
+[dedicated deployment runbook](docs/runbooks/dedicated-deployment.md).
+
+Verified workflows include Blak ID SSO, files and sharing, Docs editing, team chat,
+knowledge, projects, forms, private drawings, Frappe CRM and private Hermes sync.
+Blak Knowledge uses Outline; Docmost was replaced because its SSO is licence-gated.
 
 ## Upstream baseline
 

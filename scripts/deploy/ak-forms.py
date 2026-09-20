@@ -18,7 +18,7 @@ provider, created = OAuth2Provider.objects.get_or_create(
         'client_secret': secrets.token_urlsafe(48),
         'redirect_uris': [RedirectURI(
             matching_mode=RedirectURIMatchingMode.STRICT,
-            url='https://forms.homelab.local/connect/oidc/callback',
+            url='https://forms.workspace.example.com/connect/oidc/callback',
         )],
         'signing_key': CertificateKeyPair.objects.first(),
         'sub_mode': 'user_uuid',
@@ -29,7 +29,7 @@ provider, created = OAuth2Provider.objects.get_or_create(
 provider.property_mappings.set(ScopeMapping.objects.filter(scope_name__in=['openid', 'profile', 'email']))
 Application.objects.update_or_create(slug='blak-forms', defaults={
     'name': 'Blak Forms', 'provider': provider,
-    'meta_launch_url': 'https://forms.homelab.local', 'open_in_new_tab': True,
+    'meta_launch_url': 'https://forms.workspace.example.com', 'open_in_new_tab': True,
 })
 print('BLAK_FORMS_CONFIG=' + json.dumps({
     'client-id': provider.client_id, 'oidc-secret': provider.client_secret,

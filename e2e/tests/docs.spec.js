@@ -14,8 +14,8 @@ test('Blak Docs opens, edits and saves a real Drive document with themed chrome'
  const path=new URL(personal.root.webDavUrl).pathname+'/'+name;
  try {
   expect((await drive.put(path,{data:require('node:fs').readFileSync(require('node:path').join(__dirname,'../fixtures/docs.odt')),headers:{'content-type':'application/vnd.oasis.opendocument.text'}})).ok()).toBeTruthy();
-  await page.goto('https://drive.homelab.local');await authentikLogin(page);
-  await page.waitForURL(u=>u.hostname==='drive.homelab.local'&&!/callback/.test(u.pathname));
+  await page.goto('https://drive.workspace.example.com');await authentikLogin(page);
+  await page.waitForURL(u=>u.hostname==='drive.workspace.example.com'&&!/callback/.test(u.pathname));
   await page.getByText(name,{exact:true}).dblclick();
   await expect(page.locator('iframe')).toBeVisible();
   const editor=page.frameLocator('iframe');

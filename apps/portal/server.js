@@ -22,11 +22,11 @@ function connectorsFor(owner) {
   if (!ownerConnectors.has(owner)) ownerConnectors.set(owner, flowEngine.defaultConnectors());
   return ownerConnectors.get(owner);
 }
-const OIDC_BASE = process.env.OIDC_BASE || 'http://id.homelab.local/application/o';
-const AUTH_URL = process.env.OIDC_AUTH_URL || 'http://id.homelab.local/application/o/authorize/';
+const OIDC_BASE = process.env.OIDC_BASE || 'http://id.workspace.example.com/application/o';
+const AUTH_URL = process.env.OIDC_AUTH_URL || 'http://id.workspace.example.com/application/o/authorize/';
 const CLIENT_ID = process.env.OIDC_CLIENT_ID || 'blak-portal';
 const CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET || '';
-const REDIRECT_URI = process.env.OIDC_REDIRECT_URI || 'http://portal.homelab.local/callback';
+const REDIRECT_URI = process.env.OIDC_REDIRECT_URI || 'http://portal.workspace.example.com/callback';
 
 const { CSS, themeScript, blakTheme, tokens } = require('./theme');
 
@@ -69,7 +69,7 @@ function xmlTag(xml, tag) {
   }));
   return out;
 }
-const BRAND_BASE = process.env.BRAND_BASE || 'http://portal.homelab.local';
+const BRAND_BASE = process.env.BRAND_BASE || 'http://portal.workspace.example.com';
 // Shared Blak brand assets (no cultural motifs; geometric wordmark only)
 const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="${tokens.dark['blak-950']}"/><rect x="14" y="14" width="68" height="68" rx="14" fill="${tokens.dark['primary']}"/><text x="48" y="64" font-family="system-ui,sans-serif" font-size="44" font-weight="700" fill="${tokens.dark['sand-50']}" text-anchor="middle">B</text><rect x="26" y="72" width="44" height="4" rx="2" fill="${tokens.dark['ochre-400']}"/></svg>`;
 const FLOW_BG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><rect width="1600" height="900" fill="${tokens.dark['blak-950']}"/><ellipse cx="1150" cy="620" rx="420" ry="200" fill="${tokens.dark['earth-700']}" opacity="0.7"/><ellipse cx="1150" cy="700" rx="560" ry="160" fill="${tokens.dark['water-700']}" opacity="0.6"/><circle cx="1150" cy="520" r="110" fill="${tokens.dark['ochre-400']}" opacity="0.9"/><ellipse cx="300" cy="150" rx="500" ry="240" fill="${tokens.dark['blak-800']}" opacity="0.9"/></svg>`;
@@ -268,7 +268,7 @@ function homePage(user) {
   return shell(user, 'home', 'Home', `<div class=hero><img src="/brand/banner.png" alt="Blak Workspace banner artwork"><div class=cap><b>Your work. Your workspace.</b><span>SOVEREIGN · OPEN · TOGETHER</span></div></div>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
-<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="https://drive.homelab.local">Open Blak Drive</a></p></div>
+<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="https://drive.workspace.example.com">Open Blak Drive</a></p></div>
 <h3 class=sec>Announcements</h3><div class=statusrow><span class=pill>Welcome to Blak Workspace — currently in early development.</span></div>
 <h3 class=sec>System status</h3><div class=statusrow id=pills><span class=pill>checking…</span></div>
 <script>
@@ -382,7 +382,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/welcome') {
     if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
     res.setHeader('content-type','text/html; charset=utf-8');
-    res.end(shell(user,'home','Getting started',`<h1>Your Blak workspace</h1><p>One Blak ID opens your workspace apps. Manage your sign-in through Blak ID; you do not need separate app passwords.</p><ol><li><a href="https://drive.homelab.local">Add your files to Drive</a> and open documents with Blak Docs.</li><li><a href="https://crm.homelab.local/login?redirect-to=/crm">Create your first CRM lead</a>, then track contacts, organisations and deals.</li><li><a href="https://projects.homelab.local">Create a project workspace</a> and plan tasks with your team.</li><li><a href="https://forms.homelab.local">Build a form</a> or <a href="/draw">draw a diagram</a>.</li><li><a href="/sync">Check your Hermes connections</a>, then select the Blak Workspace model in Hermes.</li></ol><p>Use the Blak Workspace button in any app to switch products, return home or change your shared theme. Private files and drawings stay scoped to their owner.</p>`));return;
+    res.end(shell(user,'home','Getting started',`<h1>Your Blak workspace</h1><p>One Blak ID opens your workspace apps. Manage your sign-in through Blak ID; you do not need separate app passwords.</p><ol><li><a href="https://drive.workspace.example.com">Add your files to Drive</a> and open documents with Blak Docs.</li><li><a href="https://crm.workspace.example.com/login?redirect-to=/crm">Create your first CRM lead</a>, then track contacts, organisations and deals.</li><li><a href="https://projects.workspace.example.com">Create a project workspace</a> and plan tasks with your team.</li><li><a href="https://forms.workspace.example.com">Build a form</a> or <a href="/draw">draw a diagram</a>.</li><li><a href="/sync">Check your Hermes connections</a>, then select the Blak Workspace model in Hermes.</li></ol><p>Use the Blak Workspace button in any app to switch products, return home or change your shared theme. Private files and drawings stay scoped to their owner.</p>`));return;
   }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');
@@ -393,7 +393,7 @@ async function handleRequest(req, res) {
     const rows = health.sources.map(source => `<tr><th scope="row">${esc(source.label)}</th><td>${esc(source.status)}</td><td>${source.last_success ? esc(new Date(source.last_success*1000).toISOString().replace('T',' ').slice(0,19))+' UTC' : 'Not yet synced'}</td><td>${source.documents}</td><td>${source.expires_at ? esc(new Date(source.expires_at*1000).toISOString().slice(0,10)) : 'Not reported by source'}</td></tr>`).join('');
     const warning = !health.enrolled ? health.message : health.healthy ? 'Your connected sources are up to date.' : 'Some sources need attention. Answers may omit unavailable or outdated content.';
     res.setHeader('content-type','text/html; charset=utf-8');
-    res.end(shell(user,'hermes','Hermes sync status',`<h1>Hermes sync status</h1><p role="status">${esc(warning)}</p><p>Private to your account. Sync runs every five minutes. More than 15 minutes without success is marked stale.</p><div style="overflow-x:auto"><table><caption>Connected sources</caption><thead><tr><th>Source</th><th>Status</th><th>Last success</th><th>Documents</th><th>Credential expiry</th></tr></thead><tbody>${rows}</tbody></table></div><h2>Connect or repair a source</h2><p>Ask your workspace administrator to enrol credentials belonging to your account. Never send passwords or API keys through chat. Revoked credentials need renewal; expiry dates are shown where supplied.</p><p><a href="https://hermes.homelab.local">Open Hermes</a> and select <strong>Blak Workspace</strong> to use your connected sources.</p>`)); return;
+    res.end(shell(user,'hermes','Hermes sync status',`<h1>Hermes sync status</h1><p role="status">${esc(warning)}</p><p>Private to your account. Sync runs every five minutes. More than 15 minutes without success is marked stale.</p><div style="overflow-x:auto"><table><caption>Connected sources</caption><thead><tr><th>Source</th><th>Status</th><th>Last success</th><th>Documents</th><th>Credential expiry</th></tr></thead><tbody>${rows}</tbody></table></div><h2>Connect or repair a source</h2><p>Ask your workspace administrator to enrol credentials belonging to your account. Never send passwords or API keys through chat. Revoked credentials need renewal; expiry dates are shown where supplied.</p><p><a href="https://hermes.workspace.example.com">Open Hermes</a> and select <strong>Blak Workspace</strong> to use your connected sources.</p>`)); return;
   }
   if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
     res.setHeader('content-type', 'application/json');
