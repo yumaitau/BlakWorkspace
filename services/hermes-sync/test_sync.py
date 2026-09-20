@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 spec=importlib.util.spec_from_file_location('sync',Path(__file__).with_name('sync.py'))
 sync=importlib.util.module_from_spec(spec);spec.loader.exec_module(sync)
 class FakeHermes:
@@ -80,6 +81,24 @@ class WorkspaceDataTests(unittest.TestCase):
 
 
 class NewWorkspaceSourcesTests(unittest.TestCase):
+    def test_failed_source_does_not_block_others_and_detaches_from_model(self):
+        class Hermes:
+            def json(self, method, path):
+                if path == '/api/v1/auths/': return {'id':'owner'}
+                return {'user_id':'owner', 'access_grants':[]}
+        mapping={'owner_id':'owner', 'hermes':{'base':'https://hermes.example'},
+                 'sources':{'forms':{'base':'https://forms.example'}, 'draw':{'base':'https://portal.example'}}}
+        state={name:{'collection':name, 'files':{}} for name in mapping['sources']}
+        with patch.object(sync, 'API', return_value=Hermes()), \
+             patch.object(sync, 'forms_documents', side_effect=RuntimeError('offline')), \
+             patch.object(sync, 'portal_documents', return_value=[]) as reader, \
+             patch.object(sync, 'ensure_workspace_model') as model:
+            with self.assertRaises(RuntimeError): sync.sync_mapping(mapping, state, lambda:None)
+            reader.assert_called_once()
+            self.assertEqual(set(model.call_args.args[2]), {'draw'})
+            self.assertIn('last_error', state['forms'])
+            self.assertIn('last_success', state['draw'])
+
     def test_crm_requires_matching_identity_before_reading_any_records(self):
         class Source:
             expected_user='alice@example.test'

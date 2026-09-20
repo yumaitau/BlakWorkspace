@@ -279,7 +279,7 @@ def forms_documents(api):
         for project in team['projects']:
             forms = graphql(api, 'query($input:FormsInput!){forms(input:$input){id name}}', {'input': {'projectId': project['id'], 'status': FORMS_STATUS_NORMAL}})['forms']
             for form in forms:
-                detail = graphql(api, 'query($input:FormDetailInput!){formDetail(input:$input){id name description fields{id title description kind properties}}}', {'input': {'formId': form['id']}})['formDetail']
+                detail = graphql(api, 'query($input:FormDetailInput!){formDetail(input:$input){id name description fields:drafts{id title description kind properties}}}', {'input': {'formId': form['id']}})['formDetail']
                 source = api.public_base + '/workspace/' + team['id'] + '/form/' + form['id'] + '/submissions'
                 documents.append(json_document('forms', form['id'], form['name'], {'source': source, 'workspace': team['name'], 'project': project['name'], 'form': detail}))
                 page, seen = 1, 0
@@ -400,42 +400,53 @@ def sync_mapping(mapping, state, checkpoint):
     owner = hermes.json('GET', '/api/v1/auths/')['id']
     if owner != mapping['owner_id']:
         raise ValueError('Hermes credential owner does not match mapping')
-    results = {}
+    results, failures = {}, []
     for name, source in mapping['sources'].items():
-        record = state.setdefault(name, {'files': {}})
-        if not record.get('collection'):
-            created = hermes.json('POST', '/api/v1/knowledge/create', {'name': 'Blak Workspace · ' + SOURCE_NAMES[name], 'description': 'Automatically synced private workspace content. Source permissions belong to this account.', 'access_grants': []})
-            record['collection'] = created['id']
+        try:
+            record = state.setdefault(name, {'files': {}})
+            if not record.get('collection'):
+                created = hermes.json('POST', '/api/v1/knowledge/create', {'name': 'Blak Workspace · ' + SOURCE_NAMES[name], 'description': 'Automatically synced private workspace content. Source permissions belong to this account.', 'access_grants': []})
+                record['collection'] = created['id']
+                checkpoint()
+            collection = hermes.json('GET', '/api/v1/knowledge/' + record['collection'])
+            if collection['user_id'] != owner or collection.get('access_grants'):
+                raise ValueError('Sync knowledge must remain private to its source owner')
+            api = API(**source)
+            if name == 'drive':
+                docs = drive_documents(api)
+            elif name == 'outline':
+                docs = outline_documents(api)
+            elif name == 'chat':
+                docs = chat_documents(api)
+            elif name == 'projects':
+                docs = project_documents(api)
+            elif name == 'crm':
+                docs = crm_documents(api)
+            elif name == 'forms':
+                docs = forms_documents(api)
+            elif name in ('draw', 'flow'):
+                docs = portal_documents(api, name)
+            elif name == 'storage':
+                docs = storage_documents(api)
+            else:
+                raise ValueError('unsupported workspace source')
+            for doc in docs:
+                if doc['revision']:
+                    doc['revision'] = EXTRACTOR_VERSION + ':' + doc['revision']
+            results[name] = reconcile(hermes, record['collection'], docs, record['files'], lambda doc: api.request('GET', doc['path']), checkpoint)
+            record['last_success'] = int(time.time())
+            state[name].pop('last_error', None)
             checkpoint()
-        collection = hermes.json('GET', '/api/v1/knowledge/' + record['collection'])
-        if collection['user_id'] != owner or collection.get('access_grants'):
-            raise ValueError('Sync knowledge must remain private to its source owner')
-        api = API(**source)
-        if name == 'drive':
-            docs = drive_documents(api)
-        elif name == 'outline':
-            docs = outline_documents(api)
-        elif name == 'chat':
-            docs = chat_documents(api)
-        elif name == 'projects':
-            docs = project_documents(api)
-        elif name == 'crm':
-            docs = crm_documents(api)
-        elif name == 'forms':
-            docs = forms_documents(api)
-        elif name in ('draw', 'flow'):
-            docs = portal_documents(api, name)
-        elif name == 'storage':
-            docs = storage_documents(api)
-        else:
-            raise ValueError('unsupported workspace source')
-        for doc in docs:
-            if doc['revision']:
-                doc['revision'] = EXTRACTOR_VERSION + ':' + doc['revision']
-        results[name] = reconcile(hermes, record['collection'], docs, record['files'], lambda doc: api.request('GET', doc['path']), checkpoint)
-        record['last_success'] = int(time.time())
-        checkpoint()
-    ensure_workspace_model(hermes, owner, state, mapping.get('model', 'qwen2.5:1.5b'))
+        except Exception as error:
+            failures.append(name)
+            state.setdefault(name, {'files': {}})['last_error'] = {'time': int(time.time()), 'type': type(error).__name__}
+            checkpoint()
+            LOG.error('Source sync failed source=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
+    # Unavailable sources are detached until their credentials/access recover.
+    available = {name: record for name, record in state.items() if name in mapping['sources'] and name not in failures}
+    ensure_workspace_model(hermes, owner, available, mapping.get('model', 'qwen2.5:1.5b'))
+    if failures:
+        raise RuntimeError('One or more workspace sources failed')
     return results
 
 

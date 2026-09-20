@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run on the homelab host with namespace access. Never prints credentials.
 set -euo pipefail
+umask 077
 cd "$(dirname "$0")/../.."
 NS="${NS:-blak-micro}"
 export BLAK_E2E_NAMESPACE="$NS"
