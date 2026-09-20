@@ -199,7 +199,8 @@ def project_documents(api):
 
 FORMS_STATUS_NORMAL = 1
 CRM_TYPES = {'CRM Lead': 'leads', 'CRM Deal': 'deals', 'Contact': 'contacts',
-             'CRM Organization': 'organizations', 'CRM Task': 'tasks', 'FCRM Note': 'notes'}
+             'CRM Organization': 'organizations', 'CRM Task': 'tasks', 'FCRM Note': 'notes',
+             'CRM Call Log': 'call-logs', 'CRM Product': 'products'}
 
 
 def json_document(source, identifier, title, content, revision=''):
