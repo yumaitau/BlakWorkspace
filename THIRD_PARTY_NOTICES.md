@@ -12,7 +12,7 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 
 | Function | Component | Licence (as documented upstream) | Blak label |
 | --- | --- | --- | --- |
-| Chat | Element Web / Synapse / Nordeck | AGPL-3.0-or-later / AGPL-3.0-only / Apache-2.0 | Blak Chat |
+| Chat | Rocket.Chat (homelab); Element Web / Synapse in openDesk seed | MIT / AGPL-3.0-or-later | Blak Chat |
 | Notes | Notes | MIT | Blak Notes |
 | Diagrams | CryptPad | AGPL-3.0-only | (diagrams) |
 | Files | Nextcloud | AGPL-3.0-or-later | Blak Drive |
@@ -20,7 +20,7 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 | Knowledge | Docmost (Blak default; replaces XWiki) | TBD — record upstream licence at pin | Blak Knowledge |
 | Knowledge (openDesk default, not Blak default) | XWiki | LGPL-2.1-or-later | Not enabled in Blak default profiles (see BW-055) |
 | Portal and IAM | Nubus | AGPL-3.0-or-later | Blak Admin / sign-in |
-| Projects | OpenProject | GPL-3.0-only | Blak Projects |
+| Projects | Kaneo (homelab MIT); OpenProject in openDesk seed | MIT / GPL-3.0-only | Blak Projects |
 | Meet | Jitsi | Apache-2.0 | Blak Meet |
 | Weboffice | Collabora | MPL-2.0 | Blak Docs |
 | Sovereign AI runtime | Hermes Agent (Yuma package `companyos-hermes`) | TBD — record upstream licence at pin | Blak Hermes (opt-in, default off) |

@@ -42,7 +42,7 @@ class TestNamingMap(unittest.TestCase):
         self.assertIn("do not rename", text.lower())
         self.assertIn("OIDC", text)
         self.assertIn("Helm", text)
-        for internal in ("opencloud", "collabora", "docmost", "openproject", "nubus", "hermes", "sites", "flow"):
+        for internal in ("opencloud", "collabora", "docmost", "openproject", "nubus", "hermes", "sites", "flow", "rocketchat", "kaneo"):
             self.assertIn(internal, text)
 
     def test_portal_plan_documented(self):
