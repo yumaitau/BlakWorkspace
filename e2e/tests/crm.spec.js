@@ -1,7 +1,7 @@
 "use strict";
 const { test, expect } = require("@playwright/test");
 // Twenty loads a large frontend bundle; allow 30 seconds for a cold homelab render.
-test.use({ actionTimeout: 30000 });
+test.use({ actionTimeout: 30000, viewport: { width: 1440, height: 1000 } });
 test.describe.configure({ timeout: 120000 });
 const CRM = "https://crm.homelab.local";
 async function login(page) {
@@ -35,6 +35,18 @@ async function saveName(page, name) {
   const response = await saved;
   expect(response.ok()).toBeTruthy();
   expect((await response.json()).errors).toBeUndefined();
+}
+async function deleteRecord(page, type) {
+  const saved = page.waitForResponse((response) => {
+    const body = response.request().postData() || "";
+    return body.includes("mutation") && /Delete(?:One|Many)/.test(body);
+  });
+  // Twenty's menu label is a pointer-disabled tooltip; click its owning menu item.
+  await page
+    .getByText("Delete " + type, { exact: true })
+    .locator("xpath=../../../..")
+    .click();
+  expect((await (await saved).json()).errors).toBeUndefined();
 }
 test("CRM requires authentication", async ({ page }) => {
   await page.goto(CRM);
@@ -83,10 +95,7 @@ for (const [type, section] of [
       .getByText(updated, { exact: true })
       .first()
       .click({ button: "right" });
-    await page
-      .getByText("Delete " + type, { exact: true })
-      .locator("xpath=../../../..")
-      .click();
+    await deleteRecord(page, type);
     await expect(page.getByText(updated, { exact: true })).toHaveCount(0);
     await page.reload();
     await expect(page.getByText(updated, { exact: true })).toHaveCount(0);
@@ -124,9 +133,6 @@ test("CRM people persist and can be deleted", async ({ page }) => {
   await page
     .getByRole("link", { name: name + " Test", exact: true })
     .click({ button: "right" });
-  await page
-    .getByText("Delete Person", { exact: true })
-    .locator("xpath=../../../..")
-    .click();
+  await deleteRecord(page, "Person");
   await expect(page.getByText(name + " Test", { exact: true })).toHaveCount(0);
 });
