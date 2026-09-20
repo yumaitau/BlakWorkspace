@@ -1,0 +1,370 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crm-cache-data
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crm-db-data
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crm-data
+  namespace: blak-micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crm-db
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crm-db
+  template:
+    metadata:
+      labels:
+        app: crm-db
+    spec:
+      containers:
+      - name: crm-db
+        image: postgres:16-alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POSTGRES_USER
+          value: twenty
+        - name: POSTGRES_DB
+          value: twenty
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: database-password
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 768Mi
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: crm-db-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crm-db
+  namespace: blak-micro
+spec:
+  selector:
+    app: crm-db
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crm-cache
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crm-cache
+  template:
+    metadata:
+      labels:
+        app: crm-cache
+    spec:
+      containers:
+      - name: crm-cache
+        image: valkey/valkey:7.2-alpine
+        imagePullPolicy: IfNotPresent
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 256Mi
+        ports:
+        - containerPort: 6379
+        args:
+        - --appendonly
+        - 'yes'
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: crm-cache-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crm-cache
+  namespace: blak-micro
+spec:
+  selector:
+    app: crm-cache
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crm
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crm
+  template:
+    metadata:
+      labels:
+        app: crm
+    spec:
+      containers:
+      - name: crm
+        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_PORT
+          value: '3000'
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: database-password
+        - name: PG_DATABASE_URL
+          value: postgres://twenty:$(PGPASSWORD)@crm-db:5432/twenty
+        - name: REDIS_URL
+          value: redis://crm-cache:6379
+        - name: SERVER_URL
+          value: https://crm.homelab.local
+        - name: STORAGE_TYPE
+          value: local
+        - name: APP_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: app-secret
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: encryption-key
+        - name: TELEMETRY_ENABLED
+          value: 'false'
+        - name: SIGN_IN_PREFILLED
+          value: 'false'
+        - name: IS_MULTIWORKSPACE_ENABLED
+          value: 'false'
+        - name: IS_BILLING_ENABLED
+          value: 'false'
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 3Gi
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: data
+          mountPath: /app/packages/twenty-server/.local-storage
+        - name: frontend
+          mountPath: /app/packages/twenty-server/dist/front
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+          failureThreshold: 90
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: crm-data
+      - name: frontend
+        emptyDir: {}
+      - name: themes
+        configMap:
+          name: blak-app-themes
+      initContainers:
+      - name: workspace-theme
+        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
+        command:
+        - sh
+        - -ec
+        args:
+        - 'cp -R /app/packages/twenty-server/dist/front/. /workspace/
+
+          node -e ''const fs=require("fs");const p="/workspace/index.html";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("</head>","<style>"+fs.readFileSync("/theme/crm.css","utf8")+"</style></head>"))''
+
+          '
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        volumeMounts:
+        - name: frontend
+          mountPath: /workspace
+        - name: themes
+          mountPath: /theme
+          readOnly: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crm-worker
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crm-worker
+  template:
+    metadata:
+      labels:
+        app: crm-worker
+    spec:
+      containers:
+      - name: crm-worker
+        image: twentycrm/twenty@sha256:47bcefe4e497ceef232f149153a4a61379830f5c898b7da71a5b0e21fd5ea916
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_PORT
+          value: '3000'
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: database-password
+        - name: PG_DATABASE_URL
+          value: postgres://twenty:$(PGPASSWORD)@crm-db:5432/twenty
+        - name: REDIS_URL
+          value: redis://crm-cache:6379
+        - name: SERVER_URL
+          value: https://crm.homelab.local
+        - name: STORAGE_TYPE
+          value: local
+        - name: APP_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: app-secret
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blak-crm
+              key: encryption-key
+        - name: TELEMETRY_ENABLED
+          value: 'false'
+        - name: SIGN_IN_PREFILLED
+          value: 'false'
+        - name: IS_MULTIWORKSPACE_ENABLED
+          value: 'false'
+        - name: IS_BILLING_ENABLED
+          value: 'false'
+        - name: DISABLE_DB_MIGRATIONS
+          value: 'true'
+        - name: DISABLE_CRON_JOBS_REGISTRATION
+          value: 'true'
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 2Gi
+        volumeMounts:
+        - name: data
+          mountPath: /app/packages/twenty-server/.local-storage
+        command:
+        - yarn
+        - worker:prod
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: crm-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crm
+  namespace: blak-micro
+spec:
+  selector:
+    app: crm
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: crm
+  namespace: blak-micro
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`crm.homelab.local`)
+    services:
+    - name: crm
+      port: 3000
+  tls:
+    secretName: blak-wildcard

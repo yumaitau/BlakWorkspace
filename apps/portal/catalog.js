@@ -1,19 +1,22 @@
 'use strict';
 
-// status: live = SSO-gated and advertised; soon = not advertised as live.
-// oidcClient must be set on every live app (portal session, per-app OIDC, IdP, or WOPI-via-Drive).
+// status: live = available and advertised; soon = not advertised as live.
+// oidcClient identifies SSO; authentication labels explicit local-login exceptions.
 const ACCENT = {
-  workspace: '#D65B2E', drive: '#3199A2', docs: '#66996B', notes: '#D68B2C', chat: '#C55235',
+  forms: '#D68B2C', draw: '#3199A2', crm: '#D65B2E', workspace: '#D65B2E', drive: '#3199A2', docs: '#66996B', notes: '#D68B2C', chat: '#C55235',
   meet: '#21818A', mail: '#737BB8', knowledge: '#66996B', projects: '#D8792E', admin: '#7583B0',
   flow: '#3199A2', hermes: '#A26CC1', idp: '#7583B0', search: '#D68B2C', storage: '#21818A',
 };
-const ICON_IMG = { drive: 'drive', docs: 'docs', chat: 'chat', projects: 'projects', idp: 'admin', flow: 'flow', hermes: 'hermes', sites: 'knowledge' };
+const ICON_IMG = { forms: 'docs', draw: 'flow', crm: 'projects', drive: 'drive', docs: 'docs', chat: 'chat', projects: 'projects', idp: 'admin', flow: 'flow', hermes: 'hermes', sites: 'knowledge' };
 const RAIL_ICON = {
-  home: '⌂', drive: '▤', docs: '▤', notes: '▦', chat: '◫', meet: '◉', mail: '✉', knowledge: '▦',
+  forms: '▤', draw: '◇', crm: '▦', home: '⌂', drive: '▤', docs: '▤', notes: '▦', chat: '◫', meet: '◉', mail: '✉', knowledge: '▦',
   projects: '▤', admin: '⚙', flow: '⇄', hermes: '✦', idp: '◉', search: '⌕', storage: '⬢',
 };
 
 const APPS = [
+  { id: 'forms', name: 'Blak Forms', desc: 'Forms and surveys', url: 'https://forms.homelab.local', backend: 'Powered by HeyForm', group: 'Workspace', status: 'live', oidcClient: 'blak-forms', check: { proto: 'http', host: 'forms', port: 9157, path: '/' } },
+  { id: 'draw', name: 'Blak Draw', desc: 'Private diagrams and drawings', url: '/draw', backend: 'Powered by Excalidraw', group: 'Workspace', status: 'live', oidcClient: 'blak-portal', check: null },
+  { id: 'crm', name: 'Blak CRM', desc: 'People, companies and opportunities · separate login', url: 'https://crm.homelab.local', backend: 'Powered by Twenty · native SSO requires a licence', group: 'Organise', status: 'live', oidcClient: null, authentication: 'password', check: { proto: 'http', host: 'crm', port: 3000, path: '/healthz' } },
   { id: 'drive', name: 'Blak Drive', desc: 'Files and sharing', url: 'https://drive.homelab.local', backend: 'Powered by OpenCloud', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'drive', port: 9200, path: '/' } },
   { id: 'docs', name: 'Blak Docs', desc: 'Documents, spreadsheets, presentations', url: 'https://drive.homelab.local', backend: 'Powered by Collabora (WOPI via Drive SSO)', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'docs', port: 9980, path: '/hosting/discovery' } },
   { id: 'notes', name: 'Blak Notes', desc: 'Quick notes', url: null, backend: '', group: 'Workspace', status: 'soon', oidcClient: null, check: null },

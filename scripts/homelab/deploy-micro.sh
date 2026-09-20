@@ -13,11 +13,13 @@ docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -
 docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t "$SYNC_IMAGE" services/hermes-sync
 docker save "$PORTAL_IMAGE" "$SYNC_IMAGE" | sudo k3s ctr images import -
 python3 scripts/homelab/persist-hermes-session-key.py
+python3 scripts/homelab/provision-workspace-apps.py
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
   NS="$NS" scripts/homelab/migrate-flow-store.sh
 fi
 # Apply only changed application Deployments, ConfigMaps, portal/sync PVCs and the sync CronJob.
-# Existing databases, Jobs, secrets and unrelated workloads are not reapplied.
+# Existing workspace databases and unrelated workloads are not reapplied.
+# The new Forms/CRM resources are reconciled with persistent volumes retained.
 python3 - <<'PY' | kubectl apply -f -
 import os
 import hashlib
@@ -32,12 +34,14 @@ selected = {
     '91-kaneo.yaml': {'projects'},
     '92-hermes.yaml': {'hermes'},
     '93-hermes-sync.yaml': {'hermes-sync-state', 'hermes-workspace-sync'},
+    '94-forms.yaml': {'forms-cache-data', 'forms-data', 'forms-cache', 'forms'},
+    '95-crm.yaml': {'crm-cache-data', 'crm-db-data', 'crm-data', 'crm-db', 'crm-cache', 'crm', 'crm-worker'},
 }
 for file, names in selected.items():
     for document in yaml.safe_load_all((Path('deploy/k3s/micro') / file).read_text()):
         if not document or document['metadata']['name'] not in names:
             continue
-        if document['kind'] == 'Deployment':
+        if document['kind'] == 'Deployment' and document['metadata']['name'] in {'portal', 'opencloud', 'chat', 'projects', 'hermes', 'forms', 'crm'}:
             theme_hash = hashlib.sha256(Path('deploy/k3s/micro/51-app-themes.yaml').read_bytes() + Path('deploy/k3s/micro/50-drive-theme.yaml').read_bytes()).hexdigest()
             document['spec']['template'].setdefault('metadata', {}).setdefault('annotations', {})['blak.workspace/theme-sha'] = theme_hash
         if document['metadata']['name'] == 'portal' and document['kind'] == 'Deployment':
@@ -49,7 +53,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/homelab/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in portal opencloud chat projects hermes; do
+for app in portal opencloud chat projects hermes forms crm crm-worker; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=240s
 done
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do

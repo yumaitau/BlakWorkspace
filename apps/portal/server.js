@@ -8,6 +8,10 @@ const { supportsAccessFilter, accessFilter } = require('./search-access');
 const { readBody, MAX_UPLOAD_BYTES } = require('./request-body');
 const { request: upstreamRequest, textRequest } = require('./http-client');
 const { dispatchCloudObject, writeCloudResult, validBucketName } = require('./cloud-object');
+const { createDrawStore } = require('./draw-store');
+const path = require('node:path');
+const fs = require('node:fs');
+const drawStore = createDrawStore(process.env.DRAW_STORE || path.join(path.dirname(process.env.FLOW_STORE || '/tmp/blak-flow.json'), 'draw'));
 
 const port = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -362,6 +366,39 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', service: 'blak-portal', version: '0.3.0' }));
+    return;
+  }
+  if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
+    res.setHeader('content-type', 'application/json');
+    res.setHeader('cache-control', 'no-store');
+    if (!user) { res.writeHead(401); res.end(JSON.stringify({error:'Sign in required'})); return; }
+    try {
+      const id = url.pathname.slice('/api/draw/'.length);
+      let result;
+      if (req.method === 'GET') result = id ? drawStore.read(user.sub,id) : drawStore.list(user.sub);
+      else {
+        let body;
+        try { body=JSON.parse((await readBody(req, MAX_UPLOAD_BYTES)).toString()); } catch(e) { if(e.status)throw e; throw Object.assign(new Error('Invalid JSON'),{status:400}); }
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw Object.assign(new Error('Expected a JSON object'),{status:400});
+        if (req.method === 'POST' && !id) result=drawStore.create(user.sub,body.name);
+        else if (req.method === 'PUT' && id) result=drawStore.save(user.sub,id,body);
+        else if (req.method === 'DELETE' && id) result=drawStore.remove(user.sub,id,body.revision);
+        else throw Object.assign(new Error('Method not allowed'),{status:405});
+      }
+      res.end(JSON.stringify(result));
+    } catch(e) { res.writeHead(e.status||500); res.end(JSON.stringify({error:e.status?e.message:'Drawing could not be saved'})); }
+    return;
+  }
+  if (url.pathname === '/draw' || url.pathname.startsWith('/draw/')) {
+    if (!user) { res.writeHead(302,{location:'/login'}); res.end(); return; }
+    const root=path.join(__dirname,'draw-dist');
+    const target=path.resolve(root, url.pathname.replace(/^\/draw\/?/,'') || 'index.html');
+    if(!target.startsWith(root+path.sep)){res.writeHead(404);res.end();return;}
+    try {
+      const body=fs.readFileSync(target);
+      const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png'}[path.extname(target)]||'application/octet-stream';
+      res.writeHead(200,{'content-type':mime,'cache-control':'private, no-cache','x-content-type-options':'nosniff'});res.end(body);
+    } catch {res.writeHead(404);res.end('Not found');}
     return;
   }
   if (url.pathname === '/api/me') {
