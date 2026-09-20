@@ -21,8 +21,9 @@ client secrets, existing callbacks and database site directories are preserved.
 Private rollback inventories are written under `/var/backups/blak-workspace/`.
 Do not reapply the adapter to an already adapted release.
 After the first URL change, sign in to Chat as the existing administrator. If
-“Unique ID change detected” appears, select **Configuration update** to retain
-the existing workspace; do not select **New workspace**. The modal traps focus
+“Unique ID change detected” appears, select **Configuration update**, then
+**Confirm configuration update** to retain the existing workspace; do not select
+**New workspace**. The modal traps focus
 until acknowledged, so complete this before keyboard and accessibility tests.
 
 The node needs Tailscale HTTPS enabled, an authenticated tailnet identity, sudo,
