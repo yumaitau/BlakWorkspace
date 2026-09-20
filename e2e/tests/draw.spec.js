@@ -59,7 +59,7 @@ test("Draw denies other owners and stale updates", async ({
   const board = await (
     await page.request.post("/api/draw", { data: { name: "Private board" } })
   ).json();
-  const other = await browser.newContext({ ...publicNetworkOptions, ignoreHTTPSErrors: true, baseURL });
+  const other = await browser.newContext({ ignoreHTTPSErrors: true, baseURL });
   await other.addCookies([
     { name: "blak_session", value: session("other-draw-owner"), url: baseURL },
   ]);
