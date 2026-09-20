@@ -18,7 +18,7 @@ class FlowError extends Error {
 
 class DriveAdapter {
   constructor(files) {
-    this.files = files || {};
+    this.files = Object.assign(Object.create(null), files);
   }
   execute(action, params, context) {
     const payload = payloadOf(context);
@@ -31,7 +31,7 @@ class DriveAdapter {
     }
     if (action === 'read_file') {
       const filePath = String((params && params.path) || payload.path || '');
-      if (!(filePath in this.files)) return { ok: false, connector: 'drive', action, error: 'not found', path: filePath };
+      if (!Object.hasOwn(this.files, filePath)) return { ok: false, connector: 'drive', action, error: 'not found', path: filePath };
       return { ok: true, connector: 'drive', action, path: filePath, content: this.files[filePath] };
     }
     if (action === 'list_files') {
@@ -76,23 +76,31 @@ function loadStore(filePath) {
   try {
     const raw = fs.readFileSync(filePath, 'utf8');
     const parsed = JSON.parse(raw);
-    return { flows: parsed.flows || {}, runs: parsed.runs || [] };
-  } catch {
-    return createStore();
+    if (!parsed || !parsed.flows || typeof parsed.flows !== 'object' || Array.isArray(parsed.flows) || !Array.isArray(parsed.runs)) throw new FlowError('invalid flow store');
+    return parsed;
+  } catch (error) {
+    if (error.code === 'ENOENT') return createStore();
+    throw error;
   }
 }
 
 function saveStore(store, filePath) {
   if (!filePath) return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(store, null, 2));
+  const temporary = `${filePath}.${process.pid}.tmp`;
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(store, null, 2), { mode: 0o600 });
+    fs.renameSync(temporary, filePath);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+  }
 }
 
 function createFlow(store, { owner, name, starter, steps }) {
   owner = String(owner || '').trim();
   name = String(name || '').trim();
   if (!owner) throw new FlowError('owner required');
-  if (!name) throw new FlowError('name required');
+  if (name.length < 2) throw new FlowError('name must have at least two characters');
   const starterObj = validateStarter(starter);
   const stepObjs = validateSteps(steps);
   const now = nowIso();
@@ -118,7 +126,7 @@ function setEnabled(store, flowId, enabled) {
 }
 
 function getFlow(store, flowId) {
-  const flow = store.flows[flowId];
+  const flow = Object.hasOwn(store.flows, flowId) ? store.flows[flowId] : null;
   if (!flow) throw new FlowError(`unknown flow ${flowId}`);
   return flow;
 }
@@ -154,7 +162,10 @@ function trigger(store, flowId, event, connectors) {
     if (!adapter || typeof adapter.execute !== 'function') {
       outcome = { ok: false, error: `missing connector ${step.connector}` };
     } else {
-      outcome = adapter.execute(step.action, step.params || {}, context);
+      try {
+        outcome = adapter.execute(step.action, step.params || {}, context);
+        if (!outcome || typeof outcome.ok !== 'boolean') outcome = { ok: false, error: 'invalid connector response' };
+      } catch (error) { outcome = { ok: false, error: error.message }; }
     }
     stepRecords.push({ id: step.id, connector: step.connector, action: step.action, outcome });
     context.last = outcome;

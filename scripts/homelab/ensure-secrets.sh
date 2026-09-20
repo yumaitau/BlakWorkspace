@@ -46,7 +46,8 @@ if ! have blak-kaneo; then
 fi
 if ! have blak-hermes; then
   kubectl -n "$NS" create secret generic blak-hermes \
-    --from-literal=oidc-secret="$(rand)"
+    --from-literal=oidc-secret="$(rand)" \
+    --from-literal=session-secret="$(rand)"
 fi
 if ! have blak-drive; then
   kubectl -n "$NS" create secret generic blak-drive \

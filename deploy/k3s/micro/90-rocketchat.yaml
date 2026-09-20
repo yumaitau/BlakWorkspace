@@ -98,6 +98,11 @@ spec:
           ports:
             - containerPort: 3000
           env:
+            - name: OVERWRITE_SETTING_Custom_CSS
+              valueFrom:
+                configMapKeyRef: { name: blak-app-themes, key: chat.css }
+            - name: OVERWRITE_SETTING_Site_Name
+              value: Blak Chat
             - name: ROOT_URL
               value: https://chat.homelab.local
             - name: PORT

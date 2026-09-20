@@ -41,9 +41,26 @@ spec:
       hostAliases:
         - ip: 10.43.169.184
           hostnames: [id.homelab.local]
+      initContainers:
+        - name: workspace-theme
+          image: ghcr.io/usekaneo/kaneo@sha256:a85a23996c36166cfcebcb4ee161b40cc62c7b924faf06353684a84d5e84162c
+          command: [sh, -ec]
+          args:
+            - |
+              cp -R /usr/share/nginx/html/. /workspace/
+              cp /theme/projects.css /workspace/blak-theme.css
+              test -f /workspace/index.html
+              sed -i 's|</head>|<link rel="stylesheet" href="/blak-theme.css"></head>|' /workspace/index.html
+              sed -i 's|<title>.*</title>|<title>Blak Projects · Powered by Kaneo</title>|' /workspace/index.html
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: frontend, mountPath: /workspace }
+            - { name: themes, mountPath: /theme, readOnly: true }
       containers:
         - name: kaneo
-          image: ghcr.io/usekaneo/kaneo:latest
+          image: ghcr.io/usekaneo/kaneo@sha256:a85a23996c36166cfcebcb4ee161b40cc62c7b924faf06353684a84d5e84162c
           ports: [{ containerPort: 5173 }]
           env:
             - { name: KANEO_CLIENT_URL, value: https://projects.homelab.local }
@@ -78,8 +95,11 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 30
           volumeMounts:
+            - { name: frontend, mountPath: /usr/share/nginx/html }
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
       volumes:
+        - { name: frontend, emptyDir: {} }
+        - { name: themes, configMap: { name: blak-app-themes } }
         - name: ca
           configMap: { name: blak-ca }
 ---

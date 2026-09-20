@@ -20,5 +20,11 @@ jobs:
         run: python scripts/validate-manifest.py
       - name: Minimal config tests
         run: python -m unittest discover -s tests -v
+      - name: Portal regression tests
+        run: node --test apps/portal/test/*.test.js
+      - name: Hermes sync tests
+        run: python -m unittest discover -s services/hermes-sync -p 'test_*.py' -v
+      - name: Check generated app themes
+        run: node scripts/brand/generate.js --check
       - name: Generate SBOM
         run: python scripts/generate_sbom.py

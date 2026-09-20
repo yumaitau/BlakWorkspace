@@ -1,4 +1,8 @@
 'use strict';
+const { isIP } = require('node:net');
+function validBucketName(name) {
+  return typeof name === 'string' && /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(name) && !name.includes('..') && !isIP(name);
+}
 
 function s3ObjectPath(bucket, key) {
   return `/${bucket}/${String(key).split('/').map(encodeURIComponent).join('/')}`;
@@ -25,17 +29,14 @@ function memoryS3() {
 }
 
 async function dispatchCloudObject(s3Req, { method, bucket, key, body }) {
-  if (!bucket || !key) {
+  if (!validBucketName(bucket) || !key || String(key).split('/').some(part => part === '.' || part === '..')) {
     return { httpStatus: 400, text: 'bucket and key required' };
   }
   const path = s3ObjectPath(bucket, key);
-  if (method === 'DELETE') {
-    const r = await s3Req('DELETE', path, null);
-    return { httpStatus: 200, json: { ok: r.status < 300, status: r.status } };
-  }
-  if (method === 'PUT') {
-    const r = await s3Req('PUT', path, body || Buffer.alloc(0));
-    return { httpStatus: r.status < 300 ? 200 : r.status, json: { ok: r.status < 300, status: r.status } };
+  if (method === 'DELETE' || method === 'PUT') {
+    const result = await s3Req(method, path, method === 'PUT' ? body || Buffer.alloc(0) : null);
+    const ok = result.status >= 200 && result.status < 300;
+    return { httpStatus: ok ? 200 : result.status, json: { ok, status: result.status } };
   }
   if (method === 'GET') {
     const r = await s3Req('GET', path, null);
@@ -43,7 +44,7 @@ async function dispatchCloudObject(s3Req, { method, bucket, key, body }) {
     const headers = {
       'content-type': (r.headers && r.headers['content-type']) || 'application/octet-stream',
       'content-length': r.body.length,
-      'content-disposition': `attachment; filename="${String(key).split('/').pop()}"`,
+      'content-disposition': `attachment; filename="${String(key).split('/').pop().replace(/[^a-zA-Z0-9._ -]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(String(key).split('/').pop()).replace(/[!'()*]/g, character => '%' + character.charCodeAt(0).toString(16).toUpperCase())}`,
     };
     return { httpStatus: 200, headers, body: r.body };
   }
@@ -82,6 +83,7 @@ async function demoPutDelete() {
 }
 
 module.exports = {
+  validBucketName,
   dispatchCloudObject,
   memoryS3,
   s3ObjectPath,
