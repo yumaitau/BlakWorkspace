@@ -31,3 +31,4 @@ html[data-blak-app=sites] .sc-fThUAz a{background:transparent!important}
 html[data-blak-app=sites] .sc-fThUAz a:hover{background:var(--blak-surface-hover)!important}
 html[data-blak-app=crm]{--surface-gray-1:var(--blak-surface);--surface-gray-2:var(--blak-surface-raised);--surface-gray-3:var(--blak-surface-hover);--surface-gray-4:var(--blak-surface-selected);--surface-gray-7:var(--blak-primary);--ink-gray-8:var(--blak-text-primary);--ink-gray-6:var(--blak-text-secondary)}
 html[data-blak-app=crm] button.bg-ink-gray-9{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
+html[data-blak-app=crm] .bg-surface-sidebar{background-color:var(--blak-surface-base)!important}

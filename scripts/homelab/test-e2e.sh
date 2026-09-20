@@ -21,29 +21,21 @@ fi
 docker info >/dev/null
 VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test']")
 IMAGE="mcr.microsoft.com/playwright:v${VERSION}-noble"
-CONFIG=$(mktemp)
-trap 'rm -f "$CONFIG"' EXIT
-kubectl config view --raw --minify > "$CONFIG"
-python3 - "$CONFIG" <<'PY_CONFIG'
-import sys, yaml
-from urllib.parse import urlsplit, urlunsplit
-path=sys.argv[1]
-with open(path) as f: config=yaml.safe_load(f)
-for cluster in config['clusters']:
-    endpoint=urlsplit(cluster['cluster']['server'])
-    if endpoint.hostname in {'localhost','127.0.0.1'}:
-        cluster['cluster']['server']=urlunsplit((endpoint.scheme,'192.168.1.19:'+str(endpoint.port or 6443),endpoint.path,'',''))
-with open(path,'w') as f:yaml.safe_dump(config,f)
-PY_CONFIG
+HOMELAB_ADDRESS="${BLAK_HOMELAB_ADDRESS:-192.168.1.19}"
 HOSTS=()
 for app in portal id drive docs sites projects forms crm chat hermes; do
-  HOSTS+=(--add-host "$app.homelab.local:192.168.1.19")
+  HOSTS+=(--add-host "$app.homelab.local:$HOMELAB_ADDRESS")
 done
-docker run --rm --init --shm-size=1g --memory=6g --cpus=4 \
-  --user "$(id -u):$(id -g)" "${HOSTS[@]}" \
-  -e BLAK_E2E_NAMESPACE -e BLAK_E2E_USER -e BLAK_E2E_PASSWORD -e BLAK_E2E_SESSION_SECRET \
-  -e BLAK_E2E_REPORT -e BLAK_E2E_OUTPUT -e BLAK_E2E_BASE_URL \
-  -e KUBECONFIG=/tmp/blak-kubeconfig -e HOME=/tmp/blak-playwright-home \
-  -v "$ROOT:/workspace" -v "$CONFIG:/tmp/blak-kubeconfig:ro" \
-  -v "$(readlink -f "$(command -v kubectl)"):/usr/local/bin/kubectl:ro" \
-  -w /workspace/e2e "$IMAGE" npx playwright test "$@"
+# Only browsers run in Docker. Namespace fixtures and secrets stay on the host.
+BROWSER_CONTAINER=$(docker run -d --rm --init --shm-size=1g --memory=6g --cpus=4 \
+  "${HOSTS[@]}" -p 127.0.0.1::3000 \
+  -v "$ROOT/e2e/node_modules:/work/node_modules:ro" -w /work \
+  "$IMAGE" node node_modules/playwright/cli.js run-server --host 0.0.0.0 --port 3000)
+trap 'docker stop --time 5 "$BROWSER_CONTAINER" >/dev/null' EXIT
+BROWSER_PORT=$(docker inspect --format '{{(index (index .NetworkSettings.Ports "3000/tcp") 0).HostPort}}' "$BROWSER_CONTAINER")
+export PLAYWRIGHT_WS_ENDPOINT="ws://127.0.0.1:$BROWSER_PORT/"
+for attempt in $(seq 1 30); do
+  if curl --max-time 1 -s -o /dev/null "http://127.0.0.1:$BROWSER_PORT/"; then break; fi
+  sleep 1
+done
+npx playwright test "$@"

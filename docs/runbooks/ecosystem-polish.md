@@ -108,8 +108,9 @@ two writers opening its persistent volume during a rollout.
 
 The homelab runner uses the matching official Playwright Docker image and its own
 network namespace, preventing host CNI interface changes from aborting browser
-navigation. Credentials are passed by environment name; the temporary kubeconfig
-is private, read-only inside the container and removed on exit. Baselines are
+navigation. Only the browser runs in the container; Kubernetes fixtures and credentials
+stay on the host. Its temporary Playwright endpoint binds to loopback only and
+the runner stops its own container on exit. Baselines are
 reviewed in that pinned browser/OS environment. `BLAK_E2E_NATIVE=1` is an explicit
 local debugging fallback; it may render fonts differently and is not the baseline
 acceptance environment.

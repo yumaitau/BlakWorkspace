@@ -13,6 +13,7 @@ module.exports = defineConfig({
   reporter: [['list'], ['html', { open: 'never', outputFolder: process.env.BLAK_E2E_REPORT || 'playwright-report' }]],
   use: {
     baseURL,
+    ...(process.env.PLAYWRIGHT_WS_ENDPOINT ? {connectOptions:{wsEndpoint:process.env.PLAYWRIGHT_WS_ENDPOINT}} : {}),
     ignoreHTTPSErrors: true,
     trace: 'retain-on-failure',
     screenshot: 'on',
