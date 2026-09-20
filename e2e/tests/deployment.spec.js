@@ -8,7 +8,7 @@ const password = process.env.BLAK_E2E_PASSWORD || '';
 const { authentikLogin } = require('../helpers/auth');
 const { tokens } = require('../../apps/portal/theme');
 
-test.describe('Blak Portal homelab', () => {
+test.describe('Blak Portal dedicated', () => {
   test('anonymous visitor is gated', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('link', { name: /Sign in with Blak ID/i })).toBeVisible();
@@ -20,7 +20,7 @@ test.describe('Blak Portal homelab', () => {
     await page.goto('/');
     await page.getByRole('link', { name: /Sign in with Blak ID/i }).click();
     await authentikLogin(page);
-    await page.waitForURL((url) => url.hostname === 'portal.homelab.local' && url.pathname !== '/login' && url.pathname !== '/callback', { timeout: 30_000 });
+    await page.waitForURL((url) => url.hostname === 'portal.workspace.example.com' && url.pathname !== '/login' && url.pathname !== '/callback', { timeout: 30_000 });
     await expect(page.locator('[data-testid="userchip"]')).toBeVisible();
     await expect(page.locator('[data-testid="userchip"] .nm')).not.toHaveText('');
 
@@ -44,8 +44,8 @@ test.describe('Blak Portal homelab', () => {
 
     const waffleChat = page.locator('a.appitem[data-app="chat"]');
     await page.locator('[data-testid="waffle"]').click();
-    await expect(waffleChat).toHaveAttribute('href', 'https://chat.homelab.local');
-    await expect(page.locator('a.appitem[data-app="projects"]')).toHaveAttribute('href', 'https://projects.homelab.local');
+    await expect(waffleChat).toHaveAttribute('href', 'https://chat.workspace.example.com');
+    await expect(page.locator('a.appitem[data-app="projects"]')).toHaveAttribute('href', 'https://projects.workspace.example.com');
     expect((await page.request.post(flowPath + '/delete')).ok()).toBeTruthy();
   });
 });
@@ -53,12 +53,12 @@ test.describe('Blak Portal homelab', () => {
 test.describe('Blak Chat and Projects SSO', () => {
   test('Rocket.Chat signs in through Blak ID', async ({ page }) => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
-    await page.goto('https://chat.homelab.local');
+    await page.goto('https://chat.workspace.example.com');
     const sso = page.getByRole('button', { name: /Blak ID|blakid/i }).or(page.getByRole('link', { name: /Blak ID|blakid/i }));
     await sso.first().click({ timeout: 45_000 });
     await authentikLogin(page);
-    await page.waitForURL((url) => url.hostname === 'chat.homelab.local' && !url.pathname.includes('_oauth'), { timeout: 45_000 });
-    await expect(page).not.toHaveURL(/id\.homelab\.local/);
+    await page.waitForURL((url) => url.hostname === 'chat.workspace.example.com' && !url.pathname.includes('_oauth'), { timeout: 45_000 });
+    await expect(page).not.toHaveURL(/id\.workspace\.example\.com/);
     await expect(page.getByRole('button', { name: 'Create channel', exact: true })).toBeVisible({ timeout: 45000 });
     await expect(page.getByRole('heading', { name: 'Reset password', exact: true })).toHaveCount(0);
     await expect.poll(() => page.locator('body').evaluate(el => getComputedStyle(el).getPropertyValue('--rcx-color-button-background-primary-default').trim())).toBe(tokens.dark.primary);
@@ -67,17 +67,17 @@ test.describe('Blak Chat and Projects SSO', () => {
 
   test('Kaneo signs in through Blak ID', async ({ page }) => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
-    await page.goto('https://projects.homelab.local');
+    await page.goto('https://projects.workspace.example.com');
     const oidc = page.getByRole('button', { name: /Continue with OIDC/i });
     await Promise.race([
-      page.waitForURL(/id\.homelab\.local/, { timeout: 20_000 }),
+      page.waitForURL(/id\.workspace\.example\.com/, { timeout: 20_000 }),
       oidc.waitFor({ state: 'visible', timeout: 20_000 }),
     ]).catch(() => {});
-    if (!page.url().includes('id.homelab.local')) {
+    if (!page.url().includes('id.workspace.example.com')) {
       await oidc.click({ timeout: 10_000 });
     }
     await authentikLogin(page);
-    await page.waitForURL((url) => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
+    await page.waitForURL((url) => url.hostname === 'projects.workspace.example.com' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
     await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
   });

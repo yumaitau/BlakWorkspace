@@ -1,5 +1,5 @@
 'use strict';
-// Operator-only homelab fixtures. Secret values stay in memory and never enter reports.
+// Operator-only dedicated fixtures. Secret values stay in memory and never enter reports.
 const { execFileSync } = require('node:child_process');
 const crypto = require('node:crypto');
 const namespace = process.env.BLAK_E2E_NAMESPACE || 'blak-micro';
@@ -8,7 +8,10 @@ function kubectl(args) {
 }
 function syncAccount() {
   const secret = JSON.parse(kubectl(['get', 'secret', 'blak-hermes-sync', '-o', 'json']));
-  return JSON.parse(Buffer.from(secret.data['accounts.json'], 'base64')).accounts[0];
+  const accounts = JSON.parse(Buffer.from(secret.data['accounts.json'], 'base64')).accounts;
+  const account = process.env.BLAK_SYNC_ACCOUNT ? accounts.find(item => item.name === process.env.BLAK_SYNC_ACCOUNT) : accounts[0];
+  if (!account) throw new Error('Configured sync account not found');
+  return account;
 }
 function serviceURL(name, port) {
   const address = kubectl(['get', 'service', name, '-o', 'jsonpath={.spec.clusterIP}']);

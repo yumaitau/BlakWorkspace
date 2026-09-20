@@ -15,11 +15,11 @@ provider, _ = OAuth2Provider.objects.get_or_create(name='Blak CRM', defaults={
     'sub_mode': 'user_username', 'include_claims_in_id_token': True,
     'issuer_mode': 'per_provider',
     'redirect_uris': [RedirectURI(matching_mode=RedirectURIMatchingMode.STRICT,
-        url='https://crm.homelab.local/api/method/frappe.integrations.oauth2_logins.custom/blak_id')],
+        url='https://crm.workspace.example.com/api/method/frappe.integrations.oauth2_logins.custom/blak_id')],
 })
 provider.property_mappings.set(ScopeMapping.objects.filter(scope_name__in=['openid', 'profile', 'email']))
 Application.objects.update_or_create(slug='blak-crm', defaults={
-    'name': 'Blak CRM', 'provider': provider, 'meta_launch_url': 'https://crm.homelab.local/login?redirect-to=/crm',
+    'name': 'Blak CRM', 'provider': provider, 'meta_launch_url': 'https://crm.workspace.example.com/login?redirect-to=/crm',
     'open_in_new_tab': True,
 })
 group, created = Group.objects.get_or_create(name='Blak CRM users')

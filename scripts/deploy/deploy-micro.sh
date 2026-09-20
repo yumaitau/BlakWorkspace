@@ -1,28 +1,29 @@
 #!/usr/bin/env bash
-# Scoped deployment of the workspace application changes, run on homelab from a clean checkout.
+# Scoped deployment of the workspace application changes, run on the deployment host from a prepared release.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-git diff --quiet
-git diff --cached --quiet
+# Only deploy a release prepared for an explicitly chosen domain.
+test -f .deployment.json || { echo 'Run scripts/deploy/prepare-release.py first'; exit 1; }
+REVISION_FULL=$(python3 -c 'import json; print(json.load(open(".deployment.json"))["revision"])')
 NS="blak-micro"
-REVISION=$(git rev-parse --short=12 HEAD)
+REVISION="${REVISION_FULL:0:12}"
 export SHELL_IMAGE="blak-workspace-shell:$REVISION"
 export PORTAL_IMAGE="blak-portal:$REVISION" SYNC_IMAGE="blak-hermes-sync:$REVISION"
 docker info >/dev/null
 node scripts/brand/generate.js --check
-docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t "$PORTAL_IMAGE" apps/portal
-docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t "$SYNC_IMAGE" services/hermes-sync
-docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t "$SHELL_IMAGE" services/workspace-shell
+docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$PORTAL_IMAGE" apps/portal
+docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$SYNC_IMAGE" services/hermes-sync
+docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$SHELL_IMAGE" services/workspace-shell
 docker save "$PORTAL_IMAGE" "$SYNC_IMAGE" "$SHELL_IMAGE" | sudo k3s ctr images import -
-python3 scripts/homelab/persist-hermes-session-key.py
-scripts/homelab/backup-twenty.sh
-scripts/homelab/build-frappe.sh
-python3 scripts/homelab/polish-identities.py
-python3 scripts/homelab/ensure-docs-proof-key.py
-python3 scripts/homelab/provision-workspace-apps.py
+python3 scripts/deploy/persist-hermes-session-key.py
+scripts/deploy/backup-twenty.sh
+scripts/deploy/build-frappe.sh
+python3 scripts/deploy/polish-identities.py
+python3 scripts/deploy/ensure-docs-proof-key.py
+python3 scripts/deploy/provision-workspace-apps.py
 kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
-  NS="$NS" scripts/homelab/migrate-flow-store.sh
+  NS="$NS" scripts/deploy/migrate-flow-store.sh
 fi
 # Apply only changed application Deployments, ConfigMaps, portal/sync PVCs and the sync CronJob.
 # Existing workspace databases and unrelated workloads are not reapplied.
@@ -67,7 +68,7 @@ for file, names in selected.items():
         print('---')
         print(yaml.safe_dump(document, sort_keys=False))
 PY
-kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/homelab/ak-brand.py
+kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
 for app in workspace-shell portal collabora opencloud chat projects hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
@@ -86,10 +87,10 @@ for old in crm crm-worker; do
     kubectl -n "$NS" scale "deploy/$old" --replicas=0
   fi
 done
-python3 scripts/homelab/route-workspace-shell.py
+python3 scripts/deploy/route-workspace-shell.py
 (cd e2e && npm ci --ignore-scripts)
-node scripts/homelab/connect-hermes-apps.js
-python3 scripts/homelab/configure-hermes-tasks.py
+node scripts/deploy/connect-hermes-apps.js
+python3 scripts/deploy/configure-hermes-tasks.py
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do
   kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=900s
 done
@@ -98,5 +99,5 @@ kubectl -n "$NS" create job "$JOB" --from=cronjob/hermes-workspace-sync
 kubectl -n "$NS" wait --for=condition=complete "job/$JOB" --timeout=900s
 kubectl -n "$NS" logs "job/$JOB"
 kubectl -n "$NS" logs "job/$JOB" | grep -q 'Sync complete'
-scripts/homelab/backup/install.sh
+scripts/deploy/backup/install.sh
 printf 'Deployed commit %s\n' "$REVISION"

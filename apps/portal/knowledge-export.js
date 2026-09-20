@@ -20,12 +20,12 @@ function documents(source, owner, drawStore, flowStore) {
   if (source === 'draw') return drawStore.list(owner).map(item => {
     const board = drawStore.read(owner, item.id);
     return { id: board.id, name: board.name, revision: String(board.revision),
-      content: { name: board.name, source: 'https://portal.homelab.local/draw',
+      content: { name: board.name, source: 'https://portal.workspace.example.com/draw',
         elements: board.scene.elements.filter(e => !e.isDeleted).map(({ id, type, text, originalText, x, y, width, height, startBinding, endBinding }) => ({ id, type, text, originalText, x, y, width, height, startBinding, endBinding })) } };
   });
   if (source === 'flow') return Object.values(flowStore.flows).filter(f => f.owner === owner).map(flow => ({
     id: flow.id, name: flow.name, revision: '',
-    content: { name: flow.name, enabled: flow.enabled, source: 'https://portal.homelab.local/flow/' + flow.id,
+    content: { name: flow.name, enabled: flow.enabled, source: 'https://portal.workspace.example.com/flow/' + flow.id,
       starter: flow.starter, steps: flow.steps.map(({ id, connector, action, params }) => ({ id, connector, action, params: pick(params, FLOW_PARAMS) })),
       runs: flowStore.runs.filter(r => r.flowId === flow.id).map(({ id, status, startedAt, finishedAt }) => ({ id, status, startedAt, finishedAt })) },
   }));

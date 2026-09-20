@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run on the homelab host with namespace access. Never prints credentials.
+# Run on the dedicated host with namespace access. Never prints credentials.
 set -euo pipefail
 umask 077
 cd "$(dirname "$0")/../.."
@@ -17,15 +17,17 @@ if [[ "${BLAK_E2E_NATIVE:-0}" == 1 ]]; then
   exec npx playwright test "$@"
 fi
 # Isolate Chromium from host CNI route/interface changes (ERR_NETWORK_CHANGED).
-# The browser still reaches the real homelab and fixtures use the same namespace.
+# The browser still reaches the deployed services and fixtures use the same namespace.
 docker info >/dev/null
 VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test']")
 IMAGE="mcr.microsoft.com/playwright:v${VERSION}-noble"
-HOMELAB_ADDRESS="${BLAK_HOMELAB_ADDRESS:-192.168.1.19}"
+DEPLOYMENT_ADDRESS="${BLAK_DEPLOYMENT_ADDRESS:-}"
 HOSTS=()
+if [[ -n "$DEPLOYMENT_ADDRESS" ]]; then
 for app in portal id drive docs sites projects forms crm chat hermes; do
-  HOSTS+=(--add-host "$app.homelab.local:$HOMELAB_ADDRESS")
+  HOSTS+=(--add-host "$app.workspace.example.com:$DEPLOYMENT_ADDRESS")
 done
+fi
 # Only browsers run in Docker. Namespace fixtures and secrets stay on the host.
 BROWSER_CONTAINER=$(docker run -d --rm --init --shm-size=1g --memory=6g --cpus=4 \
   "${HOSTS[@]}" -p 127.0.0.1::3000 \

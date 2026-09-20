@@ -3,8 +3,7 @@
 # Does not overwrite existing secrets. Operator-only — not invoked from CI.
 set -euo pipefail
 NS="${NS:-blak-micro}"
-KUBECONFIG="${KUBECONFIG:-${HOME}/.kube/blak-homelab-ts.yaml}"
-export KUBECONFIG
+# Uses the explicitly selected kubectl context or KUBECONFIG.
 
 have() { kubectl -n "$NS" get secret "$1" >/dev/null 2>&1; }
 rand() { openssl rand -base64 32 | tr -d '\n/=+'; }

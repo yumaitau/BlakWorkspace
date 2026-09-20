@@ -20,6 +20,6 @@ K8s multi-zone, dedicated DB/storage, immutable audit, SIEM, private networking,
 
 Tiny#1-2 compute+apps, Tiny#3 storage/DB/HA. DGX Spark local inference only. Workspace runs if AI node down.
 
-## Homelab target (this task)
+## Dedicated target (this task)
 
-Single-node K3s on `homelab` (Ubuntu 26.04, 12vCPU/30GB). Namespace `blak-micro`. Traefik ingress (K3s default), ClusterIP + port-forward for e2e. No TLS for first pass; add cert-manager later.
+Dedicated single-node K3s reference deployment. Namespace `blak-micro`, Traefik ingress and trusted TLS. Configure the real domain using the [deployment runbook](../runbooks/dedicated-deployment.md). This profile does not provide multi-node database failover.

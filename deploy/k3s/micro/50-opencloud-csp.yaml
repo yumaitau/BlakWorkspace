@@ -15,10 +15,10 @@ data:
         - 'blob:'
         - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
         - 'https://update.opencloud.eu/'
-        - 'http://id.homelab.local/'
-        - 'https://id.homelab.local/'
-        - 'http://docs.homelab.local/'
-        - 'https://docs.homelab.local/'
+        - 'http://id.workspace.example.com/'
+        - 'https://id.workspace.example.com/'
+        - 'http://docs.workspace.example.com/'
+        - 'https://docs.workspace.example.com/'
       default-src:
         - '''none'''
       font-src:
@@ -29,19 +29,19 @@ data:
         - '''self'''
         - 'blob:'
         - 'https://embed.diagrams.net/'
-        - 'http://docs.homelab.local/'
-        - 'https://docs.homelab.local/'
-        - 'http://id.homelab.local/'
-        - 'https://id.homelab.local/'
+        - 'http://docs.workspace.example.com/'
+        - 'https://docs.workspace.example.com/'
+        - 'http://id.workspace.example.com/'
+        - 'https://id.workspace.example.com/'
       img-src:
         - '''self'''
         - 'data:'
         - 'blob:'
         - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
-        - 'http://docs.homelab.local/'
-        - 'https://docs.homelab.local/'
-        - 'http://id.homelab.local/'
-        - 'https://id.homelab.local/'
+        - 'http://docs.workspace.example.com/'
+        - 'https://docs.workspace.example.com/'
+        - 'http://id.workspace.example.com/'
+        - 'https://id.workspace.example.com/'
       manifest-src:
         - '''self'''
       media-src:
@@ -52,8 +52,8 @@ data:
       script-src:
         - '''self'''
         - '''unsafe-inline'''
-        - 'http://id.homelab.local/'
-        - 'https://id.homelab.local/'
+        - 'http://id.workspace.example.com/'
+        - 'https://id.workspace.example.com/'
       style-src:
         - '''self'''
         - '''unsafe-inline'''

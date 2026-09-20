@@ -29,11 +29,11 @@ python3 -m unittest discover -s tests
 node --test apps/portal/test/*.test.js
 python3 -m unittest discover -s services/hermes-sync -p 'test_*.py'
 node scripts/brand/generate.js --check
-# On homelab, from this checkout:
-scripts/homelab/test-e2e.sh
+# On the deployment host, from the prepared release:
+scripts/deploy/test-e2e.sh
 ```
 
-Playwright uses real homelab services. Isolated portal regression accounts use
+Playwright uses real deployment services. Isolated portal regression accounts use
 signed test sessions; separate tests exercise real Blak ID SSO. Tests cover all
 portal routes in both themes, widths 390/768/1440, Flow lifecycle and permissions,
 Cloud upload/filter/download/delete, native SSO/themes, and Hermes sync/retrieval.
@@ -42,8 +42,8 @@ contain private test-account data and must not be published indiscriminately.
 
 ## Deploy
 
-Use a clean main checkout on homelab, with Docker, kubectl, k3s, Node and PyYAML.
-`scripts/homelab/deploy-micro.sh` builds portal/sync images tagged with the commit,
+Use a prepared main release on the deployment host, with Docker, kubectl, k3s, Node and PyYAML.
+`scripts/deploy/deploy-micro.sh` builds portal/sync images tagged with the commit,
 imports them into k3s, applies only the changed application resources, waits for
 rollouts, and starts a sync verification job. It does not restart databases.
 
@@ -57,7 +57,7 @@ running signing key into the existing cluster Secret. Generated configuration
 hashes restart apps that consume theme ConfigMaps through subPath mounts.
 
 Knowledge's supported preferences are applied separately with
-`scripts/homelab/theme-outline.js`, using the same `BLAK_E2E_USER` and
+`scripts/deploy/theme-outline.js`, using the same `BLAK_E2E_USER` and
 `BLAK_E2E_PASSWORD` environment as the browser suite. No credentials enter git.
 
 After deployment, run the complete browser suite again and inspect the latest

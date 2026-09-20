@@ -7,7 +7,7 @@ from frappe.utils.password import get_decrypted_password
 
 email = json.loads(sys.stdin.readline())['email']
 os.chdir('/home/frappe/frappe-bench/sites')
-frappe.init(site='crm.homelab.local')
+frappe.init(site='crm.workspace.example.com')
 frappe.connect()
 try:
     frappe.set_user('Administrator')

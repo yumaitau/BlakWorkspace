@@ -12,7 +12,7 @@ spec:
       securityContext: { fsGroup: 1001 }
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [drive.homelab.local]
+          hostnames: [drive.workspace.example.com]
       containers:
         - name: code
           image: collabora/code@sha256:1efda3043e8b9cb437d1b6c6efe20cc3753760e634de012b8dac391da488bf97
@@ -21,8 +21,8 @@ spec:
             requests: { cpu: "1", memory: 2Gi }
             limits: { cpu: "4", memory: 6Gi }
           env:
-            - { name: domain, value: 'drive\.homelab\.local|drive' }
-            - { name: server_name, value: docs.homelab.local }
+            - { name: domain, value: 'drive\.workspace\.example\.com|drive' }
+            - { name: server_name, value: docs.workspace.example.com }
             - { name: extra_params, value: '--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false' }
             - { name: username, value: admin }
             - { name: password, valueFrom: { secretKeyRef: { name: blak-docs, key: admin-password } } }

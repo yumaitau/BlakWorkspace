@@ -1,4 +1,4 @@
-# Blak Drive backend: OpenCloud (default). See docs/runbooks/homelab-micro.md.
+# Blak Drive backend: OpenCloud (default). See docs/runbooks/dedicated-deployment.md.
 # Follows upstream opencloud-compose conventions:
 # - entrypoint runs `opencloud init || true; opencloud server`
 # - ONLY IDM_ADMIN_PASSWORD is set; all other secrets are init-generated.
@@ -6,7 +6,7 @@
 # - PROXY_TLS=false (plain HTTP pod :9200, TLS terminated at Traefik edge)
 # - PROXY_ENABLE_BASIC_AUTH=true (WebDAV/desktop clients)
 # - COLLABORA_DOMAIN points at Blak Docs (browser + server reachable via hostAlias)
-# Secrets for blak-drive live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
+# Secrets for blak-drive live in-cluster (scripts/deploy/ensure-secrets.sh). Never commit them.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -29,7 +29,7 @@ spec:
     spec:
       hostAliases:
         - ip: 10.43.169.184
-          hostnames: [docs.homelab.local, id.homelab.local]
+          hostnames: [docs.workspace.example.com, id.workspace.example.com]
       containers:
         - name: opencloud
           image: opencloudeu/opencloud-rolling:7.5.0
@@ -39,7 +39,7 @@ spec:
             requests: { cpu: "1", memory: 2Gi }
             limits: { cpu: "4", memory: 8Gi }
           env:
-            - { name: OC_URL, value: https://drive.homelab.local }
+            - { name: OC_URL, value: https://drive.workspace.example.com }
             - { name: OC_LOG_LEVEL, value: info }
             - { name: OC_INSECURE, value: "true" }
             - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
@@ -50,10 +50,10 @@ spec:
             - { name: OC_ADD_RUN_SERVICES, value: collaboration }
             - { name: COLLABORATION_APP_NAME, value: BlakDocs }
             - { name: COLLABORATION_APP_PRODUCT, value: Collabora }
-            - { name: COLLABORATION_APP_ADDR, value: https://docs.homelab.local }
-            - { name: COLLABORATION_WOPI_SRC, value: https://drive.homelab.local }
+            - { name: COLLABORATION_APP_ADDR, value: https://docs.workspace.example.com }
+            - { name: COLLABORATION_WOPI_SRC, value: https://drive.workspace.example.com }
             - { name: COLLABORATION_HTTP_ADDR, value: "0.0.0.0:9300" }
-            - { name: OC_OIDC_ISSUER, value: https://id.homelab.local/application/o/opencloud/ }
+            - { name: OC_OIDC_ISSUER, value: https://id.workspace.example.com/application/o/opencloud/ }
             - { name: OC_EXCLUDE_RUN_SERVICES, value: idp }
             - { name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD, value: jwt }
             - { name: PROXY_OIDC_REWRITE_WELLKNOWN, value: "true" }

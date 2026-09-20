@@ -14,7 +14,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`portal.homelab.local`)
+    - match: Host(`portal.workspace.example.com`)
       kind: Rule
       services:
         - name: portal
@@ -38,7 +38,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`id.homelab.local`)
+    - match: Host(`id.workspace.example.com`)
       kind: Rule
       priority: 10
       services:
@@ -53,7 +53,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`id.homelab.local`) && PathRegexp(`^/application/o/[^/]+/(authorize|token|userinfo)/`)
+    - match: Host(`id.workspace.example.com`) && PathRegexp(`^/application/o/[^/]+/(authorize|token|userinfo)/`)
       kind: Rule
       priority: 100
       middlewares:
@@ -71,7 +71,7 @@ spec:
   entryPoints: [websecure]
   tls: {}
   routes:
-    - match: Host(`drive.homelab.local`)
+    - match: Host(`drive.workspace.example.com`)
       kind: Rule
       services:
         - name: drive
@@ -87,8 +87,8 @@ spec:
   # via WOPI. Send the bare domain to Drive; admins can still reach the CODE
   # admin console (basic auth, CODE-internal) at /browser/dist/admin/admin.html.
   redirectRegex:
-    regex: "^https?://docs\\.homelab\\.local/$"
-    replacement: "https://drive.homelab.local/"
+    regex: "^https?://docs\\.workspace\\.example\\.com/$"
+    replacement: "https://drive.workspace.example.com/"
     permanent: false
 ---
 apiVersion: traefik.io/v1alpha1
@@ -99,7 +99,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`docs.homelab.local`) && Path(`/`)
+    - match: Host(`docs.workspace.example.com`) && Path(`/`)
       kind: Rule
       priority: 100
       middlewares:
@@ -116,7 +116,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`docs.homelab.local`)
+    - match: Host(`docs.workspace.example.com`)
       kind: Rule
       priority: 10
       services:
@@ -131,7 +131,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`hermes.homelab.local`)
+    - match: Host(`hermes.workspace.example.com`)
       kind: Rule
       services:
         - name: hermes
@@ -145,7 +145,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`chat.homelab.local`)
+    - match: Host(`chat.workspace.example.com`)
       kind: Rule
       services:
         - name: chat
@@ -159,7 +159,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`projects.homelab.local`)
+    - match: Host(`projects.workspace.example.com`)
       kind: Rule
       services:
         - name: projects
@@ -173,7 +173,7 @@ metadata:
 spec:
   entryPoints: [web, websecure]
   routes:
-    - match: Host(`sites.homelab.local`)
+    - match: Host(`sites.workspace.example.com`)
       kind: Rule
       services:
         - name: sites

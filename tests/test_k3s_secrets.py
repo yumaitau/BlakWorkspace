@@ -1,4 +1,4 @@
-"""Homelab k3s manifests must not commit OIDC or bootstrap secret literals."""
+"""Dedicated k3s manifests must not commit OIDC or bootstrap secret literals."""
 
 from __future__ import annotations
 

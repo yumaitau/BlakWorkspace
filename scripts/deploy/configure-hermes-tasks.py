@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Reserve homelab CPU inference for answers, preserving unrelated task settings."""
-import base64,json,subprocess
+"""Reserve dedicated CPU inference for answers, preserving unrelated task settings."""
+import base64,json,os,subprocess
 
 def kube(*args,**kwargs):
     return subprocess.run(['kubectl','-n','blak-micro',*args],check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**kwargs).stdout
@@ -8,7 +8,7 @@ def kube(*args,**kwargs):
 try:
     secret=json.loads(kube('get','secret','blak-hermes-sync','-o','json'))
     accounts=json.loads(base64.b64decode(secret['data']['accounts.json']))['accounts']
-    account=next(a for a in accounts if a['name']=='homelab-admin')
+    account=next(a for a in accounts if a['name']==os.environ.get('BLAK_SYNC_ACCOUNT','workspace-admin'))
     code='''
 import json,sys,urllib.request
 token=json.load(sys.stdin)['token']

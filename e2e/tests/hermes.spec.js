@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const { test, expect } = require('@playwright/test');
 const { authentikLogin } = require('../helpers/auth');
 const { syncAccount, serviceURL, syncNow } = require('../helpers/sync');
-const HERMES = 'https://hermes.homelab.local';
+const HERMES = 'https://hermes.workspace.example.com';
 
 test('Hermes requires authentication for knowledge and chat', async ({ request }) => {
   for (const path of ['/api/v1/knowledge/', '/api/models']) {
@@ -15,7 +15,7 @@ test('Hermes SSO opens a usable workspace chat', async ({ page }) => {
   await page.goto(HERMES);
   await page.getByRole('button', { name: 'Continue with Blak ID' }).click();
   await authentikLogin(page);
-  await page.waitForURL(url => url.hostname === 'hermes.homelab.local' && !/^\/(auth|oauth)/.test(url.pathname));
+  await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
   await expect(page.getByRole('link', { name: /New Chat/i }).or(page.getByRole('button', { name: /New Chat/i })).first()).toBeVisible();
   await expect(page.locator('#chat-input')).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('hermes-chat.png'), fullPage: true });
@@ -56,7 +56,7 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
     await page.goto(HERMES);
     await page.getByRole('button', { name: 'Continue with Blak ID' }).click();
     await authentikLogin(page);
-    await page.waitForURL(url => url.hostname === 'hermes.homelab.local' && !/^\/(auth|oauth)/.test(url.pathname));
+    await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
     await page.goto(HERMES + '/?model=blak-workspace-' + account.owner_id);
     await page.locator('#chat-input').waitFor();
     const releaseNotes = page.getByRole('button', { name: "Okay, Let's Go!" });
@@ -88,7 +88,7 @@ test('sync includes private team-channel and Projects task data', async ({ playw
   test.setTimeout(420000);
   const account = syncAccount();
   const chat = await playwright.request.newContext({ baseURL: serviceURL('chat', 3000), extraHTTPHeaders: account.sources.chat.headers });
-  const projects = await playwright.request.newContext({ baseURL: serviceURL('projects', 5173), extraHTTPHeaders: { ...account.sources.projects.headers, origin: 'https://projects.homelab.local' } });
+  const projects = await playwright.request.newContext({ baseURL: serviceURL('projects', 5173), extraHTTPHeaders: { ...account.sources.projects.headers, origin: 'https://projects.workspace.example.com' } });
   const hermes = await playwright.request.newContext({ baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
   const suffix = crypto.randomBytes(5).toString('hex');
   const phrase = 'TEAMDATA-' + suffix.toUpperCase();

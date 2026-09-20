@@ -2,79 +2,79 @@
   {
     "id": "portal",
     "name": "Workspace",
-    "url": "https://portal.homelab.local/",
+    "url": "https://portal.workspace.example.com/",
     "backend": "Blak Workspace by Yuma IT"
   },
   {
     "id": "forms",
     "name": "Blak Forms",
-    "url": "https://forms.homelab.local/",
+    "url": "https://forms.workspace.example.com/",
     "backend": "Powered by HeyForm"
   },
   {
     "id": "draw",
     "name": "Blak Draw",
-    "url": "https://portal.homelab.local/draw",
+    "url": "https://portal.workspace.example.com/draw",
     "backend": "Powered by Excalidraw"
   },
   {
     "id": "crm",
     "name": "Blak CRM",
-    "url": "https://crm.homelab.local/login?redirect-to=/crm",
+    "url": "https://crm.workspace.example.com/login?redirect-to=/crm",
     "backend": "Powered by Frappe CRM"
   },
   {
     "id": "drive",
     "name": "Blak Drive",
-    "url": "https://drive.homelab.local/",
+    "url": "https://drive.workspace.example.com/",
     "backend": "Powered by OpenCloud"
   },
   {
     "id": "docs",
     "name": "Blak Docs",
-    "url": "https://drive.homelab.local/",
+    "url": "https://drive.workspace.example.com/",
     "backend": "Powered by Collabora (WOPI via Drive SSO)"
   },
   {
     "id": "chat",
     "name": "Blak Chat",
-    "url": "https://chat.homelab.local/",
+    "url": "https://chat.workspace.example.com/",
     "backend": "Powered by Rocket.Chat"
   },
   {
     "id": "sites",
     "name": "Blak Knowledge",
-    "url": "https://sites.homelab.local/",
+    "url": "https://sites.workspace.example.com/",
     "backend": "Powered by Outline"
   },
   {
     "id": "projects",
     "name": "Blak Projects",
-    "url": "https://projects.homelab.local/",
+    "url": "https://projects.workspace.example.com/",
     "backend": "Powered by Kaneo"
   },
   {
     "id": "flow",
     "name": "Blak Flow",
-    "url": "https://portal.homelab.local/flow",
+    "url": "https://portal.workspace.example.com/flow",
     "backend": "Powered by Blak Flow engine"
   },
   {
     "id": "hermes",
     "name": "Blak Hermes",
-    "url": "https://hermes.homelab.local/",
+    "url": "https://hermes.workspace.example.com/",
     "backend": "Powered by Open WebUI + Ollama"
   },
   {
     "id": "search",
     "name": "Blak Search",
-    "url": "https://portal.homelab.local/search",
+    "url": "https://portal.workspace.example.com/search",
     "backend": "Powered by Meilisearch"
   },
   {
     "id": "storage",
     "name": "Blak Cloud",
-    "url": "https://portal.homelab.local/cloud",
+    "url": "https://portal.workspace.example.com/cloud",
     "backend": "Powered by Floci"
   }
 ]

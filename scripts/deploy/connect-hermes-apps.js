@@ -22,7 +22,7 @@ function save(name, values) {
 async function main() {
   const values = secret('blak-hermes-sync');
   const config = JSON.parse(values['accounts.json']);
-  const mapping = config.accounts.find(a => a.name === (process.env.BLAK_SYNC_ACCOUNT || 'homelab-admin'));
+  const mapping = config.accounts.find(a => a.name === (process.env.BLAK_SYNC_ACCOUNT || 'workspace-admin'));
   if (!mapping) throw new Error('Requested Hermes account mapping is missing');
   const hermesIP = kube(['get', 'service', 'hermes', '-o', 'jsonpath={.spec.clusterIP}']);
   const response = await fetch(`http://${hermesIP}:8080/api/v1/auths/`, { headers: { authorization: 'Bearer ' + mapping.hermes.token } });
@@ -36,38 +36,38 @@ async function main() {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
     stage = 'portal sign-in';
-    await page.goto('https://portal.homelab.local/login');
+    await page.goto('https://portal.workspace.example.com/login');
     await authentikLogin(page);
-    await page.waitForURL(u => u.hostname === 'portal.homelab.local' && u.pathname === '/');
-    const session = (await context.cookies('https://portal.homelab.local')).find(c => c.name === 'blak_session');
+    await page.waitForURL(u => u.hostname === 'portal.workspace.example.com' && u.pathname === '/');
+    const session = (await context.cookies('https://portal.workspace.example.com')).find(c => c.name === 'blak_session');
     const identity = JSON.parse(Buffer.from(session.value.split('.')[0], 'base64url').toString());
     if (identity.email !== hermes.email || !identity.sub) throw new Error('Portal and Hermes identities differ');
     mapping.portal_owner = identity.sub;
     mapping.credential_metadata ||= {};
     const checkedAt = Math.floor(Date.now()/1000);
     stage = 'Forms sign-in';
-    await page.goto('https://forms.homelab.local');
+    await page.goto('https://forms.workspace.example.com');
     await page.getByRole('button', { name: 'Blak ID', exact: true }).click();
-    await page.waitForURL(u => u.hostname === 'forms.homelab.local' && u.pathname.startsWith('/workspace/'));
-    const detail = await page.request.post('https://forms.homelab.local/graphql', { data: { query: '{userDetail{id email}}' } });
+    await page.waitForURL(u => u.hostname === 'forms.workspace.example.com' && u.pathname.startsWith('/workspace/'));
+    const detail = await page.request.post('https://forms.workspace.example.com/graphql', { data: { query: '{userDetail{id email}}' } });
     const user = (await detail.json()).data?.userDetail;
     if (user?.email !== hermes.email) throw new Error('Forms and Hermes identities differ');
-    const cookies = await context.cookies('https://forms.homelab.local');
-    mapping.sources.forms = { base: 'http://forms:9157', public_base: 'https://forms.homelab.local', expected_user: hermes.email,
+    const cookies = await context.cookies('https://forms.workspace.example.com');
+    mapping.sources.forms = { base: 'http://forms:9157', public_base: 'https://forms.workspace.example.com', expected_user: hermes.email,
       headers: { Cookie: cookies.map(c => c.name + '=' + c.value).join('; ') } };
     const expires=cookies.map(cookie=>cookie.expires).filter(value=>value>0);
     if(expires.length)mapping.credential_metadata.forms={...mapping.credential_metadata.forms,expires_at:Math.min(...expires)};
     const token = mapping.sources.draw?.token || crypto.randomBytes(40).toString('base64url');
-    for (const source of ['draw', 'flow']) mapping.sources[source] = { base: 'http://portal:3000', public_base: 'https://portal.homelab.local', token, expected_user: identity.sub };
+    for (const source of ['draw', 'flow']) mapping.sources[source] = { base: 'http://portal:3000', public_base: 'https://portal.workspace.example.com', token, expected_user: identity.sub };
     const exporters = JSON.parse(secret('blak-portal-exports')['accounts.json'] || '[]').filter(a => a.owner !== identity.sub);
     exporters.push({ owner: identity.sub, sha256: crypto.createHash('sha256').update(token).digest('hex') });
     save('blak-portal-exports', { 'accounts.json': JSON.stringify(exporters) });
     stage = 'CRM API credential';
     const script = fs.readFileSync(path.join(__dirname, '../../services/frappe/export-credentials.py'), 'utf8');
     const crm = JSON.parse(kube(['exec', '-i', 'deploy/frappe-crm', '-c', 'backend', '--', 'env/bin/python', '-c', script], JSON.stringify({ email: hermes.email }) + '\n'));
-    mapping.sources.crm = { base: 'http://crm:3000', public_base: 'https://crm.homelab.local', expected_user: hermes.email,
+    mapping.sources.crm = { base: 'http://crm:3000', public_base: 'https://crm.workspace.example.com', expected_user: hermes.email,
       headers: { Authorization: 'token ' + crm.api_key + ':' + crm.api_secret } };
-    mapping.sources.storage = { base: 'http://floci:4566', public_base: 'https://portal.homelab.local/cloud' };
+    mapping.sources.storage = { base: 'http://floci:4566', public_base: 'https://portal.workspace.example.com/cloud' };
     for (const source of ['forms','draw','flow','crm','storage']) mapping.credential_metadata[source] = { ...mapping.credential_metadata[source], checked_at: checkedAt };
     save('blak-hermes-sync', { 'accounts.json': JSON.stringify(config) });
     stage = 'portal credential projection';

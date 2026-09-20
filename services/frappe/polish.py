@@ -4,7 +4,7 @@ p = Path("apps/crm/frontend/src/components/Layouts/AppSidebar.vue")
 s = p.read_text()
 start = s.index("            <GettingStartedBanner")
 end = s.index("            />", start) + len("            />")
-s = s[:start] + '''            <a href="https://portal.homelab.local/welcome" class="rounded-md p-2 text-ink-gray-8 hover:bg-surface-gray-2">Getting started with Blak</a>''' + s[end:]
+s = s[:start] + '''            <a href="https://portal.workspace.example.com/welcome" class="rounded-md p-2 text-ink-gray-8 hover:bg-surface-gray-2">Getting started with Blak</a>''' + s[end:]
 start = s.index('    <HelpModal')
 end = s.index('    />', start) + len('    />')
 s = s[:start] + '<!-- Blak ID accounts use workspace onboarding. -->' + s[end:]
