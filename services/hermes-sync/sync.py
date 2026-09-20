@@ -207,6 +207,23 @@ def json_document(source, identifier, title, content, revision=''):
             'revision': revision, 'content': json.dumps({'title': title, **content}, ensure_ascii=False, sort_keys=True).encode()}
 
 
+def crm_related(api, doctype, filters, fields):
+    rows, offset = [], 0
+    while True:
+        query = urllib.parse.urlencode({'fields': json.dumps(fields), 'filters': json.dumps(filters),
+                                      'limit_start': offset, 'limit_page_length': 100, 'order_by': 'name asc'})
+        try:
+            batch = api.json('GET', '/api/resource/' + urllib.parse.quote(doctype) + '?' + query)['data']
+        except urllib.error.HTTPError as error:
+            if error.code == 403:
+                return []
+            raise
+        rows.extend(batch)
+        if len(batch) < 100:
+            return rows
+        offset += len(batch)
+
+
 def crm_documents(api):
     """Use the mapped person's API token, never Administrator or a database dump."""
     principal = api.json('GET', '/api/method/frappe.auth.get_logged_user')['message']
@@ -227,8 +244,17 @@ def crm_documents(api):
             for row in rows:
                 path = '/api/resource/' + urllib.parse.quote(doctype) + '/' + urllib.parse.quote(row['name'], safe='')
                 data = api.json('GET', path)['data']
+                reference = {'reference_doctype': doctype, 'reference_name': row['name']}
+                comments = crm_related(api, 'Comment', reference, ['name', 'content', 'comment_by', 'modified'])
+                communications = crm_related(api, 'Communication', reference, ['name', 'subject', 'content', 'sender', 'recipients', 'communication_date'])
+                attachments = crm_related(api, 'File', {'attached_to_doctype': doctype, 'attached_to_name': row['name']}, ['name', 'file_name', 'file_url', 'file_size', 'modified'])
                 documents.append(json_document('crm', doctype + ':' + row['name'], doctype + ' ' + row['name'],
-                    {'source': api.public_base + '/crm/' + route + '/' + urllib.parse.quote(row['name'], safe=''), 'record': data}, row['modified']))
+                    {'source': api.public_base + '/crm/' + route + '/' + urllib.parse.quote(row['name'], safe=''),
+                     'record': data, 'comments': comments, 'communications': communications, 'attachments': attachments}))
+                for file in attachments:
+                    path = file.get('file_url') or ''
+                    if path.startswith('/') and not path.startswith('//') and Path(file['file_name']).suffix.lower() in EXTENSIONS and (file.get('file_size') or 0) <= MAX_BYTES:
+                        documents.append({'id': 'crm:attachment:' + file['name'], 'name': file['file_name'], 'path': urllib.parse.quote(path, safe='/%'), 'revision': file['modified']})
             if len(rows) < 100:
                 break
             offset += len(rows)

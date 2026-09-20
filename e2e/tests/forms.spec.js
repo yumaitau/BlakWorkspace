@@ -1,6 +1,8 @@
 "use strict";
 const { test, expect } = require("@playwright/test");
 const { authentikLogin } = require("../helpers/auth");
+const { syncNow } = require("../helpers/sync");
+const { privateKnowledge, indexedName } = require("../helpers/knowledge");
 const FORMS = "https://forms.homelab.local";
 test("Forms dashboard requires login", async ({ page }) => {
   await page.goto(FORMS);
@@ -11,8 +13,10 @@ test("Forms dashboard requires login", async ({ page }) => {
 test("Forms SSO, create, publish, anonymous response, review and delete", async ({
   page,
   browser,
+  playwright,
 }) => {
-  test.setTimeout(120000);
+  test.setTimeout(360000);
+  const knowledge = await privateKnowledge(playwright);
   page.setDefaultTimeout(20000);
   await page.goto(FORMS);
   await page.getByRole("button", { name: "Blak ID", exact: true }).click();
@@ -40,7 +44,7 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
   await page.waitForURL(/\/form\/[^/]+\/create/);
   const formId = page.url().match(/\/form\/([^/]+)/)[1];
   const marker = "E2E-" + Date.now();
-  let respondent;
+  let respondent, responseId;
   try {
     const saved = page.waitForResponse(
       (r) =>
@@ -67,6 +71,15 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
     ).toBeVisible();
     await page.getByRole("link", { name: "Submissions", exact: true }).click();
     await expect(page.locator("body")).toContainText(marker);
+    const submissions = await page.request.post(FORMS + "/graphql", { data: {
+      query: "query($input:SubmissionsInput!){submissions(input:$input){submissions{id answers}}}",
+      variables: { input: { formId, page: 1, limit: 30 } },
+    } });
+    const submissionData = await submissions.json();
+    expect(submissionData.errors).toBeUndefined();
+    responseId = submissionData.data.submissions.submissions.find(s => JSON.stringify(s.answers).includes(marker)).id;
+    syncNow();
+    expect(await knowledge.query('Forms', marker)).toContain(marker);
     await page.screenshot({
       path: test.info().outputPath("forms-submission.png"),
       fullPage: true,
@@ -81,5 +94,10 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
       },
     });
     expect((await result.json()).errors).toBeUndefined();
+    syncNow();
+    const remaining = await knowledge.files('Forms');
+    expect(remaining).not.toContain(indexedName('forms', formId));
+    if (responseId) expect(remaining).not.toContain(indexedName('forms', formId + ':' + responseId));
+    await knowledge.client.dispose();
   }
 });

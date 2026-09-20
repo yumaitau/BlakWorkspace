@@ -12,7 +12,7 @@ frappe.connect()
 try:
     frappe.set_user('Administrator')
     user = frappe.get_doc('User', email)
-    if not user.enabled or email == 'Administrator' or not set(user.get_roles()) & {'Sales User', 'Sales Manager'}:
+    if not user.enabled or email == 'Administrator' or not set(frappe.get_roles(email)) & {'Sales User', 'Sales Manager'}:
         raise ValueError('Mapped CRM user must be an enabled CRM account')
     api_secret = get_decrypted_password('User', email, 'api_secret', raise_exception=False)
     if not user.api_key:

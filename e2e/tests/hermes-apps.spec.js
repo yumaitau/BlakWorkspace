@@ -1,0 +1,76 @@
+'use strict';
+const crypto = require('node:crypto');
+const { test, expect } = require('@playwright/test');
+const { authentikLogin } = require('../helpers/auth');
+const { session } = require('../helpers/fixtures');
+const { syncNow, serviceURL } = require('../helpers/sync');
+const { privateKnowledge, indexedName } = require('../helpers/knowledge');
+const PORTAL = 'https://portal.homelab.local';
+test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another owner', async ({ page, browser, playwright }) => {
+  test.setTimeout(600000);
+  const knowledge = await privateKnowledge(playwright);
+  const crm = await playwright.request.newContext({ baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
+  const exporter = await playwright.request.newContext({ baseURL: PORTAL, ignoreHTTPSErrors: true, extraHTTPHeaders: { authorization: 'Bearer ' + knowledge.account.sources.draw.token } });
+  const other = await browser.newContext({ ignoreHTTPSErrors: true });
+  await other.addCookies([{ name: 'blak_session', value: session('hermes-other-' + Date.now()), url: PORTAL }]);
+  const suffix = crypto.randomBytes(5).toString('hex');
+  const first = 'APPS-FIRST-' + suffix.toUpperCase(), changed = 'APPS-UPDATED-' + suffix.toUpperCase(), privatePhrase = 'PRIVATE-' + suffix;
+  const objectName = 'hermes-' + suffix + '.txt';
+  const objectURL = PORTAL + '/cloud/object?' + new URLSearchParams({ bucket: 'blak-hermes-e2e', key: objectName });
+  let lead, board, privateBoard, flowPath;
+  try {
+    await page.goto(PORTAL + '/login');
+    await authentikLogin(page);
+    await page.waitForURL(u => u.hostname === 'portal.homelab.local' && u.pathname === '/');
+    expect((await exporter.get('/api/draw')).status()).toBe(401);
+    expect((await exporter.post('/api/knowledge-export/draw', { data: {} })).status()).toBe(405);
+    const created = await crm.post('/api/resource/CRM%20Lead', { data: { first_name: 'Hermes CRM ' + suffix, job_title: first } });
+    expect(created.ok()).toBeTruthy(); lead = (await created.json()).data;
+    const drawing = await page.request.post(PORTAL + '/api/draw', { data: { name: 'Hermes Draw ' + suffix } });
+    expect(drawing.ok()).toBeTruthy(); board = await drawing.json();
+    const scene = text => ({ appState: {}, files: {}, elements: [{ id: 'text', type: 'text', text, x: 10, y: 10, width: 200, height: 40 }] });
+    const saved = await page.request.put(PORTAL + '/api/draw/' + board.id, { data: { revision: board.revision, scene: scene(first) } });
+    expect(saved.ok()).toBeTruthy(); board = await saved.json();
+    privateBoard = await (await other.request.post(PORTAL + '/api/draw', { data: { name: privatePhrase } })).json();
+    const exported = await exporter.get('/api/knowledge-export/draw?owner=someone-else');
+    expect(exported.ok()).toBeTruthy(); expect(await exported.text()).not.toContain(privatePhrase);
+    await page.goto(PORTAL + '/flow/new');
+    await page.getByLabel('Name', { exact: true }).fill('Hermes Flow ' + suffix);
+    await page.getByRole('button', { name: 'Save flow' }).click();
+    await page.waitForURL(/\/flow\/[a-f0-9]{16}$/); flowPath = new URL(page.url()).pathname;
+    expect((await page.request.post(PORTAL + '/cloud/bucket', { form: { name: 'blak-hermes-e2e' } })).ok()).toBeTruthy();
+    expect((await page.request.put(objectURL, { data: first })).ok()).toBeTruthy();
+    syncNow();
+    for (const label of ['CRM', 'Draw', 'Cloud files']) expect(await knowledge.query(label, first)).toContain(first);
+    expect(await knowledge.query('Flow', 'Hermes Flow ' + suffix)).toContain('Hermes Flow ' + suffix);
+    expect(await knowledge.query('Draw', privatePhrase)).not.toContain(privatePhrase);
+    const answer = await knowledge.client.post('/api/chat/completions', { data: { model: 'blak-workspace-' + knowledge.account.owner_id, stream: false,
+      messages: [{ role: 'user', content: 'What is the exact job title of the CRM lead Hermes CRM ' + suffix + '? Return its job title.' }] } });
+    expect(answer.ok()).toBeTruthy();
+    const completion = await answer.json();
+    expect(completion.choices[0].message.content).toContain(first);
+    expect(JSON.stringify(completion.sources)).toContain(first);
+    expect((await crm.put('/api/resource/CRM%20Lead/' + lead.name, { data: { job_title: changed } })).ok()).toBeTruthy();
+    const updatedBoard = await page.request.put(PORTAL + '/api/draw/' + board.id, { data: { revision: board.revision, scene: scene(changed) } });
+    expect(updatedBoard.ok()).toBeTruthy(); board = await updatedBoard.json();
+    expect((await page.request.put(objectURL, { data: changed })).ok()).toBeTruthy();
+    expect((await page.request.post(PORTAL + flowPath + '/enable')).ok()).toBeTruthy();
+    syncNow();
+    for (const label of ['CRM', 'Draw', 'Cloud files']) {
+      const result = await knowledge.query(label, changed);
+      expect(result).toContain(changed); expect(result).not.toContain(first);
+    }
+  } finally {
+    if (lead) expect((await crm.delete('/api/resource/CRM%20Lead/' + lead.name)).ok()).toBeTruthy();
+    if (board) expect((await page.request.delete(PORTAL + '/api/draw/' + board.id, { data: { revision: board.revision } })).ok()).toBeTruthy();
+    if (privateBoard?.id) expect((await other.request.delete(PORTAL + '/api/draw/' + privateBoard.id, { data: { revision: privateBoard.revision } })).ok()).toBeTruthy();
+    if (flowPath) expect((await page.request.post(PORTAL + flowPath + '/delete')).ok()).toBeTruthy();
+    await page.request.delete(objectURL);
+    syncNow();
+    if (lead) expect(await knowledge.files('CRM')).not.toContain(indexedName('crm', 'CRM Lead:' + lead.name));
+    if (board) expect(await knowledge.files('Draw')).not.toContain(indexedName('draw', board.id));
+    if (flowPath) expect(await knowledge.files('Flow')).not.toContain(indexedName('flow', flowPath.split('/').pop()));
+    expect(await knowledge.files('Cloud files')).not.toContain(objectName);
+    await Promise.all([crm.dispose(), exporter.dispose(), other.close(), knowledge.client.dispose()]);
+  }
+});
