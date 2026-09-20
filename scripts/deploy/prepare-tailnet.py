@@ -40,6 +40,8 @@ def configure(root,host,address):
         addition="site_config = SITES / SITE / 'site_config.json'\nsite_settings = json.loads(site_config.read_text())\nsite_settings['host_name'] = "+repr(origins['crm'])+"\nsite_config.write_text(json.dumps(site_settings))\n"
         text=setup.read_text().replace('import frappe\n', addition+'\nimport frappe\n')
         setup.write_text(text)
+    runner=root/'scripts/deploy/test-e2e.sh'
+    if runner.exists():runner.write_text(runner.read_text().replace('HOSTS=()', 'HOSTS=(--add-host '+repr(host+':'+address)+')'))
     # Preserve old routes while adding explicit port-aware tailnet origins.
     nginx=root/'services/workspace-shell/nginx.conf'
     text=nginx.read_text().replace('map $host $blak_upstream','map $http_host $blak_upstream')

@@ -1,5 +1,9 @@
 ARG BASE_IMAGE=blak-frappe:crm1.84.0-frappe15.121.0
 FROM ${BASE_IMAGE}
+USER root
+# Preserve the public port when Frappe builds redirects and socket origins.
+RUN sed -i 's/Host $host;/Host $http_host;/g; s@Origin $proxy_x_forwarded_proto://${FRAPPE_SITE_NAME_HEADER};@Origin $proxy_x_forwarded_proto://$http_host;@g' /templates/nginx/frappe.conf.template
+USER frappe
 COPY --chown=frappe:frappe polish.py /tmp/blak-polish.py
 RUN python /tmp/blak-polish.py && cd apps/crm/frontend && yarn build
 # Small upgrade-safe adapter: shared theme is mounted from the generated ConfigMap.

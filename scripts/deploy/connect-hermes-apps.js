@@ -31,7 +31,9 @@ async function main() {
   if (hermes.id !== mapping.owner_id || !hermes.email) throw new Error('Hermes mapping owner mismatch');
   process.env.BLAK_E2E_USER ||= 'akadmin';
   process.env.BLAK_E2E_PASSWORD ||= secret('blak-idp')['bootstrap-password'];
-  const browser = await chromium.launch({ headless: true });
+  const browser = process.env.PLAYWRIGHT_WS_ENDPOINT
+    ? await chromium.connect(process.env.PLAYWRIGHT_WS_ENDPOINT)
+    : await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();

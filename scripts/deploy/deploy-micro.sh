@@ -89,6 +89,9 @@ for old in crm crm-worker; do
   fi
 done
 python3 scripts/deploy/route-workspace-shell.py
+if python3 -c 'import json,sys; sys.exit(not bool(json.load(open(".deployment.json")).get("tailnet")))'; then
+  python3 scripts/deploy/publish-tailnet.py
+fi
 (cd e2e && npm ci --ignore-scripts)
 node scripts/deploy/connect-hermes-apps.js
 python3 scripts/deploy/configure-hermes-tasks.py
