@@ -1,0 +1,145 @@
+# Blak Chat: Rocket.Chat Community with custom OAuth (OIDC) to Blak ID.
+# Custom OAuth is Community-licenced (unlike Mattermost Team). Mongo replica set required.
+# Secrets: blak-chat (scripts/homelab/ensure-secrets.sh). Never commit them.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rocketchat-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: mongo } }
+  template:
+    metadata: { labels: { app: mongo } }
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          args: ["--replSet", "rs0", "--bind_ip_all"]
+          ports: [{ containerPort: 27017 }]
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 2Gi }
+          readinessProbe:
+            exec: { command: ["mongosh", "--quiet", "--eval", "db.adminCommand({ping:1})"] }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts: [{ name: data, mountPath: /data/db }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: mongo-data } }]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-rs-init
+  namespace: blak-micro
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: mongo:7.0
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -e
+              until mongosh --host mongo --quiet --eval 'db.adminCommand({ping:1})'; do sleep 2; done
+              mongosh --host mongo --quiet --eval 'try { rs.status() } catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"mongo:27017"}]}) }'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: blak-micro
+spec:
+  selector: { app: mongo }
+  ports: [{ port: 27017, targetPort: 27017 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: chat } }
+  template:
+    metadata: { labels: { app: chat } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [id.homelab.local]
+      containers:
+        - name: rocketchat
+          image: rocketchat/rocket.chat:7.9.3
+          ports: [{ containerPort: 3000 }]
+          env:
+            - { name: ROOT_URL, value: https://chat.homelab.local }
+            - { name: PORT, value: "3000" }
+            - { name: MONGO_URL, value: mongodb://mongo:27017/rocketchat?replicaSet=rs0 }
+            - { name: MONGO_OPLOG_URL, value: mongodb://mongo:27017/local?replicaSet=rs0 }
+            - { name: OVERWRITE_SETTING_Show_Setup_Wizard, value: completed }
+            - { name: OVERWRITE_SETTING_Accounts_ShowFormLogin, value: "false" }
+            - { name: ADMIN_EMAIL, value: admin@blak.local }
+            - { name: ADMIN_USERNAME, value: akadmin }
+            - name: ADMIN_PASS
+              valueFrom: { secretKeyRef: { name: blak-chat, key: admin-password } }
+            - { name: Accounts_OAuth_Custom-Blakid, value: "true" }
+            - { name: Accounts_OAuth_Custom-Blakid-url, value: https://id.homelab.local/application/o }
+            - { name: Accounts_OAuth_Custom-Blakid-token_path, value: /token/ }
+            - { name: Accounts_OAuth_Custom-Blakid-identity_path, value: /userinfo/ }
+            - { name: Accounts_OAuth_Custom-Blakid-authorize_path, value: /authorize/ }
+            - { name: Accounts_OAuth_Custom-Blakid-scope, value: "openid email profile" }
+            - { name: Accounts_OAuth_Custom-Blakid-button_label_text, value: Sign in with Blak ID }
+            - { name: Accounts_OAuth_Custom-Blakid-login_style, value: redirect }
+            - { name: Accounts_OAuth_Custom-Blakid-token_sent_via, value: payload }
+            - { name: Accounts_OAuth_Custom-Blakid-identity_token_sent_via, value: payload }
+            - { name: Accounts_OAuth_Custom-Blakid-username_field, value: preferred_username }
+            - { name: Accounts_OAuth_Custom-Blakid-email_field, value: email }
+            - { name: Accounts_OAuth_Custom-Blakid-name_field, value: name }
+            - { name: Accounts_OAuth_Custom-Blakid-merge_users, value: "true" }
+            - name: Accounts_OAuth_Custom-Blakid-id
+              value: rocketchat
+            - name: Accounts_OAuth_Custom-Blakid-secret
+              valueFrom: { secretKeyRef: { name: blak-chat, key: oidc-secret } }
+            - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          readinessProbe: { httpGet: { path: /api/info, port: 3000 }, initialDelaySeconds: 60, periodSeconds: 15 }
+          livenessProbe: { httpGet: { path: /api/info, port: 3000 }, initialDelaySeconds: 180, periodSeconds: 30 }
+          volumeMounts:
+            - { name: data, mountPath: /app/uploads }
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: rocketchat-data } }
+        - name: ca
+          configMap: { name: blak-ca }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+  namespace: blak-micro
+spec:
+  selector: { app: chat }
+  ports: [{ name: http, port: 3000, targetPort: 3000 }]

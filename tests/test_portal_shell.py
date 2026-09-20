@@ -62,15 +62,19 @@ class TestPortalShell(unittest.TestCase):
         self.assertIn("data-app=\"flow\"", spec)
         self.assertIn("/flow", spec)
         self.assertIn("run-row", spec)
+        self.assertIn("chat.homelab.local", spec)
+        self.assertIn("projects.homelab.local", spec)
 
-    def test_chat_and_projects_are_not_advertised_live(self):
+    def test_chat_and_projects_are_live_oidc(self):
         data = _fixture()
         chat = next(a for a in data["apps"] if a["id"] == "chat")
         projects = next(a for a in data["apps"] if a["id"] == "projects")
-        self.assertEqual(chat["status"], "soon")
-        self.assertFalse(chat["url"])
-        self.assertEqual(projects["status"], "soon")
-        self.assertFalse(projects["url"])
+        self.assertEqual(chat["status"], "live")
+        self.assertEqual(chat["url"], "https://chat.homelab.local")
+        self.assertEqual(chat["oidcClient"], "rocketchat")
+        self.assertEqual(projects["status"], "live")
+        self.assertEqual(projects["url"], "https://projects.homelab.local")
+        self.assertEqual(projects["oidcClient"], "kaneo")
 
 
 def _flow_waffle_item(html: str) -> str:

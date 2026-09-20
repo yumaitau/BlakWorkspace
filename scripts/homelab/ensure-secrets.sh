@@ -34,10 +34,15 @@ if ! have blak-sites; then
     --from-literal=utils-secret="$(rand)" \
     --from-literal=oidc-secret="$(rand)"
 fi
-if ! have blak-projects; then
-  kubectl -n "$NS" create secret generic blak-projects \
-    --from-literal=secret-key-base="$(rand)" \
-    --from-literal=oidc-secret="$(rand)"
+if ! have blak-chat; then
+  kubectl -n "$NS" create secret generic blak-chat \
+    --from-literal=oidc-secret="$(rand)" \
+    --from-literal=admin-password="$(rand)"
+fi
+if ! have blak-kaneo; then
+  kubectl -n "$NS" create secret generic blak-kaneo \
+    --from-literal=oidc-secret="$(rand)" \
+    --from-literal=auth-secret="$(rand)$(rand)"
 fi
 if ! have blak-hermes; then
   kubectl -n "$NS" create secret generic blak-hermes \

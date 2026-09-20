@@ -1,0 +1,93 @@
+# Blak Projects: Kaneo (MIT) with custom OIDC to Blak ID.
+# Image: ghcr.io/usekaneo/kaneo — API+web on :5173. Redirect:
+#   {KANEO_API_URL}/api/auth/oauth2/callback/custom
+# Secrets: blak-kaneo (scripts/homelab/ensure-secrets.sh). Never commit them.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaneo-createdb
+  namespace: blak-micro
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: createdb
+          image: postgres:16-alpine
+          env:
+            - { name: PGUSER, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-user } } }
+            - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-password } } }
+            - { name: PGHOST, value: postgres }
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              until pg_isready -h postgres; do sleep 2; done
+              psql -d portal -tc "SELECT 1 FROM pg_database WHERE datname='kaneo'" | grep -q 1 \
+                || psql -d portal -c 'CREATE DATABASE kaneo'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: projects
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: projects } }
+  template:
+    metadata: { labels: { app: projects } }
+    spec:
+      hostAliases:
+        - ip: 10.43.169.184
+          hostnames: [id.homelab.local]
+      containers:
+        - name: kaneo
+          image: ghcr.io/usekaneo/kaneo:latest
+          ports: [{ containerPort: 5173 }]
+          env:
+            - { name: KANEO_CLIENT_URL, value: https://projects.homelab.local }
+            - { name: KANEO_API_URL, value: https://projects.homelab.local/api }
+            - { name: POSTGRES_HOST, value: postgres }
+            - { name: POSTGRES_PORT, value: "5432" }
+            - { name: POSTGRES_DB, value: kaneo }
+            - { name: POSTGRES_USER, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-user } } }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: blak-core, key: postgres-password } } }
+            - { name: AUTH_SECRET, valueFrom: { secretKeyRef: { name: blak-kaneo, key: auth-secret } } }
+            - { name: DISABLE_LOGIN_FORM, value: "true" }
+            - { name: DISABLE_PASSWORD_REGISTRATION, value: "true" }
+            - { name: CUSTOM_OAUTH_AUTO_LOGIN, value: "true" }
+            - { name: CUSTOM_OAUTH_CLIENT_ID, value: kaneo }
+            - { name: CUSTOM_OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-kaneo, key: oidc-secret } } }
+            - { name: CUSTOM_OAUTH_AUTHORIZATION_URL, value: https://id.homelab.local/application/o/authorize/ }
+            - { name: CUSTOM_OAUTH_TOKEN_URL, value: https://id.homelab.local/application/o/token/ }
+            - { name: CUSTOM_OAUTH_USER_INFO_URL, value: https://id.homelab.local/application/o/userinfo/ }
+            - { name: CUSTOM_OAUTH_DISCOVERY_URL, value: https://id.homelab.local/application/o/kaneo/.well-known/openid-configuration }
+            - { name: CUSTOM_OAUTH_SCOPES, value: "openid,profile,email" }
+            - { name: CUSTOM_AUTH_PKCE, value: "true" }
+            - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 2Gi }
+          readinessProbe:
+            httpGet: { path: /api/health, port: 5173 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: { path: /api/health, port: 5173 }
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          volumeMounts:
+            - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
+      volumes:
+        - name: ca
+          configMap: { name: blak-ca }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: projects
+  namespace: blak-micro
+spec:
+  selector: { app: projects }
+  ports: [{ name: http, port: 5173, targetPort: 5173 }]

@@ -8,11 +8,11 @@ Labels only. Do not rename Helm releases, chart names, or OIDC client IDs withou
 | Blak Drive | OpenCloud | opencloud |
 | Blak Docs | Collabora | collabora |
 | Blak Notes | Notes | notes |
-| Blak Chat | Element | element / synapse |
+| Blak Chat | Rocket.Chat (homelab); Element in openDesk seed | rocketchat / element |
 | Blak Meet | Jitsi | jitsi |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed) | ox |
 | Blak Knowledge | Docmost (not XWiki) | docmost |
-| Blak Projects | OpenProject | openproject |
+| Blak Projects | Kaneo (homelab); OpenProject in openDesk seed | kaneo / openproject |
 | Blak Admin | Nubus admin / portal admin | nubus |
 | Blak Flow | Blak Flow engine | flow |
 | Blak Hermes | Hermes agent (Yuma-packaged `companyos-hermes`) | hermes |
