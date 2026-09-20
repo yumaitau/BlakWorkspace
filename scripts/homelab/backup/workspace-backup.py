@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """Encrypted, consistent single-node PVC backup and isolated database restore drill."""
-import argparse, base64, datetime, fcntl, hashlib, json, os, secrets, shutil, sqlite3, subprocess, tarfile, tempfile, time
+import argparse, base64, datetime, fcntl, hashlib, json, os, secrets, signal, shutil, sqlite3, subprocess, tarfile, tempfile, time
 from pathlib import Path
 NS='blak-micro'
+RESTORE_LABEL='com.blakworkspace.restore-drill=true'
 os.umask(0o077)
 os.environ.setdefault('KUBECONFIG','/etc/rancher/k3s/k3s.yaml')
 def run(*args, **kwargs):
     return subprocess.run(args,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**kwargs).stdout
-def kube(*args):return run('kubectl','-n',NS,*args).decode()
+def kube(*args):
+    timeout='330s' if args[0]=='rollout' else '30s'
+    return run('kubectl','--request-timeout='+timeout,'-n',NS,*args).decode()
+def cleanup_restore():
+    containers=run('docker','ps','-aq','--filter','label='+RESTORE_LABEL).decode().split()
+    if containers:run('docker','rm','-f',*containers)
+def secret_text(resources,name,key):
+    resource=next(r for r in resources if r['kind']=='Secret' and r['metadata']['name']==name)
+    return base64.b64decode(resource['data'][key]).decode()
+def recover_after_snapshot(root,error):
+    try:recover(root)
+    except Exception as recovery_error:
+        if error is None:raise
+        print('Recovery failed:',type(recovery_error).__name__,'Run workspace-backup.py recover.',flush=True)
+    if error is not None:raise error
 def digest(path):
     h=hashlib.sha256()
     with open(path,'rb') as f:
@@ -45,6 +60,7 @@ def snapshot(root,key):
         replicas={d['metadata']['name']:d['spec'].get('replicas',1) for d in deploys if d['metadata']['name'] not in {'ollama','workspace-shell'}}
         crons={r['metadata']['name']:r['spec'].get('suspend',False) for r in resources['items'] if r['kind']=='CronJob'}
         atomic(root/'resume.json',{'replicas':replicas,'crons':crons})
+        snapshot_error=None
         try:
             for name in crons:kube('patch','cronjob',name,'--type=merge','-p','{"spec":{"suspend":true}}')
             deadline=time.monotonic()+900
@@ -57,7 +73,8 @@ def snapshot(root,key):
                 if time.monotonic()>deadline:raise RuntimeError('Workloads did not quiesce')
                 time.sleep(2)
             for name,path in volumes.items():run('cp','-a','--reflink=auto',path,str(stage/'volumes'/name))
-        finally:recover(root)
+        except Exception as error:snapshot_error=error
+        finally:recover_after_snapshot(root,snapshot_error)
         checks={str(p.relative_to(stage)):digest(p) for p in stage.rglob('*') if p.is_file() and not p.is_symlink()}
         atomic(stage/'manifest.json',{'created_at':stamp,'namespace':NS,'volumes':sorted(volumes),'excluded':{'ollama-data':'Downloadable model weights; re-pull after restore'},'sha256':checks})
         tar=subprocess.Popen(['tar','-C',str(stage),'-cf','-','.'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
@@ -86,7 +103,6 @@ def restore_drill(root,key,archive):
         for path,expected in manifest['sha256'].items():
             if digest(data/path)!=expected:raise RuntimeError('Restore checksum mismatch')
         resources=json.loads((data/'resources.json').read_text())['items']
-        secret={r['metadata']['name']:{k:base64.b64decode(v).decode() for k,v in r.get('data',{}).items()} for r in resources if r['kind']=='Secret'}
         evidence={'files_verified':len(manifest['sha256']),'volumes_verified':len(manifest['volumes']),'database_checks':{}}
         try:
             for deployment,volume,mount in [('postgres','postgres-data','/var/lib/postgresql/data'),('frappe-db','frappe-db-data','/var/lib/mysql'),('mongo','mongo-data','/data/db')]:
@@ -97,19 +113,18 @@ def restore_drill(root,key,archive):
                 # Parent mount must remain traversable after privilege drop.
                 (data/'volumes'/volume).chmod(0o755)
                 options=['-e','PGDATA=/var/lib/postgresql/data/pgdata'] if deployment=='postgres' else []
-                run('docker','run','-d','--name',name,'--network','none','--memory','768m','--cpus','1',*options,'-v',str(data/'volumes'/volume)+':'+mount,c['image'])
+                run('docker','run','-d','--name',name,'--label',RESTORE_LABEL,'--network','none','--memory','768m','--cpus','1',*options,'-v',str(data/'volumes'/volume)+':'+mount,c['image'])
                 if deployment=='postgres':
-                    user=secret['blak-core']['postgres-user']
+                    user=secret_text(resources,'blak-core','postgres-user')
                     command=['psql','-U',user,'-d','portal','-Atc',"SELECT count(*) FROM pg_database WHERE NOT datistemplate;"]
                 elif deployment=='frappe-db':
-                    config=json.loads((data/'volumes/frappe-sites/crm.homelab.local/site_config.json').read_text())
                     # Password through stdin, never command line or logs.
                     command=['sh','-c','read -r MYSQL_PWD; export MYSQL_PWD; mariadb -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE TABLE_SCHEMA NOT IN (\'mysql\',\'information_schema\',\'performance_schema\',\'sys\');"']
                 else:command=['mongosh','--quiet','--eval','db.adminCommand({listDatabases:1}).databases.length']
                 deadline=time.monotonic()+120
                 while True:
                     try:
-                        password=next((v for k,v in secret.get('blak-frappe',{}).items() if k=='database-password'),None)
+                        password=secret_text(resources,'blak-frappe','database-password') if deployment=='frappe-db' else None
                         args=['docker','exec']+(['-i'] if deployment=='frappe-db' else [])+[name,*command]
                         value=run(*args,input=(password+'\n').encode() if deployment=='frappe-db' and password else None).decode().strip()
                         if not value.isdigit() or int(value)<1:raise RuntimeError('Restored database empty')
@@ -130,8 +145,9 @@ def restore_drill(root,key,archive):
             for name in containers:subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['snapshot','restore-drill','recover']);parser.add_argument('--root',type=Path,default=Path('/var/backups/blak-workspace'));parser.add_argument('--key',type=Path,default=Path('/etc/blak-backup/key'));parser.add_argument('--archive',type=Path)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['snapshot','restore-drill','recover','cleanup-restore']);parser.add_argument('--root',type=Path,default=Path('/var/backups/blak-workspace'));parser.add_argument('--key',type=Path,default=Path('/etc/blak-backup/key'));parser.add_argument('--archive',type=Path)
     args=parser.parse_args();args.root.mkdir(parents=True,exist_ok=True,mode=0o700)
+    if args.action=='cleanup-restore':cleanup_restore();return
     lock=open(args.root/'lock','w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     if args.action=='recover':recover(args.root);return
     if not args.key.exists():raise RuntimeError('Backup key must be provisioned separately')
@@ -139,6 +155,8 @@ def main():
     if args.action=='snapshot':snapshot(args.root,args.key)
     else:restore_drill(args.root,args.key,args.archive or sorted(args.root.glob('workspace-*.tar.gpg'))[-1])
 if __name__=='__main__':
+    def terminate(signum,frame):raise InterruptedError('Backup service stopped')
+    signal.signal(signal.SIGTERM,terminate)
     try:main()
     except Exception as error:
         # Subprocess exceptions may include sensitive output: never print their details.

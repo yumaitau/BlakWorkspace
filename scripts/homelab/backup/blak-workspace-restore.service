@@ -5,4 +5,5 @@ After=docker.service
 Type=oneshot
 UMask=0077
 ExecStart=/usr/bin/python3 /opt/blak-backup/workspace-backup.py restore-drill
+ExecStopPost=/usr/bin/python3 /opt/blak-backup/workspace-backup.py cleanup-restore
 TimeoutStartSec=30min
