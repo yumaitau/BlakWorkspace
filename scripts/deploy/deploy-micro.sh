@@ -36,6 +36,7 @@ from pathlib import Path
 import yaml
 selected = {
     '60-collabora.yaml': {'collabora'},
+    '70-outline.yaml': {'outline'},
     '52-workspace-shell.yaml': {'workspace-shell'},
     '30-portal.yaml': {'portal', 'portal-flow-data'},
     '50-drive-theme.yaml': {'drive-theme'},
@@ -70,7 +71,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal collabora opencloud chat projects hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud outline chat projects hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.
