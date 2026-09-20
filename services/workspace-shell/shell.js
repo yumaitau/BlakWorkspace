@@ -20,8 +20,8 @@
     for (const [key,value] of Object.entries({...tokens.dark,...tokens[mode]})) root.style.setProperty('--blak-' + key,value);
     if(app.id==='chat') for(const [key,value] of Object.entries(tokens.chat[mode])) document.body.style.setProperty('--rcx-color-'+key,value,'important');
     if(app.id==='drive') {
-      try {const value=JSON.stringify(mode==='dark');localStorage.setItem('oc_currentThemeIsDark',value);window.dispatchEvent(new StorageEvent('storage',{key:'oc_currentThemeIsDark',newValue:value,storageArea:localStorage}));} catch {}
-      for(const [key,value] of Object.entries(tokens.drive[mode])) document.body.style.setProperty('--oc-role-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),value);
+      try {const value=JSON.stringify(mode==='dark');localStorage.setItem('oc_currentThemeIsDark',value);localStorage.setItem('oc_currentThemeName','Blak '+(mode==='dark'?'Dark':'Light'));window.dispatchEvent(new StorageEvent('storage',{key:'oc_currentThemeName',newValue:'Blak '+(mode==='dark'?'Dark':'Light'),storageArea:localStorage}));window.dispatchEvent(new StorageEvent('storage',{key:'oc_currentThemeIsDark',newValue:value,storageArea:localStorage}));} catch {}
+      for(const [key,value] of Object.entries(tokens.drive[mode])) {const prop='--oc-role-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());root.style.setProperty(prop,value);document.body.style.setProperty(prop,value);}
     }
     // These native preference keys are cosmetic only. Shared cookie is authoritative.
     try { localStorage.setItem(cookieName,mode); localStorage.setItem('theme',mode); localStorage.setItem('color-scheme',mode); } catch {}
