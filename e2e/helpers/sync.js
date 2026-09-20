@@ -27,7 +27,9 @@ function syncNow() {
     kubectl(['create', 'job', name, '--from=cronjob/hermes-workspace-sync']);
     try {
       kubectl(['wait', '--for=condition=complete', `job/${name}`, '--timeout=180s']);
-      const logs = kubectl(['logs', `job/${name}`]);
+      const pod = kubectl(['get', 'pods', '-l', `job-name=${name}`, '--field-selector=status.phase=Succeeded', '-o', 'jsonpath={.items[0].metadata.name}']);
+      if (!pod) throw new Error('Completed sync job has no successful pod');
+      const logs = kubectl(['logs', pod]);
       if (logs.includes('Sync complete')) return logs;
       if (!logs.includes('Another sync is active')) throw new Error('Sync did not complete; inspect job ' + name);
     } finally {

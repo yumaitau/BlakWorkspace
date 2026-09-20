@@ -102,7 +102,9 @@ done
 JOB="hermes-release-$REVISION-$(date +%s)"
 kubectl -n "$NS" create job "$JOB" --from=cronjob/hermes-workspace-sync
 kubectl -n "$NS" wait --for=condition=complete "job/$JOB" --timeout=900s
-kubectl -n "$NS" logs "job/$JOB"
-kubectl -n "$NS" logs "job/$JOB" | grep -q 'Sync complete'
+POD=$(kubectl -n "$NS" get pods -l "job-name=$JOB" --field-selector=status.phase=Succeeded -o jsonpath='{.items[0].metadata.name}')
+test -n "$POD"
+kubectl -n "$NS" logs "$POD"
+kubectl -n "$NS" logs "$POD" | grep -q 'Sync complete'
 scripts/deploy/backup/install.sh
 printf 'Deployed commit %s\n' "$REVISION"
