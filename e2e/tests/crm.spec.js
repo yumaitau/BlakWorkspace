@@ -41,7 +41,7 @@ async function deleteRecord(page, type) {
     const body = response.request().postData() || "";
     return body.includes("mutation") && /Delete(?:One|Many)/.test(body);
   });
-  // Twenty's menu label is a pointer-disabled tooltip; click its owning menu item.
+  // Twenty exposes labels as tooltip nodes; click the owning menu item.
   await page
     .getByText("Delete " + type, { exact: true })
     .locator("xpath=../../../..")
