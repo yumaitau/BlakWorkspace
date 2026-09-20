@@ -1,3 +1,14 @@
+# Flow definitions and run history survive portal replacement.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portal-flow-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 1Gi }
+---
 # Secrets for blak-portal live in-cluster (scripts/homelab/ensure-secrets.sh). Never commit them.
 apiVersion: apps/v1
 kind: Deployment
@@ -6,6 +17,8 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector: { matchLabels: { app: portal } }
   template:
     metadata: { labels: { app: portal } }
@@ -17,7 +30,7 @@ spec:
         - name: ca
           configMap: { name: blak-ca }
         - name: flow-store
-          emptyDir: {}
+          persistentVolumeClaim: { claimName: portal-flow-data }
       containers:
         - name: portal
           image: blak-portal:micro

@@ -66,11 +66,13 @@ spec:
           hostnames: [id.homelab.local]
       containers:
         - name: webui
-          image: ghcr.io/open-webui/open-webui:latest
+          image: ghcr.io/open-webui/open-webui@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
           ports: [{ containerPort: 8080 }]
           env:
             - { name: OLLAMA_BASE_URL, value: http://ollama:11434 }
             - { name: WEBUI_NAME, value: 'Blak Hermes' }
+            - { name: WEBUI_SECRET_KEY, valueFrom: { secretKeyRef: { name: blak-hermes, key: session-secret } } }
+            - { name: ENABLE_API_KEYS, value: "true" }
             - { name: ENABLE_SIGNUP, value: "false" }
             - { name: ENABLE_LOGIN_FORM, value: "false" }
             - { name: ENABLE_OAUTH_SIGNUP, value: "true" }
@@ -83,8 +85,12 @@ spec:
           resources:
             requests: { cpu: 500m, memory: 1Gi }
             limits: { cpu: "2", memory: 4Gi }
-          volumeMounts: [{ name: data, mountPath: /app/backend/data }]
-      volumes: [{ name: data, persistentVolumeClaim: { claimName: webui-data } }]
+          volumeMounts:
+            - { name: data, mountPath: /app/backend/data }
+            - { name: themes, mountPath: /app/build/static/custom.css, subPath: hermes.css, readOnly: true }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: webui-data } }
+        - { name: themes, configMap: { name: blak-app-themes } }
 ---
 apiVersion: v1
 kind: Service

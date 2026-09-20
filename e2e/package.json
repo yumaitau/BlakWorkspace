@@ -3,9 +3,10 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
-    "test:twice": "playwright test && playwright test"
+    "test:twice": "playwright test && playwright test",
+    "test:portal": "playwright test portal.spec.js flow.spec.js cloud.spec.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0"
+    "@playwright/test": "1.63.0"
   }
 }

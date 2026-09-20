@@ -5,21 +5,8 @@ const { test, expect } = require('@playwright/test');
 const user = process.env.BLAK_E2E_USER || '';
 const password = process.env.BLAK_E2E_PASSWORD || '';
 
-async function authentikLogin(page) {
-  await page.waitForURL(/id\.homelab\.local/, { timeout: 30_000 });
-  const uid = page.getByRole('textbox', { name: /email or username/i });
-  if (await uid.isVisible().catch(() => false)) {
-    await uid.click({ force: true });
-    await uid.fill('');
-    await uid.pressSequentially(user, { delay: 20 });
-    await expect(uid).toHaveValue(user);
-    await page.getByRole('button', { name: /log in/i }).click();
-  }
-  const pw = page.getByRole('textbox', { name: /password/i });
-  await pw.waitFor({ state: 'visible', timeout: 20_000 });
-  await pw.fill(password);
-  await page.getByRole('button', { name: /continue/i }).click();
-}
+const { authentikLogin } = require('../helpers/auth');
+const { tokens } = require('../../apps/portal/theme');
 
 test.describe('Blak Portal homelab', () => {
   test('anonymous visitor is gated', async ({ page }) => {
@@ -48,16 +35,18 @@ test.describe('Blak Portal homelab', () => {
     await page.locator('[data-testid="flow-builder"] input[name="name"]').fill(name);
     await page.locator('[data-testid="save-flow"]').click();
     await page.waitForURL(/\/flow\/[a-f0-9]+/);
+    const flowPath = new URL(page.url()).pathname;
     await page.getByRole('button', { name: 'Enable' }).click();
     await page.locator('[data-testid="run-flow"]').click();
     await page.waitForURL(/\/flow\/activity/);
     await expect(page.locator('[data-testid="run-row"]').first()).toBeVisible();
-    await expect(page.locator('[data-testid="flow-activity"]')).toContainText(/ok/i);
+    await expect(page.locator('[data-testid="run-row"]').filter({ hasText: name })).toContainText('ok');
 
     const waffleChat = page.locator('a.appitem[data-app="chat"]');
     await page.locator('[data-testid="waffle"]').click();
     await expect(waffleChat).toHaveAttribute('href', 'https://chat.homelab.local');
     await expect(page.locator('a.appitem[data-app="projects"]')).toHaveAttribute('href', 'https://projects.homelab.local');
+    expect((await page.request.post(flowPath + '/delete')).ok()).toBeTruthy();
   });
 });
 
@@ -70,6 +59,10 @@ test.describe('Blak Chat and Projects SSO', () => {
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'chat.homelab.local' && !url.pathname.includes('_oauth'), { timeout: 45_000 });
     await expect(page).not.toHaveURL(/id\.homelab\.local/);
+    await expect(page.getByRole('button', { name: 'Create channel', exact: true })).toBeVisible({ timeout: 45000 });
+    await expect(page.getByRole('heading', { name: 'Reset password', exact: true })).toHaveCount(0);
+    await expect.poll(() => page.locator('body').evaluate(el => getComputedStyle(el).getPropertyValue('--rcx-color-button-background-primary-default').trim())).toBe(tokens.dark.primary);
+    await expect(page.locator('nav.rcx-sidebar--main')).toHaveCSS('background-color', 'rgb(11, 17, 18)');
   });
 
   test('Kaneo signs in through Blak ID', async ({ page }) => {
@@ -86,5 +79,6 @@ test.describe('Blak Chat and Projects SSO', () => {
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
     await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
   });
 });

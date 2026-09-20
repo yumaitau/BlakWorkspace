@@ -2,17 +2,9 @@
   "common": {
     "name": "Blak Drive",
     "slogan": "Your work. Your workspace.",
-    "logo": "themes/blak/assets/logo.svg",
-    "urls": {
-      "accessDeniedHelp": "",
-      "imprint": "",
-      "privacy": ""
-    }
+    "logo": "themes/blak/assets/logo.svg"
   },
   "clients": {
-    "android": {},
-    "desktop": {},
-    "ios": {},
     "web": {
       "defaults": {
         "logo": "themes/blak/assets/logo.svg",
@@ -26,11 +18,11 @@
           "designTokens": {
             "roles": {
               "primary": "#D65B2E",
-              "onPrimary": "#FFF4E5",
+              "onPrimary": "#FFF9EF",
               "primaryContainer": "#8E3525",
               "onPrimaryContainer": "#F4EBDD",
               "secondary": "#21818A",
-              "onSecondary": "#FFFFFF",
+              "onSecondary": "#FFF9EF",
               "secondaryContainer": "#14565E",
               "onSecondaryContainer": "#F4EBDD",
               "tertiary": "#D68B2C",
@@ -45,7 +37,7 @@
               "onBackground": "#F4EBDD",
               "surface": "#172123",
               "onSurface": "#F4EBDD",
-              "surfaceVariant": "#29393A",
+              "surfaceVariant": "#202D2F",
               "onSurfaceVariant": "#B8B5AA",
               "outline": "#455456",
               "outlineVariant": "#263436",
@@ -57,14 +49,62 @@
               "primaryFixed": "#E5A447",
               "onPrimaryFixed": "#0B1112",
               "surfaceDim": "#0B1112",
-              "surfaceBright": "#1B292B",
+              "surfaceBright": "#202D2F",
               "surfaceContainerLowest": "#0B1112",
               "surfaceContainerLow": "#101819",
-              "surfaceContainer": "#152022",
-              "surfaceContainerHigh": "#1B292B",
-              "surfaceContainerHighest": "#29393A",
-              "chrome": "#D65B2E",
-              "onChrome": "#FFF4E5"
+              "surfaceContainer": "#172123",
+              "surfaceContainerHigh": "#202D2F",
+              "surfaceContainerHighest": "#252F2E",
+              "chrome": "#0B1112",
+              "onChrome": "#F4EBDD"
+            }
+          }
+        },
+        {
+          "isDark": false,
+          "label": "Blak Light",
+          "designTokens": {
+            "roles": {
+              "primary": "#D65B2E",
+              "onPrimary": "#FFF9EF",
+              "primaryContainer": "#8E3525",
+              "onPrimaryContainer": "#F4EBDD",
+              "secondary": "#21818A",
+              "onSecondary": "#FFF9EF",
+              "secondaryContainer": "#14565E",
+              "onSecondaryContainer": "#F4EBDD",
+              "tertiary": "#D68B2C",
+              "onTertiary": "#0B1112",
+              "tertiaryContainer": "#B97524",
+              "onTertiaryContainer": "#0B1112",
+              "error": "#D35B48",
+              "onError": "#0B1112",
+              "errorContainer": "#8E3525",
+              "onErrorContainer": "#F4EBDD",
+              "background": "#F5F0E7",
+              "onBackground": "#182122",
+              "surface": "#FFF9EF",
+              "onSurface": "#182122",
+              "surfaceVariant": "#EDE5D8",
+              "onSurfaceVariant": "#596261",
+              "outline": "#BCAF9D",
+              "outlineVariant": "#E0D6C8",
+              "shadow": "#000000",
+              "scrim": "#000000",
+              "inverseSurface": "#182122",
+              "inverseOnSurface": "#F5F0E7",
+              "inversePrimary": "#D65B2E",
+              "primaryFixed": "#E5A447",
+              "onPrimaryFixed": "#0B1112",
+              "surfaceDim": "#EDE5D8",
+              "surfaceBright": "#EDE5D8",
+              "surfaceContainerLowest": "#EDE5D8",
+              "surfaceContainerLow": "#F5F0E7",
+              "surfaceContainer": "#FFF9EF",
+              "surfaceContainerHigh": "#EDE5D8",
+              "surfaceContainerHighest": "#E0D6C8",
+              "chrome": "#EDE5D8",
+              "onChrome": "#182122"
             }
           }
         }

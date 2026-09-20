@@ -57,6 +57,8 @@ spec:
             - { name: PROXY_AUTOPROVISION_ACCOUNTS, value: "true" }
             - { name: PROXY_AUTOPROVISION_CLAIM_USERNAME, value: preferred_username }
             - { name: PROXY_AUTOPROVISION_CLAIM_EMAIL, value: email }
+            # Basic-auth and OIDC both provide preferred_username; basic-auth has no name claim.
+            - { name: PROXY_AUTOPROVISION_CLAIM_DISPLAYNAME, value: preferred_username }
             - { name: GRAPH_USERNAME_MATCH, value: none }
             - { name: GRAPH_LDAP_SERVER_WRITE_ENABLED, value: "true" }
             - { name: PROXY_ROLE_ASSIGNMENT_DRIVER, value: default }

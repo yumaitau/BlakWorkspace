@@ -1,0 +1,53 @@
+# Per-account source credentials and private Hermes owner mapping live in blak-hermes-sync.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-sync-state
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 1Gi }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hermes-workspace-sync
+  namespace: blak-micro
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 240
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 900
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+          containers:
+            - name: sync
+              image: blak-hermes-sync:micro
+              imagePullPolicy: IfNotPresent
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits: { cpu: "1", memory: 512Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: { drop: [ALL] }
+              volumeMounts:
+                - { name: accounts, mountPath: /config, readOnly: true }
+                - { name: state, mountPath: /data }
+          volumes:
+            - name: accounts
+              secret: { secretName: blak-hermes-sync }
+            - name: state
+              persistentVolumeClaim: { claimName: hermes-sync-state }
