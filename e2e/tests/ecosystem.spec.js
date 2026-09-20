@@ -28,6 +28,7 @@ test('Projects stylesheet uses shared palette and branded title', async ({ page 
   await authentikLogin(page);
   await page.waitForURL(url => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'));
   await expect(page).toHaveTitle('Blak Projects · Powered by Kaneo');
+  await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
   await expect.poll(() => page.locator('html').evaluate(el => getComputedStyle(el).getPropertyValue('--primary').trim())).toBe(tokens.dark.primary);
   await page.screenshot({ path: test.info().outputPath('projects.png'), fullPage: true });
 });

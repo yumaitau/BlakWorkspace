@@ -34,8 +34,19 @@ html.dark body{background:${t.surface};color:${t['text-primary']}}
 :focus-visible{outline-color:${t.focus}!important}
 ::selection{background:${t['water-700']};color:${t['sand-50']}}
 `;
-const chatCSS = `:root,.rcx-darkmode,[data-theme="dark"]{--rcx-color-button-background-primary-default:${t.primary};--rcx-color-button-background-primary-hover:${t['primary-hover']};--rcx-color-stroke-highlight:${t.focus};--rcx-color-font-info:${t.info};font-family:Inter,system-ui,sans-serif}
-.rcx-darkmode,[data-theme="dark"]{--rcx-color-surface-light:${t.surface};--rcx-color-surface-tint:${t['surface-base']};--rcx-color-surface-room:${t.surface};--rcx-color-surface-dark:${t['surface-base']};--rcx-color-font-default:${t['text-primary']};--rcx-color-font-secondary-info:${t['text-secondary']};--rcx-color-stroke-light:${t['border-subtle']}}
+function chatPalette(palette) {
+  return Object.entries({
+    'button-background-primary-default':t.primary,'button-background-primary-hover':t['primary-hover'],
+    'stroke-highlight':t.focus,'font-info':t.info,'surface-light':palette.surface,
+    'surface-tint':palette['surface-base'],'surface-room':palette.surface,
+    'surface-dark':palette['surface-base'],'surface-sidebar':palette['surface-base'],
+    'font-default':palette['text-primary'],'font-secondary-info':palette['text-secondary'],
+    'font-sidebar-default':palette['text-primary'],'stroke-light':palette['border-subtle'],
+  }).map(([name,value])=>`--rcx-color-${name}:${value}!important`).join(';');
+}
+const chatCSS = `:root,body{${chatPalette(tokens.light)};font-family:Inter,system-ui,sans-serif}
+.rcx-darkmode,.rcx-darkmode body,[data-theme="dark"],[data-theme="dark"] body{${chatPalette(t)}}
+.rcx-sidebar--main{background:${t['surface-base']}!important}
 `;
 // Kaneo uses shadcn design tokens; append after its stylesheet via the deployment adapter.
 const kaneoCSS = `:root{--primary:${t.primary};--primary-foreground:${t['sand-50']};--ring:${t.focus};--background:${tokens.light.surface};--foreground:${tokens.light['text-primary']};--card:${tokens.light['surface-raised']};--card-foreground:${tokens.light['text-primary']};--border:${tokens.light.border};--input:${tokens.light.border};--muted:${tokens.light['surface-hover']};--muted-foreground:${tokens.light['text-secondary']};--accent:${tokens.light['surface-selected']};--accent-foreground:${tokens.light['text-primary']};--sidebar:${tokens.light['surface-base']};--sidebar-foreground:${tokens.light['text-primary']}}

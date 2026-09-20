@@ -6,6 +6,7 @@ const user = process.env.BLAK_E2E_USER || '';
 const password = process.env.BLAK_E2E_PASSWORD || '';
 
 const { authentikLogin } = require('../helpers/auth');
+const { tokens } = require('../../apps/portal/theme');
 
 test.describe('Blak Portal homelab', () => {
   test('anonymous visitor is gated', async ({ page }) => {
@@ -58,6 +59,10 @@ test.describe('Blak Chat and Projects SSO', () => {
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'chat.homelab.local' && !url.pathname.includes('_oauth'), { timeout: 45_000 });
     await expect(page).not.toHaveURL(/id\.homelab\.local/);
+    await expect(page.getByRole('button', { name: 'Create channel', exact: true })).toBeVisible({ timeout: 45000 });
+    await expect(page.getByRole('heading', { name: 'Reset password', exact: true })).toHaveCount(0);
+    await expect.poll(() => page.locator('body').evaluate(el => getComputedStyle(el).getPropertyValue('--rcx-color-button-background-primary-default').trim())).toBe(tokens.dark.primary);
+    await expect(page.locator('nav.rcx-sidebar--main')).toHaveCSS('background-color', 'rgb(11, 17, 18)');
   });
 
   test('Kaneo signs in through Blak ID', async ({ page }) => {
@@ -74,5 +79,6 @@ test.describe('Blak Chat and Projects SSO', () => {
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
     await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
   });
 });

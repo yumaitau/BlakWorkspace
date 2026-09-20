@@ -98,7 +98,7 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: OVERWRITE_SETTING_Custom_CSS
+            - name: OVERWRITE_SETTING_theme-custom-css
               valueFrom:
                 configMapKeyRef: { name: blak-app-themes, key: chat.css }
             - name: OVERWRITE_SETTING_Site_Name
