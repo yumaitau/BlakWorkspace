@@ -35,7 +35,7 @@ async function main() {
     ? await chromium.connect(process.env.PLAYWRIGHT_WS_ENDPOINT)
     : await chromium.launch({ headless: true });
   try {
-    const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    const context = await browser.newContext({ ignoreHTTPSErrors: true, ...require('../../e2e/helpers/network').publicNetworkOptions });
     const page = await context.newPage();
     stage = 'portal sign-in';
     await page.goto('https://portal.workspace.example.com/login');

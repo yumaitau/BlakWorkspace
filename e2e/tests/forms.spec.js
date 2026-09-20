@@ -58,7 +58,7 @@ test("Forms SSO, create, publish, anonymous response, review and delete", async 
     await saved;
     await page.getByRole("button", { name: "Publish", exact: true }).click();
     await page.waitForURL(/\/share/);
-    respondent = await browser.newContext({ ignoreHTTPSErrors: true });
+    respondent = await browser.newContext({ ...publicNetworkOptions, ignoreHTTPSErrors: true });
     const responsePage = await respondent.newPage();
     await responsePage.goto(FORMS + "/form/" + formId);
     await expect(

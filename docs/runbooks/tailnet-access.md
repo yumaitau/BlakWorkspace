@@ -35,6 +35,11 @@ on another tailnet client. `PLAYWRIGHT_WS_ENDPOINT` supports a browser reached
 through a private SSH tunnel; the controller and Kubernetes credentials remain
 on the deployment node. Set `BLAK_E2E_NATIVE=1` to use that endpoint with
 `scripts/deploy/test-e2e.sh`. The Hermes enrolment script uses the same endpoint.
+Alternatively, run the pinned Linux browser on the node with host networking
+and route public origins through an SSH reverse SOCKS tunnel from another tailnet
+client (`ssh -N -R 127.0.0.1:3109 "$NODE"`). Set
+`BLAK_E2E_PROXY=socks5://127.0.0.1:3109`; cluster API fixtures stay direct.
+Run test invocations sequentially because the runner installs shared dependencies.
 
 Use the pinned Linux Playwright image for visual baseline comparisons. A browser
 on another operating system can exercise functional and accessibility tests with

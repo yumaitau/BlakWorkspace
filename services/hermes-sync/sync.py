@@ -433,7 +433,10 @@ def sync_mapping(mapping, state, checkpoint):
                 raise ValueError('unsupported workspace source')
             for doc in docs:
                 if doc['revision']:
-                    doc['revision'] = EXTRACTOR_VERSION + ':' + doc['revision']
+                    # Public links are part of extracted content even when the
+                    # upstream record or DAV ETag has not changed.
+                    origin_revision = hashlib.sha256(source.get('public_base', '').encode()).hexdigest()[:16]
+                    doc['revision'] = EXTRACTOR_VERSION + ':' + origin_revision + ':' + doc['revision']
             results[name] = reconcile(hermes, record['collection'], docs, record['files'], lambda doc: api.request('GET', doc['path']), checkpoint)
             record['last_success'] = int(time.time())
             state[name].pop('last_error', None)

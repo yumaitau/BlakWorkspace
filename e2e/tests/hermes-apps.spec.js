@@ -1,4 +1,5 @@
 'use strict';
+const { publicNetworkOptions } = require('../helpers/network');
 const crypto = require('node:crypto');
 const { test, expect } = require('@playwright/test');
 const { authentikLogin } = require('../helpers/auth');
@@ -10,8 +11,8 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
   test.setTimeout(600000);
   const knowledge = await privateKnowledge(playwright);
   const crm = await playwright.request.newContext({ baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
-  const exporter = await playwright.request.newContext({ baseURL: PORTAL, ignoreHTTPSErrors: true, extraHTTPHeaders: { authorization: 'Bearer ' + knowledge.account.sources.draw.token } });
-  const other = await browser.newContext({ ignoreHTTPSErrors: true });
+  const exporter = await playwright.request.newContext({ ...publicNetworkOptions, baseURL: PORTAL, ignoreHTTPSErrors: true, extraHTTPHeaders: { authorization: 'Bearer ' + knowledge.account.sources.draw.token } });
+  const other = await browser.newContext({ ...publicNetworkOptions, ignoreHTTPSErrors: true });
   await other.addCookies([{ name: 'blak_session', value: session('hermes-other-' + Date.now()), url: PORTAL }]);
   const suffix = crypto.randomBytes(5).toString('hex');
   const first = 'APPS-FIRST-' + suffix.toUpperCase(), changed = 'APPS-UPDATED-' + suffix.toUpperCase(), privatePhrase = 'PRIVATE-' + suffix;
