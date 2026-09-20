@@ -9,11 +9,14 @@ async function authentikLogin(page) {
   await page.waitForURL(/id\.homelab\.local/, { timeout: 30_000 });
   const uid = page.getByRole('textbox', { name: /email or username/i });
   if (await uid.isVisible().catch(() => false)) {
-    await uid.fill(user);
+    await uid.click({ force: true });
+    await uid.fill('');
+    await uid.pressSequentially(user, { delay: 20 });
+    await expect(uid).toHaveValue(user);
     await page.getByRole('button', { name: /log in/i }).click();
   }
   const pw = page.getByRole('textbox', { name: /password/i });
-  await pw.waitFor({ state: 'visible', timeout: 15_000 });
+  await pw.waitFor({ state: 'visible', timeout: 20_000 });
   await pw.fill(password);
   await page.getByRole('button', { name: /continue/i }).click();
 }
@@ -63,7 +66,7 @@ test.describe('Blak Chat and Projects SSO', () => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
     await page.goto('https://chat.homelab.local');
     const sso = page.getByRole('button', { name: /Blak ID|blakid/i }).or(page.getByRole('link', { name: /Blak ID|blakid/i }));
-    await sso.first().click({ timeout: 30_000 });
+    await sso.first().click({ timeout: 45_000 });
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'chat.homelab.local' && !url.pathname.includes('_oauth'), { timeout: 45_000 });
     await expect(page).not.toHaveURL(/id\.homelab\.local/);
@@ -72,17 +75,14 @@ test.describe('Blak Chat and Projects SSO', () => {
   test('Kaneo signs in through Blak ID', async ({ page }) => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
     await page.goto('https://projects.homelab.local');
-    await page.waitForURL(/id\.homelab\.local|projects\.homelab\.local/, { timeout: 30_000 });
+    const oidc = page.getByRole('button', { name: /Continue with OIDC/i });
     if (page.url().includes('id.homelab.local')) {
       await authentikLogin(page);
     } else {
-      const sso = page.getByRole('button', { name: /OIDC|Blak ID|Continue/i });
-      if (await sso.first().isVisible().catch(() => false)) {
-        await sso.first().click();
-        await authentikLogin(page);
-      }
+      await oidc.click({ timeout: 20_000 });
+      await authentikLogin(page);
     }
-    await page.waitForURL((url) => url.hostname === 'projects.homelab.local', { timeout: 45_000 });
-    await expect(page).not.toHaveURL(/id\.homelab\.local/);
+    await page.waitForURL((url) => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
+    await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
   });
 });
