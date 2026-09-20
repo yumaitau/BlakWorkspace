@@ -73,7 +73,12 @@ def restore_drill(root,key,archive):
     with tempfile.TemporaryDirectory(prefix='restore-',dir=root) as tmp:
         stage=Path(tmp);plain=stage/'backup.tar'
         run('gpg','--batch','--pinentry-mode','loopback','--passphrase-file',str(key),'--decrypt','--output',str(plain),str(archive))
-        with tarfile.open(plain) as tar:tar.extractall(stage/'data',filter='data')
+        # Runtime asset symlinks may point outside a PVC. Keep them archived,
+        # but do not materialize external links in the isolated data drill.
+        def data_filter(member, destination):
+            try:return tarfile.data_filter(member, destination)
+            except (tarfile.AbsoluteLinkError, tarfile.LinkOutsideDestinationError):return None
+        with tarfile.open(plain) as tar:tar.extractall(stage/'data',filter=data_filter)
         plain.unlink();data=stage/'data';manifest=json.loads((data/'manifest.json').read_text())
         for path,expected in manifest['sha256'].items():
             if digest(data/path)!=expected:raise RuntimeError('Restore checksum mismatch')
@@ -85,7 +90,11 @@ def restore_drill(root,key,archive):
                 d=next(r for r in resources if r['kind']=='Deployment' and r['metadata']['name']==deployment)
                 c=d['spec']['template']['spec']['containers'][0];name='blak-restore-'+deployment+'-'+secrets.token_hex(4);containers.append(name)
                 # No network, no ports, copied volumes only. Never run application workers.
-                run('docker','run','-d','--name',name,'--network','none','--memory','768m','--cpus','1','-v',str(data/'volumes'/volume)+':'+mount,c['image'])
+                # data_filter strips owners; entrypoints restore database ownership.
+                # Parent mount must remain traversable after privilege drop.
+                (data/'volumes'/volume).chmod(0o755)
+                options=['-e','PGDATA=/var/lib/postgresql/data/pgdata'] if deployment=='postgres' else []
+                run('docker','run','-d','--name',name,'--network','none','--memory','768m','--cpus','1',*options,'-v',str(data/'volumes'/volume)+':'+mount,c['image'])
                 if deployment=='postgres':
                     user=secret['blak-core']['postgres-user']
                     command=['psql','-U',user,'-d','portal','-Atc',"SELECT count(*) FROM pg_database WHERE NOT datistemplate;"]
@@ -103,6 +112,7 @@ def restore_drill(root,key,archive):
                         if not value.isdigit() or int(value)<1:raise RuntimeError('Restored database empty')
                         evidence['database_checks'][deployment]=int(value);break
                     except (subprocess.CalledProcessError,RuntimeError):
+                        if run('docker','inspect','--format','{{.State.Running}}',name).strip()!=b'true':raise RuntimeError('Restored database stopped: '+deployment)
                         if time.monotonic()>deadline:raise RuntimeError('Isolated restored database validation failed: '+deployment)
                         time.sleep(2)
             db=data/'volumes/webui-data/webui.db'

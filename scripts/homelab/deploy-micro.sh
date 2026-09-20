@@ -38,7 +38,7 @@ selected = {
     '50-drive-theme.yaml': {'drive-theme'},
     '50-opencloud.yaml': {'opencloud'},
     '51-app-themes.yaml': {'blak-app-themes'},
-    '90-rocketchat.yaml': {'chat'},
+    '90-rocketchat.yaml': {'chat', 'mongo'},
     '91-kaneo.yaml': {'projects'},
     '92-hermes.yaml': {'hermes'},
     '93-hermes-sync.yaml': {'hermes-sync-state', 'hermes-workspace-sync'},

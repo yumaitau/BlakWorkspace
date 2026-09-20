@@ -172,7 +172,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - start.sh
@@ -210,7 +210,7 @@ spec:
               value: crm.homelab.local
           periodSeconds: 10
       - name: frontend
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - nginx-entrypoint.sh
@@ -248,7 +248,7 @@ spec:
             port: 8080
           periodSeconds: 10
       - name: websocket
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - node
@@ -270,7 +270,7 @@ spec:
         ports:
         - containerPort: 9000
       - name: worker
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - bench
@@ -292,7 +292,7 @@ spec:
             cpu: '2'
             memory: 768Mi
       - name: scheduler
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - bench
@@ -334,7 +334,7 @@ spec:
         - id.homelab.local
       initContainers:
       - name: configure
-        image: blak-frappe:crm1.84.0-frappe15.121.0-blak1
+        image: blak-frappe:crm1.84.0-frappe15.121.0-blak2
         imagePullPolicy: IfNotPresent
         args:
         - bash

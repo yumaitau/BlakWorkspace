@@ -10,6 +10,7 @@ for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, key
  if(name==='crm')await page.getByRole('link',{name:/Blak ID/}).click();
  if(name==='forms')await page.getByRole('button',{name:'Blak ID',exact:true}).click();
  if(name==='hermes')await page.getByRole('button',{name:'Continue with Blak ID'}).click();
+ if(name==='projects'){const login=page.getByRole('button',{name:/Continue with OIDC/i});await Promise.race([page.waitForURL(/\/onboarding|\/workspace/, {timeout:15000}),login.waitFor({timeout:15000})]).catch(()=>{});if(await login.isVisible())await login.click();}
  if(name==='chat'){const login=page.getByRole('button',{name:/Blak ID/i});if(await login.isVisible())await login.click();}
  await page.waitForURL(u=>u.hostname===new URL(url).hostname&&!/login|sign-in|oauth|callback/.test(u.pathname));
  const shell=page.locator('#blak-workspace-shell');await expect(shell).toBeVisible();

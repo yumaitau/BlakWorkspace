@@ -26,10 +26,15 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
+  strategy: { type: Recreate }
   selector: { matchLabels: { app: mongo } }
   template:
     metadata: { labels: { app: mongo } }
     spec:
+      hostname: mongo
+      hostAliases:
+        - ip: 127.0.0.1
+          hostnames: [mongo]
       containers:
         - name: mongo
           image: mongo:7.0
@@ -40,7 +45,7 @@ spec:
             limits: { cpu: "1", memory: 2Gi }
           readinessProbe:
             exec:
-              command: ["mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+              command: ["mongosh", "--quiet", "--eval", "if (!db.hello().isWritablePrimary) quit(1)"]
             initialDelaySeconds: 15
             periodSeconds: 10
           volumeMounts: [{ name: data, mountPath: /data/db }]
@@ -73,6 +78,7 @@ metadata:
   name: mongo
   namespace: blak-micro
 spec:
+  publishNotReadyAddresses: true
   selector: { app: mongo }
   ports: [{ port: 27017, targetPort: 27017 }]
 ---
