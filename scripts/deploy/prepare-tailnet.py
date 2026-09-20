@@ -5,6 +5,7 @@ import ipaddress
 import json
 from pathlib import Path
 import re
+import yaml
 
 PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8448,'forms':8449,'crm':8450,'chat':8451,'hermes':8452}
 UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080'}
@@ -55,7 +56,6 @@ def configure(root,host,address):
     text=text.replace('    proxy_pass http://$blak_upstream;', '    rewrite ^/application/o/[^/]+/(authorize|token|userinfo)/$ /application/o/$1/ break;\n    proxy_pass http://$blak_upstream;')
     nginx.write_text(text)
     # CoreDNS cannot always resolve MagicDNS names; use the node's verified tailnet IP.
-    import yaml
     for path in (root/'deploy/k3s/micro').glob('*.yaml'):
         documents=list(yaml.safe_load_all(path.read_text()));changed=False
         for doc in documents:
