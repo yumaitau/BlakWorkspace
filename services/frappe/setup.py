@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 
 SITE = 'crm.homelab.local'
+BRAND_LOGO = 'https://portal.homelab.local/brand/logo.svg'
 SITES = Path('/home/frappe/frappe-bench/sites')
 common = SITES / 'common_site_config.json'
 config = json.loads(common.read_text()) if common.exists() else {}
@@ -41,10 +42,11 @@ try:
     settings.save()
     website = frappe.get_single('Website Settings')
     website.update({'app_name': 'Blak CRM', 'home_page': 'login', 'disable_signup': 1,
+                    'app_logo': BRAND_LOGO, 'favicon': BRAND_LOGO,
                     'head_html': '<link rel="stylesheet" href="/files/blak-crm.css">'})
     website.save()
     crm = frappe.get_single('FCRM Settings')
-    crm.update({'brand_name': 'Blak CRM', 'currency': 'AUD'})
+    crm.update({'brand_name': 'Blak CRM', 'brand_logo': BRAND_LOGO, 'currency': 'AUD'})
     crm.save()
     provider = frappe.get_doc('Social Login Key', 'blak_id') if frappe.db.exists('Social Login Key', 'blak_id') else frappe.new_doc('Social Login Key')
     provider.update({

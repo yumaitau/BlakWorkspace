@@ -23,6 +23,9 @@ test('CRM native SSO and shared theme', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--blak-crm-accent').trim())).toBe('#D65B2E');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeVisible();
+  const logo = page.locator('img[src="https://portal.homelab.local/brand/logo.svg"]').first();
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.screenshot({ path: test.info().outputPath('frappe-crm.png'), fullPage: true });
 });
 async function api(page, method, path, data) {
