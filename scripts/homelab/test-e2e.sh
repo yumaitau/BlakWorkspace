@@ -9,7 +9,6 @@ export BLAK_E2E_PASSWORD="$(kubectl -n "$NS" get secret blak-idp -o jsonpath='{.
 export BLAK_E2E_SESSION_SECRET="$(kubectl -n "$NS" get secret blak-portal -o jsonpath='{.data.session-secret}' | base64 -d)"
 : "${BLAK_E2E_PASSWORD:?missing IdP credential}"
 : "${BLAK_E2E_SESSION_SECRET:?missing portal session secret}"
-export BLAK_CRM_PASSWORD="$(kubectl -n "$NS" get secret blak-crm -o jsonpath='{.data.admin-password}' | base64 -d)"
 cd e2e
 npm ci --ignore-scripts
 npx playwright test "$@"

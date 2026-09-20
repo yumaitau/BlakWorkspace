@@ -17,7 +17,9 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 | Diagrams (homelab) | [Excalidraw](https://github.com/excalidraw/excalidraw) 0.18.1 | MIT | Blak Draw, embedded editor |
 | Diagrams (openDesk seed) | CryptPad | AGPL-3.0-only | Not selected for homelab |
 | Forms (homelab) | [HeyForm](https://github.com/heyform/heyform) | AGPL-3.0 | Blak Forms, pinned upstream image |
-| CRM (homelab) | [Twenty](https://github.com/twentyhq/twenty) 2.41.0 | AGPL-3.0 with separately licensed Enterprise files | Blak CRM; Enterprise SSO not enabled |
+| CRM (homelab) | [Frappe CRM](https://github.com/frappe/crm/tree/v1.84.0) 1.84.0 | AGPL-3.0 | Blak CRM; native Blak ID login |
+| CRM framework | [Frappe Framework](https://github.com/frappe/frappe/tree/v15.121.0) 15.121.0 | MIT | Native social login, persistence and background jobs |
+| CRM rollback only | [Twenty](https://github.com/twentyhq/twenty) 2.41.0 | AGPL-3.0 with separately licensed Enterprise files | Retained inactive rollback manifest and data |
 | Files | Nextcloud | AGPL-3.0-or-later | Blak Drive |
 | Groupware | OX App Suite | GPL-2.0-only / AGPL-3.0-or-later | Blak Mail and Calendar (optional) |
 | Knowledge | Docmost (Blak default; replaces XWiki) | TBD — record upstream licence at pin | Blak Knowledge |
@@ -45,4 +47,4 @@ Docmost replaces XWiki for Blak Knowledge defaults (BW-055). Do not enable XWiki
 
 ## Homelab application overlays
 
-Forms and CRM retain upstream application code and notices. Shared CSS is injected from a generated ConfigMap into a disposable copy of their frontend templates. The upstream source links above provide the corresponding projects; exact image digests are pinned in `deploy/k3s/micro/94-forms.yaml` and `95-crm.yaml`. Excalidraw dependencies and patched transitive versions are recorded in `apps/portal/draw/package-lock.json`. The embedding source is `apps/portal/draw/src/`. Bundled fonts retain their upstream licences.
+Forms and CRM retain upstream application code and notices. Shared CSS comes from a generated ConfigMap. Forms uses a disposable template copy; the Frappe adapter adds a stylesheet link to its CRM template. The upstream source links above provide the corresponding projects; Forms image digest is pinned in `deploy/k3s/micro/94-forms.yaml`; Frappe source releases and Docker recipe revision are pinned in `services/frappe/versions.env`. Excalidraw dependencies and patched transitive versions are recorded in `apps/portal/draw/package-lock.json`. The embedding source is `apps/portal/draw/src/`. Bundled fonts retain their upstream licences.

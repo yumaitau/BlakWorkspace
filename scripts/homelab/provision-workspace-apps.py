@@ -1,4 +1,4 @@
-"""Create new app secrets and configure HeyForm OIDC without logging credentials."""
+"""Reconcile app secrets and native OIDC providers without logging credentials."""
 import json
 from pathlib import Path
 import re
@@ -24,26 +24,31 @@ def ensure_secret(name, values):
                    input=json.dumps(resource).encode(), check=True)
 
 
+def reconcile_oidc(script, marker, secret):
+    # ak shell is interactive: execute the complete module so compound statements
+    # cannot be split or silently discarded by its REPL parser.
+    source = Path(__file__).with_name(script).read_text()
+    result = subprocess.run(
+        KUBECTL + ['exec', '-i', 'deploy/authentik-server', '--', 'ak', 'shell'],
+        input=('exec(' + repr(source) + ')\n').encode(),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+    )
+    match = re.search(re.escape(marker.encode()) + rb'=(\{[^\n]+\})', result.stdout)
+    if not match:
+        raise RuntimeError(f'{secret} OIDC setup failed; credentials omitted')
+    subprocess.run(
+        KUBECTL + ['patch', 'secret', secret, '--type=merge', '--patch-file=/dev/stdin'],
+        input=json.dumps({'stringData': json.loads(match.group(1))}).encode(), check=True,
+    )
+
+
 ensure_secret('blak-forms', {
     'session-key': secrets.token_urlsafe(48),
     'encryption-key': secrets.token_urlsafe(48),
 })
-ensure_secret('blak-crm', {
+ensure_secret('blak-frappe', {
     'database-password': secrets.token_hex(32),
-    'app-secret': secrets.token_urlsafe(48),
-    'encryption-key': secrets.token_hex(32),
     'admin-password': secrets.token_urlsafe(28),
 })
-result = subprocess.run(
-    KUBECTL + ['exec', '-i', 'deploy/authentik-server', '--', 'ak', 'shell'],
-    input=Path(__file__).with_name('ak-forms.py').read_bytes(),
-    stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
-)
-match = re.search(rb'BLAK_FORMS_CONFIG=(\{[^\n]+\})', result.stdout)
-if not match:
-    raise RuntimeError('Forms OIDC setup failed; no credentials logged')
-values = json.loads(match.group(1))
-subprocess.run(
-    KUBECTL + ['patch', 'secret', 'blak-forms', '--type=merge', '--patch-file=/dev/stdin'],
-    input=json.dumps({'stringData': values}).encode(), check=True,
-)
+reconcile_oidc('ak-forms.py', 'BLAK_FORMS_CONFIG', 'blak-forms')
+reconcile_oidc('ak-crm.py', 'BLAK_CRM_CONFIG', 'blak-frappe')

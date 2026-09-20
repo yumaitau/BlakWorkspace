@@ -140,7 +140,7 @@ class TestSsoGate(unittest.TestCase):
         self.assertNotIn("terraform apply", workflow)
         self.assertNotIn("helmfile apply", workflow)
 
-    def test_live_apps_declare_sso_or_explicit_crm_password_exception(self):
+    def test_live_apps_declare_sso(self):
         raw = subprocess.check_output(
             ["node", "-e", "console.log(JSON.stringify(require('./apps/portal/catalog.js').APPS))"],
             cwd=str(ROOT),
@@ -150,10 +150,9 @@ class TestSsoGate(unittest.TestCase):
         live = [a for a in apps if a.get("status") == "live"]
         self.assertGreaterEqual(len(live), 6)
         crm = next(a for a in live if a["id"] == "crm")
-        self.assertEqual(crm["authentication"], "password")
-        self.assertIn("separate login", crm["desc"])
-        self.assertIn("requires a licence", crm["backend"])
-        missing = [a["id"] for a in live if a["id"] != "crm" and not a.get("oidcClient")]
+        self.assertEqual(crm["oidcClient"], "blak-crm")
+        self.assertIn("Frappe CRM", crm["backend"])
+        missing = [a["id"] for a in live if not a.get("oidcClient")]
         self.assertEqual(missing, [])
         flow = next(a for a in live if a["id"] == "flow")
         self.assertEqual(flow["oidcClient"], "blak-portal")

@@ -1,30 +1,36 @@
 # Forms, Draw and CRM on homelab
 
-The selected services are HeyForm (Blak Forms), Excalidraw (Blak Draw) and Twenty (Blak CRM). They are linked from the portal catalog. This supersedes the provisional CryptPad and EspoCRM shortlist.
+The selected services are HeyForm (Blak Forms), Excalidraw (Blak Draw) and Frappe CRM (Blak CRM). They are linked from the portal catalog. This supersedes the provisional CryptPad and EspoCRM shortlist.
 
 | Service | Address | Authentication | Persistence |
 | --- | --- | --- | --- |
 | Forms | https://forms.homelab.local | Native OIDC through Blak ID | Existing MongoDB, `heyform` database; `forms-data` uploads PVC |
 | Draw | https://portal.homelab.local/draw | Existing portal OIDC session | Portal PVC, private owner directories under `/data/draw` |
-| CRM | https://crm.homelab.local | Separate email/password login | Dedicated PostgreSQL `crm-db-data` and `crm-data` attachment PVCs |
+| CRM | https://crm.homelab.local | Native Blak ID social login | MariaDB `frappe-db-data`, `frappe-sites` files/config and `frappe-cache-data` queues |
 
-Twenty's native SSO is Enterprise licensed. No licence is configured. The catalog explicitly discloses the separate login; selecting Twenty does not satisfy the original free native OIDC preference. Do not bypass licence checks or claim CRM SSO has passed. `IS_MULTIWORKSPACE_ENABLED=false` prevents uninvited creation of additional workspaces after initial setup.
+Frappe CRM replaces Twenty because native custom social login is free in Frappe Framework. The confidential `blak-crm` provider uses the strict callback `/api/method/frappe.integrations.oauth2_logins.custom/blak_id`. Python token exchange trusts the mounted homelab CA. Public signup is disabled and social signup is denied; users must be provisioned explicitly.
 
 Draw embeds the upstream Excalidraw package with bundled local fonts. Drawings are private per portal subject; explicit Save persists across devices. Revision checks reject stale writes. JSON export/import supports sharing files. Live collaboration is not enabled. Back up the portal PVC alongside the new app volumes and MongoDB database.
 
 ## Deploy
 
-Run `scripts/homelab/deploy-micro.sh` on homelab from a clean checkout. It provisions missing secrets, reconciles the Forms OIDC provider, and applies the scoped app manifests. It retains existing secrets and data. Forms uses `client_secret_post` and the homelab CA to exchange tokens with Blak ID. Secrets never belong in git or command output.
+Run `scripts/homelab/deploy-micro.sh` on homelab from a clean checkout. It provisions missing secrets, reconciles Forms and CRM OIDC providers, and applies the scoped app manifests. It retains existing secrets and data. Forms uses `client_secret_post` and the homelab CA to exchange tokens with Blak ID. Secrets never belong in git or command output.
 
 Add `forms.homelab.local` and `crm.homelab.local` to client DNS/hosts pointing at homelab's ingress, and trust the existing homelab CA. IngressRoutes use the existing `blak-wildcard` TLS secret. Database/cache services have no external ingress.
 
-On a fresh installation, sign into Forms with Blak ID, create `Blak Workspace`, and create its first project. CRM requires one-time browser onboarding: use the operator email, retrieve `blak-crm/admin-password` privately from Kubernetes, create `Blak Workspace`, and skip app installs and invitations unless needed. The current homelab operator email is `admin@blak.local`. Secret creation does not itself create a CRM user; subsequent runs preserve the existing account. Invitations and outbound email were not exercised by acceptance tests.
+On a fresh installation, sign into Forms with Blak ID, create `Blak Workspace`, and create its first project. CRM creates its site, installs/migrates CRM, and provisions approved users automatically. The Authentik `Blak CRM users` group controls which accounts the deploy script provisions. `akadmin` is the bootstrap Sales Manager; other approved members receive Sales User. Add users to that group and redeploy to provision them. Removing group membership alone does not revoke an existing Frappe account: disable the account in Frappe and terminate its sessions. The random local Administrator password remains in `blak-frappe/admin-password` for recovery only. Outbound email requires separate configuration.
 
-Images are pinned by digest in `94-forms.yaml` and `95-crm.yaml`; Draw dependencies are pinned in its lockfile. Generated palette adapters preserve upstream names and UI. Forms uses shared light/dark palette variables; CRM uses shared accent/focus colours and retains native surfaces. Re-run `node scripts/brand/generate.js` when changing workspace tokens.
+CRM runs gunicorn, nginx, websocket, queue worker and scheduler as separate processes in one pod, with separate MariaDB and Valkey deployments. The pinned release/build recipe is in `services/frappe/versions.env`; `build-frappe.sh` builds the official production image with CRM only, then adds a small shared-theme adapter. Forms retains its digest pin and Draw its dependency lockfile. Run `node scripts/brand/generate.js` when changing workspace tokens.
+
+## Twenty retention and rollback
+
+Before initial cutover, `backup-twenty.sh` saves a PostgreSQL custom dump, attachments, secret and deployment definitions under `~/backups/twenty-<timestamp>` with restrictive permissions. Twenty's database and volumes are retained; server and worker are scaled to zero after Frappe becomes ready. Its active records at cutover were the upstream demo companies, people and opportunities plus empty test records. They are preserved in Twenty, not imported into the fresh Frappe site.
+
+For rollback, apply `scripts/homelab/rollback/twenty.yaml`, wait for `crm` and `crm-worker` readiness, and restore the former portal catalog from the previous release if needed. The rollback manifest restores the public Service selector. Never apply it during normal Frappe deployment. Back up Frappe separately using `bench --site crm.homelab.local backup --with-files` in the backend and copy the backup off the sites volume. Twenty backups do not contain subsequent Frappe changes.
 
 ## Acceptance checks
 
-Run `scripts/homelab/test-e2e.sh` on homelab. It obtains existing operator credentials from Kubernetes, installs the locked Playwright version and runs the full suite. Override `BLAK_CRM_EMAIL` if the CRM operator email differs. Forms tests use the first workspace project, publish only a temporary test survey, submit a synthetic answer anonymously, verify it and delete the form. CRM tests use uniquely named synthetic records. Draw tests use isolated signed test identities and clean their own boards.
+Run `scripts/homelab/test-e2e.sh` on homelab. It obtains existing operator credentials from Kubernetes, installs the locked Playwright version and runs the full suite. Forms tests use the first workspace project, publish only a temporary test survey, submit a synthetic answer anonymously, verify it and delete the form. CRM tests use uniquely named synthetic records. Draw tests use isolated signed test identities and clean their own boards.
 
 Credentials, storage state, Playwright traces and screenshots may include sensitive session data. Keep evidence private; never commit auth state or raw traces.
 

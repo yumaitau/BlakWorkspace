@@ -13,7 +13,10 @@ docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -
 docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t "$SYNC_IMAGE" services/hermes-sync
 docker save "$PORTAL_IMAGE" "$SYNC_IMAGE" | sudo k3s ctr images import -
 python3 scripts/homelab/persist-hermes-session-key.py
+scripts/homelab/backup-twenty.sh
+scripts/homelab/build-frappe.sh
 python3 scripts/homelab/provision-workspace-apps.py
+kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
   NS="$NS" scripts/homelab/migrate-flow-store.sh
 fi
@@ -23,6 +26,7 @@ fi
 python3 - <<'PY' | kubectl apply -f -
 import os
 import hashlib
+import subprocess
 from pathlib import Path
 import yaml
 selected = {
@@ -35,15 +39,19 @@ selected = {
     '92-hermes.yaml': {'hermes'},
     '93-hermes-sync.yaml': {'hermes-sync-state', 'hermes-workspace-sync'},
     '94-forms.yaml': {'forms-cache-data', 'forms-data', 'forms-cache', 'forms'},
-    '95-crm.yaml': {'crm-cache-data', 'crm-db-data', 'crm-data', 'crm-db', 'crm-cache', 'crm', 'crm-worker'},
+    '95-crm.yaml': {'frappe-cache-data', 'frappe-db-data', 'frappe-sites', 'frappe-db', 'frappe-cache', 'frappe-crm'},
 }
 for file, names in selected.items():
     for document in yaml.safe_load_all((Path('deploy/k3s/micro') / file).read_text()):
         if not document or document['metadata']['name'] not in names:
             continue
-        if document['kind'] == 'Deployment' and document['metadata']['name'] in {'portal', 'opencloud', 'chat', 'projects', 'hermes', 'forms', 'crm'}:
+        if document['kind'] == 'Deployment' and document['metadata']['name'] in {'portal', 'opencloud', 'chat', 'projects', 'hermes', 'forms', 'frappe-crm'}:
             theme_hash = hashlib.sha256(Path('deploy/k3s/micro/51-app-themes.yaml').read_bytes() + Path('deploy/k3s/micro/50-drive-theme.yaml').read_bytes()).hexdigest()
             document['spec']['template'].setdefault('metadata', {}).setdefault('annotations', {})['blak.workspace/theme-sha'] = theme_hash
+        if document['metadata']['name'] == 'frappe-crm' and document['kind'] == 'Deployment':
+            secret_version = subprocess.check_output(['kubectl', '-n', 'blak-micro', 'get', 'secret', 'blak-frappe', '-o', 'jsonpath={.metadata.resourceVersion}'])
+            setup_hash = hashlib.sha256(Path('services/frappe/setup.py').read_bytes() + secret_version).hexdigest()
+            document['spec']['template']['metadata']['annotations']['blak.workspace/setup-sha'] = setup_hash
         if document['metadata']['name'] == 'portal' and document['kind'] == 'Deployment':
             document['spec']['template']['spec']['containers'][0]['image'] = os.environ['PORTAL_IMAGE']
         if document['kind'] == 'CronJob':
@@ -53,8 +61,22 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/homelab/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in portal opencloud chat projects hermes forms crm crm-worker; do
-  kubectl -n "$NS" rollout status "deploy/$app" --timeout=240s
+for app in portal opencloud chat projects hermes forms frappe-crm; do
+  kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
+done
+# Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.
+python3 - <<'PY_CUTOVER' | kubectl apply -f -
+from pathlib import Path
+import yaml
+for doc in yaml.safe_load_all(Path('deploy/k3s/micro/95-crm.yaml').read_text()):
+    if doc and (doc['kind'] == 'IngressRoute' or (doc['kind'] == 'Service' and doc['metadata']['name'] == 'crm')):
+        print('---')
+        print(yaml.safe_dump(doc))
+PY_CUTOVER
+for old in crm crm-worker; do
+  if kubectl -n "$NS" get deploy "$old" >/dev/null 2>&1; then
+    kubectl -n "$NS" scale "deploy/$old" --replicas=0
+  fi
 done
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do
   kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=900s
