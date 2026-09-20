@@ -10,6 +10,24 @@ class FakeHermes:
     def upload(self,name,content):self.counter+=1;self.calls.append(('upload',name,content));return {'id':str(self.counter)}
     def json(self,method,path,data=None):self.calls.append((method,path,data));return {}
 class SyncTests(unittest.TestCase):
+    def test_public_origin_change_refreshes_unchanged_source_revision(self):
+        class Hermes(FakeHermes):
+            def json(self, method, path, data=None):
+                if path == '/api/v1/auths/': return {'id': 'owner'}
+                if path == '/api/v1/knowledge/private': return {'user_id': 'owner', 'access_grants': []}
+                return super().json(method, path, data)
+        api=Hermes()
+        source={'base':'http://portal:3000','public_base':'https://old.example.test'}
+        mapping={'hermes':{},'owner_id':'owner','sources':{'draw':source}}
+        state={'draw':{'collection':'private','files':{}}}
+        def documents(*args):
+            return [{'id':'one','name':'one.md','revision':'1','content':source['public_base'].encode()}]
+        with patch.object(sync,'API',return_value=api), patch.object(sync,'portal_documents',side_effect=documents), patch.object(sync,'ensure_workspace_model'):
+            self.assertEqual(sync.sync_mapping(mapping,state,lambda:None)['draw']['uploaded'],1)
+            self.assertEqual(sync.sync_mapping(mapping,state,lambda:None)['draw']['unchanged'],1)
+            source['public_base']='https://new.example.test'
+            self.assertEqual(sync.sync_mapping(mapping,state,lambda:None)['draw']['uploaded'],1)
+        self.assertEqual(api.counter,2)
     def test_create_unchanged_update_delete(self):
         api=FakeHermes();old={};saves=[]
         doc={'id':'one','name':'one.md','revision':'1','content':b'first'}

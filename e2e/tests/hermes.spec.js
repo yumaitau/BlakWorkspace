@@ -25,8 +25,8 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
   test.setTimeout(600000);
   const account = syncAccount();
   const source = account.sources.drive;
-  const drive = await playwright.request.newContext({ baseURL: serviceURL('drive', 9200), extraHTTPHeaders: { authorization: 'Basic ' + Buffer.from(source.username + ':' + source.password).toString('base64') } });
-  const hermes = await playwright.request.newContext({ baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
+  const drive = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('drive', 9200), extraHTTPHeaders: { authorization: 'Basic ' + Buffer.from(source.username + ':' + source.password).toString('base64') } });
+  const hermes = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
   const id = crypto.randomBytes(5).toString('hex');
   const phrase = 'WORKSPACE-' + id.toUpperCase();
   const updated = 'UPDATED-' + id.toUpperCase();
@@ -87,9 +87,9 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
 test('sync includes private team-channel and Projects task data', async ({ playwright }) => {
   test.setTimeout(420000);
   const account = syncAccount();
-  const chat = await playwright.request.newContext({ baseURL: serviceURL('chat', 3000), extraHTTPHeaders: account.sources.chat.headers });
-  const projects = await playwright.request.newContext({ baseURL: serviceURL('projects', 5173), extraHTTPHeaders: { ...account.sources.projects.headers, origin: 'https://projects.workspace.example.com' } });
-  const hermes = await playwright.request.newContext({ baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
+  const chat = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('chat', 3000), extraHTTPHeaders: account.sources.chat.headers });
+  const projects = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('projects', 5173), extraHTTPHeaders: { ...account.sources.projects.headers, origin: 'https://projects.workspace.example.com' } });
+  const hermes = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
   const suffix = crypto.randomBytes(5).toString('hex');
   const phrase = 'TEAMDATA-' + suffix.toUpperCase();
   let room, workspace;

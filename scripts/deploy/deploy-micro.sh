@@ -36,9 +36,11 @@ from pathlib import Path
 import yaml
 selected = {
     '60-collabora.yaml': {'collabora'},
+    '70-outline.yaml': {'outline'},
     '52-workspace-shell.yaml': {'workspace-shell'},
     '30-portal.yaml': {'portal', 'portal-flow-data'},
     '50-drive-theme.yaml': {'drive-theme'},
+    '50-opencloud-csp.yaml': {'drive-csp'},
     '50-opencloud.yaml': {'opencloud', 'drive'},
     '51-app-themes.yaml': {'blak-app-themes'},
     '90-rocketchat.yaml': {'chat', 'mongo'},
@@ -53,7 +55,7 @@ for file, names in selected.items():
         if not document or document['metadata']['name'] not in names:
             continue
         if document['kind'] == 'Deployment' and document['metadata']['name'] in {'portal', 'opencloud', 'chat', 'projects', 'hermes', 'forms', 'frappe-crm'}:
-            theme_hash = hashlib.sha256(Path('deploy/k3s/micro/51-app-themes.yaml').read_bytes() + Path('deploy/k3s/micro/50-drive-theme.yaml').read_bytes()).hexdigest()
+            theme_hash = hashlib.sha256(Path('deploy/k3s/micro/51-app-themes.yaml').read_bytes() + Path('deploy/k3s/micro/50-drive-theme.yaml').read_bytes() + Path('deploy/k3s/micro/50-opencloud-csp.yaml').read_bytes()).hexdigest()
             document['spec']['template'].setdefault('metadata', {}).setdefault('annotations', {})['blak.workspace/theme-sha'] = theme_hash
         if document['metadata']['name'] == 'frappe-crm' and document['kind'] == 'Deployment':
             secret_version = subprocess.check_output(['kubectl', '-n', 'blak-micro', 'get', 'secret', 'blak-frappe', '-o', 'jsonpath={.metadata.resourceVersion}'])
@@ -70,7 +72,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal collabora opencloud chat projects hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud outline chat projects hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.
@@ -88,6 +90,9 @@ for old in crm crm-worker; do
   fi
 done
 python3 scripts/deploy/route-workspace-shell.py
+if python3 -c 'import json,sys; sys.exit(not bool(json.load(open(".deployment.json")).get("tailnet")))'; then
+  python3 scripts/deploy/publish-tailnet.py
+fi
 (cd e2e && npm ci --ignore-scripts)
 node scripts/deploy/connect-hermes-apps.js
 python3 scripts/deploy/configure-hermes-tasks.py
