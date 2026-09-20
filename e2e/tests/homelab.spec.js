@@ -76,12 +76,14 @@ test.describe('Blak Chat and Projects SSO', () => {
     test.skip(!user || !password, 'BLAK_E2E_USER and BLAK_E2E_PASSWORD required');
     await page.goto('https://projects.homelab.local');
     const oidc = page.getByRole('button', { name: /Continue with OIDC/i });
-    if (page.url().includes('id.homelab.local')) {
-      await authentikLogin(page);
-    } else {
-      await oidc.click({ timeout: 20_000 });
-      await authentikLogin(page);
+    await Promise.race([
+      page.waitForURL(/id\.homelab\.local/, { timeout: 20_000 }),
+      oidc.waitFor({ state: 'visible', timeout: 20_000 }),
+    ]).catch(() => {});
+    if (!page.url().includes('id.homelab.local')) {
+      await oidc.click({ timeout: 10_000 });
     }
+    await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'projects.homelab.local' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
     await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
   });
