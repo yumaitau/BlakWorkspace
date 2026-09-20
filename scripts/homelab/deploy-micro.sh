@@ -18,6 +18,7 @@ python3 scripts/homelab/persist-hermes-session-key.py
 scripts/homelab/backup-twenty.sh
 scripts/homelab/build-frappe.sh
 python3 scripts/homelab/polish-identities.py
+python3 scripts/homelab/ensure-docs-proof-key.py
 python3 scripts/homelab/provision-workspace-apps.py
 kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
@@ -33,10 +34,11 @@ import subprocess
 from pathlib import Path
 import yaml
 selected = {
+    '60-collabora.yaml': {'collabora'},
     '52-workspace-shell.yaml': {'workspace-shell'},
     '30-portal.yaml': {'portal', 'portal-flow-data'},
     '50-drive-theme.yaml': {'drive-theme'},
-    '50-opencloud.yaml': {'opencloud'},
+    '50-opencloud.yaml': {'opencloud', 'drive'},
     '51-app-themes.yaml': {'blak-app-themes'},
     '90-rocketchat.yaml': {'chat', 'mongo'},
     '91-kaneo.yaml': {'projects'},
@@ -67,7 +69,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/homelab/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal opencloud chat projects hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud chat projects hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.
@@ -95,4 +97,5 @@ kubectl -n "$NS" create job "$JOB" --from=cronjob/hermes-workspace-sync
 kubectl -n "$NS" wait --for=condition=complete "job/$JOB" --timeout=900s
 kubectl -n "$NS" logs "job/$JOB"
 kubectl -n "$NS" logs "job/$JOB" | grep -q 'Sync complete'
+scripts/homelab/backup/install.sh
 printf 'Deployed commit %s\n' "$REVISION"

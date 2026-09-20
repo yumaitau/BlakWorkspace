@@ -10,7 +10,7 @@ html[data-blak-app=crm] :is(.bg-gray-200,.bg-surface-gray-2,.bg-surface-gray-3){
 html[data-blak-app=crm] :is(.text-gray-900,.text-gray-800,.text-ink-gray-9,.text-ink-gray-8){color:var(--blak-text-primary)!important}
 html[data-blak-app=crm] :is(.text-gray-700,.text-gray-600,.text-gray-500,.text-ink-gray-7,.text-ink-gray-6,.text-ink-gray-5){color:var(--blak-text-secondary)!important}
 html[data-blak-app=crm] :is(.border-gray-100,.border-gray-200,.border-gray-300,.border-outline-gray-1,.border-outline-gray-2,.border-outline-gray-3){border-color:var(--blak-border-subtle)!important}
-html[data-blak-app=crm] button:is(.bg-gray-900,.bg-gray-800,.bg-surface-gray-7,.bg-surface-gray-8,.bg-surface-gray-9),html[data-blak-app=crm] .btn-primary{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
+html[data-blak-app=crm] button:is(.bg-gray-900,.bg-gray-800,.bg-surface-gray-7,.bg-surface-gray-8,.bg-surface-gray-9,.bg-surface-gray-10),html[data-blak-app=crm] .btn-primary{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
 html[data-blak-app=crm] input,html[data-blak-app=crm] select,html[data-blak-app=crm] textarea{background:var(--blak-surface-raised)!important;color:var(--blak-text-primary)!important;border-color:var(--blak-border)!important}
 /* Outline exposes structural landmarks; leave editor blocks/embedded content alone. */
 html[data-blak-app=sites] :is(aside,nav,[role=navigation]){background:var(--blak-surface-base)!important;color:var(--blak-text-primary)!important}

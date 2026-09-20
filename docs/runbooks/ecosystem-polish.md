@@ -86,3 +86,30 @@ third-party accessibility is not represented as universally compliant. Existing
 functional tests continue to cover actual create/update/delete and SSO behaviour.
 Generate baselines on homelab Linux using `--update-snapshots`, review them, commit
 them, then run again without update mode. Never blindly regenerate to hide a diff.
+
+## Verified integration boundaries
+
+Drive starts OpenCloud's `collaboration` service explicitly and exposes its WOPI
+endpoint through the workspace gateway. Collabora uses a persistent RSA proof key
+from `blak-docs-proof-key`; proof verification remains enabled. The image is pinned
+by digest. `docs.spec.js` uploads a fixture, opens the actual editor, edits it,
+saves it back to Drive, verifies the stored document content and removes it.
+
+Hermes discovery uses HTTPS and a CA bundle that includes both public roots and
+the homelab CA. Using the HTTP discovery URL loses the browser's existing secure
+Blak ID session and can loop at identification; the cross-app acceptance test
+covers the HTTPS path. Shared navigation isolates its keyboard/click handling
+from upstream app shortcuts, including Escape after mobile focus changes.
+
+Cold recovery starts and waits for databases before restoring application
+replicas, then resumes the original CronJob schedules. Mongo has a stable local
+replica identity and a primary-aware readiness probe; it uses Recreate to avoid
+two writers opening its persistent volume during a rollout.
+
+The homelab runner uses the matching official Playwright Docker image and its own
+network namespace, preventing host CNI interface changes from aborting browser
+navigation. Credentials are passed by environment name; the temporary kubeconfig
+is private, read-only inside the container and removed on exit. Baselines are
+reviewed in that pinned browser/OS environment. `BLAK_E2E_NATIVE=1` is an explicit
+local debugging fallback; it may render fonts differently and is not the baseline
+acceptance environment.

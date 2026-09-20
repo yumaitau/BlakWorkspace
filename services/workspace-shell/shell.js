@@ -5,6 +5,7 @@
   const [apps, tokens] = await Promise.all(['apps','tokens'].map(name => fetch('/_blak/' + name + '.json').then(r => { if (!r.ok) throw Error('Workspace assets unavailable'); return r.json(); })));
   const app = location.hostname === 'docs.homelab.local' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
   if (!app) return;
+  const portalURL=apps.find(a=>a.id==='portal').url;
   const root = document.documentElement, cookieName = 'blak-theme';
   const cookieTheme = () => document.cookie.split('; ').find(s => s.startsWith(cookieName + '='))?.split('=')[1];
   let mode = cookieTheme();
@@ -17,6 +18,11 @@
     root.classList.toggle('dark', mode === 'dark');
     root.style.colorScheme = mode;
     for (const [key,value] of Object.entries({...tokens.dark,...tokens[mode]})) root.style.setProperty('--blak-' + key,value);
+    if(app.id==='chat') for(const [key,value] of Object.entries(tokens.chat[mode])) document.body.style.setProperty('--rcx-color-'+key,value,'important');
+    if(app.id==='drive') {
+      try {const value=JSON.stringify(mode==='dark');localStorage.setItem('oc_currentThemeIsDark',value);window.dispatchEvent(new StorageEvent('storage',{key:'oc_currentThemeIsDark',newValue:value,storageArea:localStorage}));} catch {}
+      for(const [key,value] of Object.entries(tokens.drive[mode])) document.body.style.setProperty('--oc-role-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),value);
+    }
     // These native preference keys are cosmetic only. Shared cookie is authoritative.
     try { localStorage.setItem(cookieName,mode); localStorage.setItem('theme',mode); localStorage.setItem('color-scheme',mode); } catch {}
     if (persist) document.cookie = `${cookieName}=${mode}; Domain=homelab.local; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
@@ -28,8 +34,6 @@
     if (toggle) toggle.textContent = mode === 'dark' ? 'Use light theme' : 'Use dark theme';
   }
   apply(mode);
-  // Observe only theme attributes, never content edits or typed user data.
-  new MutationObserver(() => { if (root.dataset.theme !== mode || root.classList.contains('dark') !== (mode === 'dark')) apply(mode); }).observe(root,{attributes:true,attributeFilter:['data-theme','class']});
   window.addEventListener('focus',() => { const value=cookieTheme(); if (value && value!==mode) apply(value); });
   setInterval(() => { const value=cookieTheme(); if (value && value!==mode) apply(value); },1500);
   document.addEventListener('click',event => { if (event.target.closest?.('#themebtn')) { mode=root.dataset.theme; apply(mode,true); } });
@@ -40,27 +44,33 @@
   shadow.append(style);
   const panel=document.createElement('section'); panel.id='panel'; panel.hidden=true; panel.setAttribute('aria-label','Workspace apps');
   const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; panel.append(heading);
-  const home=document.createElement('a');home.id='home';home.href='https://portal.homelab.local/';home.textContent='Workspace home';panel.append(home);
+  const home=document.createElement('a');home.id='home';home.href=portalURL;home.textContent='Workspace home';panel.append(home);
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Switch app');
   for(const item of apps.filter(a=>a.id!=='portal')) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
   panel.append(nav);
-  const welcome=document.createElement('a');welcome.href='https://portal.homelab.local/welcome';welcome.textContent='Getting started with Blak';welcome.style.display='block';panel.append(welcome);
-  const health=document.createElement('a');health.href='https://portal.homelab.local/sync';health.textContent='Hermes sync status';health.style.display='block';panel.append(health);
+  const welcome=document.createElement('a');welcome.href=new URL('/welcome',portalURL).href;welcome.textContent='Getting started with Blak';welcome.style.display='block';panel.append(welcome);
+  const health=document.createElement('a');health.href=new URL('/sync',portalURL).href;health.textContent='Hermes sync status';health.style.display='block';panel.append(health);
   const toggle=document.createElement('button');toggle.id='theme';toggle.type='button';toggle.addEventListener('click',()=>apply(mode==='dark'?'light':'dark',true));panel.append(toggle);
   const footer=document.createElement('div');footer.className='footer';footer.textContent=app.backend;panel.append(footer);
   const button=document.createElement('button');button.id='open';button.type='button';button.textContent='Blak Workspace';button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','panel');
   const close=()=>{panel.hidden=true;button.setAttribute('aria-expanded','false');button.focus();};
   button.addEventListener('click',()=>{panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)home.focus();});
-  shadow.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){e.preventDefault();close();}});
+  shadow.addEventListener('click',e=>e.stopPropagation());
+  shadow.addEventListener('keydown',e=>e.stopPropagation());
+  // Native mobile apps may move focus to their editor after navigation. Escape
+  // still closes an open workspace panel and restores its trigger focus.
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){e.preventDefault();e.stopImmediatePropagation();close();}},true);
   document.addEventListener('pointerdown',e=>{if(!panel.hidden&&!e.composedPath().includes(host)){panel.hidden=true;button.setAttribute('aria-expanded','false');}});
   shadow.append(panel,button);document.body.append(host);apply(mode);
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
     const title=app.name + (app.backend ? ' · ' + app.backend : '');
     if (document.title!==title) document.title=title;
-    if(app.id==='crm') {
-      for(const el of document.querySelectorAll('button')) if(el.textContent.trim()==='Getting started') el.closest('.border')?.setAttribute('data-blak-onboarding','');
-    }
+
   }
-  brandChrome();new MutationObserver(brandChrome).observe(document.querySelector('title')||document.head,{childList:true,subtree:true});
+  if(app.id==='projects') {
+    const brandLogo=()=>{for(const img of document.querySelectorAll('img[alt="Kaneo"]')) {img.src='/_blak/projects-logo.svg';img.alt='Blak Projects';}};
+    brandLogo();new MutationObserver(brandLogo).observe(document.body,{childList:true,subtree:true});
+  }
+  brandChrome();
 })().catch(() => { /* Upstream app remains usable if cosmetic assets fail. */ });

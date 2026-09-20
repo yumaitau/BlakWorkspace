@@ -55,6 +55,8 @@ async function main() {
     const cookies = await context.cookies('https://forms.homelab.local');
     mapping.sources.forms = { base: 'http://forms:9157', public_base: 'https://forms.homelab.local', expected_user: hermes.email,
       headers: { Cookie: cookies.map(c => c.name + '=' + c.value).join('; ') } };
+    const expires=cookies.map(cookie=>cookie.expires).filter(value=>value>0);
+    if(expires.length)mapping.credential_metadata.forms={...mapping.credential_metadata.forms,expires_at:Math.min(...expires)};
     const token = mapping.sources.draw?.token || crypto.randomBytes(40).toString('base64url');
     for (const source of ['draw', 'flow']) mapping.sources[source] = { base: 'http://portal:3000', public_base: 'https://portal.homelab.local', token, expected_user: identity.sub };
     const exporters = JSON.parse(secret('blak-portal-exports')['accounts.json'] || '[]').filter(a => a.owner !== identity.sub);

@@ -21,8 +21,11 @@ def recover(root):
     state=json.loads(journal.read_text())
     # Start storage before clients. All original replica counts are restored.
     priority=['postgres','mongo','frappe-db','frappe-cache','forms-cache','valkey','crm-db','crm-cache']
-    for name,count in sorted(state['replicas'].items(),key=lambda x:(x[0] not in priority,x[0])):
-        kube('scale','deploy/'+name,'--replicas='+str(count))
+    for storage in (True,False):
+        group={name:count for name,count in state['replicas'].items() if (name in priority)==storage}
+        for name,count in group.items():kube('scale','deploy/'+name,'--replicas='+str(count))
+        for name,count in group.items():
+            if count:kube('rollout','status','deploy/'+name,'--timeout=300s')
     for name,suspended in state['crons'].items():kube('patch','cronjob',name,'--type=merge','-p',json.dumps({'spec':{'suspend':suspended}}))
     journal.unlink()
 def snapshot(root,key):

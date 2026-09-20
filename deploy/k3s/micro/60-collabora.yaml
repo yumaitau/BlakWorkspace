@@ -9,12 +9,13 @@ spec:
   template:
     metadata: { labels: { app: collabora } }
     spec:
+      securityContext: { fsGroup: 1001 }
       hostAliases:
         - ip: 10.43.169.184
           hostnames: [drive.homelab.local]
       containers:
         - name: code
-          image: collabora/code:latest
+          image: collabora/code@sha256:1efda3043e8b9cb437d1b6c6efe20cc3753760e634de012b8dac391da488bf97
           ports: [{ containerPort: 9980 }]
           resources:
             requests: { cpu: "1", memory: 2Gi }
@@ -22,15 +23,18 @@ spec:
           env:
             - { name: domain, value: 'drive\.homelab\.local|drive' }
             - { name: server_name, value: docs.homelab.local }
-            - { name: extra_params, value: '--o:ssl.enable=false --o:ssl.termination=true' }
+            - { name: extra_params, value: '--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false' }
             - { name: username, value: admin }
             - { name: password, valueFrom: { secretKeyRef: { name: blak-docs, key: admin-password } } }
             - { name: SSL_CERT_FILE, value: /certs/rootCA.pem }
           volumeMounts:
+            - { name: proof-key, mountPath: /etc/coolwsd/proof_key, subPath: proof_key, readOnly: true }
             - { name: ca, mountPath: /certs/rootCA.pem, subPath: rootCA.pem }
           readinessProbe: { httpGet: { path: /hosting/discovery, port: 9980 }, initialDelaySeconds: 30, periodSeconds: 15 }
           livenessProbe: { httpGet: { path: /hosting/discovery, port: 9980 }, initialDelaySeconds: 90, periodSeconds: 30 }
       volumes:
+        - name: proof-key
+          secret: { secretName: blak-docs-proof-key, defaultMode: 0440 }
         - name: ca
           configMap: { name: blak-ca }
 ---
