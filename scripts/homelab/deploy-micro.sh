@@ -89,6 +89,7 @@ done
 python3 scripts/homelab/route-workspace-shell.py
 (cd e2e && npm ci --ignore-scripts)
 node scripts/homelab/connect-hermes-apps.js
+python3 scripts/homelab/configure-hermes-tasks.py
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do
   kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=900s
 done

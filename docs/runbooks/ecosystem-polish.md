@@ -101,6 +101,13 @@ Blak ID session and can loop at identification; the cross-app acceptance test
 covers the HTTPS path. Shared navigation isolates its keyboard/click handling
 from upstream app shortcuts, including Escape after mobile focus changes.
 
+On the CPU-only homelab, the deploy configures Hermes to use the original question
+for retrieval and disables automatic titles, tags and follow-up suggestions.
+These [optional model tasks](https://docs.openwebui.com/features/administration/task-models/)
+otherwise compete with the answer for local inference. Users can name chats
+manually. Other administrator settings are preserved through the supported task
+configuration API; changing environment defaults alone does not update saved settings.
+
 Cold recovery starts and waits for databases before restoring application
 replicas, then resumes the original CronJob schedules. Mongo has a stable local
 replica identity and a primary-aware readiness probe; it uses Recreate to avoid
