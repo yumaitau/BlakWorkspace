@@ -88,7 +88,7 @@ test('CRM reuses portal identity and logout invalidates CRM session', async ({ p
   expect((await page.goto(CRM + '/crm')).status()).toBe(403);
 });
 for (const record of [
-  { section: 'organizations', doctype: 'CRM Organization', field: 'organization_name', placeholder: 'Organization Name' },
+  { section: 'organizations', doctype: 'CRM Organization', field: 'organization_name', placeholder: 'Organization Name', rename: true },
   { section: 'contacts', doctype: 'Contact', field: 'first_name', placeholder: 'First Name' },
 ]) {
   test(`CRM ${record.section}: create in browser, persist, update and delete`, async ({ page }) => {
@@ -107,7 +107,12 @@ for (const record of [
       await page.reload();
       await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
       // Exercise the authenticated public API too; the browser must reflect saved changes.
-      await api(page, 'PUT', `resource/${encodeURIComponent(record.doctype)}/${encodeURIComponent(doc.name)}`, { [record.field]: updated });
+      if (record.rename) {
+        await api(page, 'POST', 'method/frappe.client.rename_doc', { doctype: record.doctype, old_name: doc.name, new_name: updated });
+        doc.name = updated;
+      } else {
+        await api(page, 'PUT', `resource/${encodeURIComponent(record.doctype)}/${encodeURIComponent(doc.name)}`, { [record.field]: updated });
+      }
       await page.reload();
       await expect(page.getByText(updated, { exact: true }).first()).toBeVisible();
       await api(page, 'DELETE', `resource/${encodeURIComponent(record.doctype)}/${encodeURIComponent(doc.name)}`);

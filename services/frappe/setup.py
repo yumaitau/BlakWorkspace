@@ -31,6 +31,10 @@ frappe.init(site=SITE, sites_path=str(SITES))
 frappe.connect()
 try:
     frappe.set_user('Administrator')
+    # CRM 1.84 filters hidden fields from list columns. Framework 15 marks
+    # Contact.full_name hidden, which otherwise leaves contacts unnamed.
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+    make_property_setter('Contact', 'full_name', 'hidden', 0, 'Check')
     settings = frappe.get_single('System Settings')
     settings.update({'country': 'Australia', 'time_zone': 'Australia/Sydney',
                      'language': 'en', 'enable_onboarding': 0})
