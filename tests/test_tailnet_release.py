@@ -19,6 +19,8 @@ class TailnetReleaseTests(unittest.TestCase):
             root=Path(tmp)
             (root/'.deployment.json').write_text(json.dumps({'domain':'workspace.example.com','revision':'test'}))
             (root/'deploy/k3s/micro').mkdir(parents=True)
+            collabora=root/'deploy/k3s/micro/60-collabora.yaml'
+            collabora.write_text(json.dumps({'kind':'Deployment','metadata':{'name':'collabora'},'spec':{'template':{'spec':{'containers':[{'name':'code','env':[{'name':'server_name','value':'docs.workspace.example.com'},{'name':'domain','value':'drive.workspace.example.com'}]}]}}}}))
             (root/'services/workspace-shell').mkdir(parents=True)
             (root/'services/workspace-shell/nginx.conf').write_text((ROOT/'services/workspace-shell/nginx.conf').read_text())
             (root/'e2e').mkdir()
@@ -37,4 +39,8 @@ class TailnetReleaseTests(unittest.TestCase):
             self.assertIn('map $http_host $blak_upstream',gateway)
             self.assertIn('demo.tail123.ts.net:8444 authentik-server.blak-micro.svc.cluster.local:9000;',gateway)
             self.assertIn('portal.workspace.example.com portal.blak-micro.svc.cluster.local:3000;',gateway)
+            document=tailnet.yaml.safe_load(collabora.read_text())
+            env={item['name']:item['value'] for item in document['spec']['template']['spec']['containers'][0]['env']}
+            self.assertEqual(env['server_name'],'demo.tail123.ts.net:8446')
+            self.assertEqual(env['domain'],r'demo\.tail123\.ts\.net|drive')
             with self.assertRaises(ValueError):tailnet.configure(root,'demo.tail123.ts.net','100.64.0.1')
