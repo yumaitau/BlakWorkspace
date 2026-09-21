@@ -12,7 +12,8 @@ source = `import { installRoleBridge, protectsManagedAuthority } from './blak-ro
 // Operator-only enrollment imports the running native APIs; no HTTP enrollment route.
 source += '\nexport { auth as blakNativeAuth, database_default as blakNativeDatabase, schema as blakNativeSchema, eq147 as blakNativeEq };\n';
 replace('    before: createAuthMiddleware(async (ctx) => {', `    before: createAuthMiddleware(async (ctx) => {
-      if (await protectsManagedAuthority(ctx, { database: database_default, schema, eq: eq147, getSessionFromCtx })) {
+      if (await protectsManagedAuthority(ctx, { database: database_default, schema, eq: eq147,
+        getSessionFromCtx: (request) => auth.api.getSession({ headers: request.headers }) })) {
         throw new APIError2('FORBIDDEN', { message: 'Blak ID manages this native authority' });
       }`);
 replace('  api.route("/", mcp_default);', `  installRoleBridge(api, {

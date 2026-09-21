@@ -131,7 +131,13 @@ export function installRoleBridge(router, { auth, database, schema, eq, builtInR
       const roles = await database.select({ workspaceId: schema.workspaceRoleTable.workspaceId, role: schema.workspaceRoleTable.role, permission: schema.workspaceRoleTable.permission }).from(schema.workspaceRoleTable);
       const result = await withNativeSession(auth, controller, headers => reconcile({ snapshot: { users, links, members, roles }, desired, controller, workspaceIds,
         permissions: rolePermissions(builtInRoles), closeConnections,
-        api: (name, body) => auth.api[name](name === 'addMember' ? { body } : { headers, body }) }));
+        api: async (name, body) => {
+          try { return await auth.api[name](name === 'addMember' ? { body } : { headers, body }); }
+          catch (error) {
+            console.error('Native Projects operation failed: ' + name + ' HTTP ' + (Number(error.statusCode) || 0));
+            throw error;
+          }
+        } }));
       return c.json(result);
     } catch (error) {
       // Native error objects may contain request details; never serialize them.

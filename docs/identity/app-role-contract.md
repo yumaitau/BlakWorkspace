@@ -52,7 +52,7 @@ and Hermes must respect source ownership and permissions; neither indexes Vault.
 | --- | --- | --- | --- | --- |
 | Vault | Group collection read-only | Group collection edit | Organization admin, not server operator | Cipher and attachment ACLs, membership removal, encrypted key handoff |
 | Drive / Docs | Space can-view | Space can-edit | Space management plus deliberately scoped app administration | DAV upload/delete denied to reader; Docs cannot save read-only file |
-| Projects | Viewer | Member | Admin | Native API project/task writes and member management |
+| Projects | Managed viewer | Managed content writer | Managed workspace admin | Native API project/task writes, immutable membership authority, existing key/session downgrade |
 | Knowledge | Viewer | Editor | Admin | Document writes denied; document/comment distinctions documented |
 | CRM | Read-only CRM permission set | Sales User | Sales Manager with scoped administration | Native Frappe permission checks on lists, documents and mutations |
 | Forms | Must verify native support | Collaborator/member as supported | Workspace admin | GraphQL mutations denied to reader, including aliases and batches |
@@ -60,6 +60,40 @@ and Hermes must respect source ownership and permissions; neither indexes Vault.
 | Hermes | Use permitted sources/models | Manage permitted knowledge | App admin | Native permission checks and continued private owner boundaries |
 | Draw / Flow / Cloud | Server-side read capability | Server-side write capability | Scoped management capability | Direct API denial; no owner bypass |
 | Search | Search permitted sources | No extra source rights | Manage app settings only | Search cannot widen source ACLs |
+
+## Projects native enforcement
+
+Projects uses Kaneo's Better Auth workspace permission engine. The controller
+owns `Blak Group Projects`; Blak ID grants map to `blak-reader`, `blak-writer`,
+and `blak-admin` native roles. Writer adds project editing/deletion and task
+assignment/deletion to the upstream member role. Reader retains the upstream
+viewer permissions. Admin manages workspace content and settings, while group
+membership and role authority remain managed in Blak ID. Native app admins
+cannot promote a reader, alter managed role definitions, remove the controller,
+or delete the managed workspace.
+
+The controller binds accounts only through the native `custom` OIDC account's
+immutable subject. Human global instance-admin roles are removed before applying
+workspace roles. Disabled identities, removed app grants, and unbound local
+accounts are banned through Better Auth. An explicit controller account is the
+only exception. Existing independently owned workspaces are preserved; these
+managed role guarantees apply to the enrolled workspace. App-wide removal still
+bans access to all workspaces.
+
+The pinned native patch disables the five-minute cookie permission cache,
+checks account bans on existing API keys, and closes existing user/project
+WebSockets on role changes. Reconciliation runs every 60 seconds. Administrator
+operations use short-lived persisted Better Auth sessions, deleted after each
+pass; synthetic API-key sessions cannot authorize upstream sensitive operations.
+No native database permissions are edited directly.
+
+`scripts/deploy/deploy-projects-roles.sh` builds committed prepared images,
+backs up the native database, migrates the identity contract, enrolls the native
+controller through operator-only server APIs, and activates the reconciler.
+`e2e/tests/projects-roles.spec.js` exercises real OIDC identity links, native
+reader/writer/admin permissions, same-key and same-cookie downgrades, WebSocket
+closure, disabled users, cross-app grants, and application removal. Report live
+acceptance separately from a successful build or rollout.
 
 ## Acceptance
 
