@@ -11,6 +11,9 @@ function replace(old, next) {
 source = `import { installRoleBridge, protectsManagedAuthority } from './blak-role-bridge.mjs';\n` + source;
 // Operator-only enrollment imports the running native APIs; no HTTP enrollment route.
 source += '\nexport { auth as blakNativeAuth, database_default as blakNativeDatabase, schema as blakNativeSchema, eq147 as blakNativeEq };\n';
+const idlePing = 'if (msg?.type === "ping") {\n              }';
+if (source.split(idlePing).length !== 3) throw Error('Unexpected native WebSocket heartbeat handlers');
+source = source.replaceAll(idlePing, 'if (msg?.type === "ping") {\n                conn?.ws.send(JSON.stringify({ type: "pong" }));\n              }');
 replace('    before: createAuthMiddleware(async (ctx) => {', `    before: createAuthMiddleware(async (ctx) => {
       if (await protectsManagedAuthority(ctx, { database: database_default, schema, eq: eq147,
         getSessionFromCtx: (request) => auth.api.getSession({ headers: request.headers }) })) {

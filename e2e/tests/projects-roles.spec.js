@@ -71,9 +71,14 @@ test('native Projects roles constrain existing keys, sessions and managed author
     await page.evaluate(() => {
       window.roleSocketClosed = null;
       window.roleSocket = new WebSocket(location.origin.replace(/^http/, 'ws') + '/api/ws/user');
-      window.roleSocket.onclose = event => { window.roleSocketClosed = event.code; };
+      window.roleSocket.onopen = () => {
+        window.roleSocketHeartbeat = setInterval(() => {
+          if (window.roleSocket.readyState === WebSocket.OPEN) window.roleSocket.send(JSON.stringify({ type: 'ping' }));
+        }, 10000);
+      };
+      window.roleSocket.onclose = event => { clearInterval(window.roleSocketHeartbeat); window.roleSocketClosed = event.code; };
     });
-    await page.waitForFunction(() => window.roleSocket.readyState === WebSocket.OPEN);
+    await page.waitForFunction(() => window.roleSocket.readyState === WebSocket.OPEN, undefined, { timeout: 15000 });
     updateIdentity(key, { roles: { projects: 'reader' } });
     await waitRole('reader');
     await expect.poll(() => page.evaluate(() => window.roleSocketClosed)).toBe(1008);

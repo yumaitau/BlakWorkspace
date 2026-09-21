@@ -32,3 +32,15 @@ test('native session wrapper rejects a freshly banned user', async () => {
   });
   assert.equal(await getSession(new Headers()), null);
 });
+test('both native WebSocket heartbeat handlers answer pings without accepting commands', () => {
+  const handlers = [...source.matchAll(/onMessage\(evt\) \{([\s\S]*?)\n        \},\n        onClose/g)];
+  assert.equal(handlers.length, 2);
+  for (const [, body] of handlers) {
+    const sent = [], conn = { ws: { send: value => sent.push(JSON.parse(value)) } };
+    const handle = new Function('evt', 'conn', body);
+    handle({ data: JSON.stringify({ type: 'ping' }) }, conn);
+    handle({ data: JSON.stringify({ type: 'write' }) }, conn);
+    handle({ data: 'invalid-json' }, conn);
+    assert.deepEqual(sent, [{ type: 'pong' }]);
+  }
+});
