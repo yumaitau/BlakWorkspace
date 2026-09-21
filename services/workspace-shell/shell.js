@@ -57,6 +57,12 @@
     if (toggle) toggle.textContent = mode === 'dark' ? 'Use light theme' : 'Use dark theme';
   }
   apply(mode);
+  // Native apps can restore a saved/system theme after their first render.
+  // Keep their class-based palette aligned with the shared workspace preference.
+  new MutationObserver(() => {
+    if(root.classList.contains('dark') !== (mode==='dark')) root.classList.toggle('dark',mode==='dark');
+    if(root.dataset.theme!==mode) root.dataset.theme=mode;
+  }).observe(root,{attributes:true,attributeFilter:['class','data-theme']});
   window.addEventListener('focus',() => { const value=cookieTheme(); if (value && value!==mode) apply(value); });
   setInterval(() => { const value=cookieTheme(); if (value && value!==mode) apply(value); },1500);
   document.addEventListener('click',event => { if (event.target.closest?.('#themebtn')) { mode=root.dataset.theme; apply(mode,true); } });

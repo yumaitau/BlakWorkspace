@@ -27,6 +27,7 @@ const areas={
   sites:['Home','Drafts','Archive','Trash'],
   drive:['Personal','Favorites','Shares','Spaces','Deleted files'],
   forms:['Dashboard','Members','Workspace Settings'],
+  hermes:['Notes','Workspace'],
 };
 for(const [app,sections] of Object.entries(areas)) test(`${app}: every main page has usable branded chrome`,async({page})=>{
   test.setTimeout(180000);
@@ -45,6 +46,20 @@ for(const [app,sections] of Object.entries(areas)) test(`${app}: every main page
     await page.screenshot({path:test.info().outputPath(app+'-'+section.toLowerCase().replaceAll(' ','-')+'.png'),fullPage:true});
   }
   expect(errors).toEqual([]);
+});
+
+test('Projects overview, projects, members and invitations keep workspace chrome',async({page})=>{
+  await page.goto('https://portal.workspace.example.com/login');await authentikLogin(page);
+  await expect(page).toHaveURL('https://portal.workspace.example.com/');
+  await page.goto('https://portal.workspace.example.com/launch/projects');
+  await expect(page.getByRole('button',{name:'Create project',exact:true}).first()).toBeVisible();
+  for(const section of ['Overview','Projects','Members','Invitations']) {
+    await page.getByRole('button',{name:section,exact:true}).first().click();
+    await expect(page.locator('#blak-workspace-shell')).toBeVisible();
+    await expect(page).toHaveTitle(/Blak Projects/);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),section).toBe(true);
+    await page.screenshot({path:test.info().outputPath('projects-'+section.toLowerCase()+'.png'),fullPage:true});
+  }
 });
 
 test('portal guide, search, cloud and status pages have labelled controls',async({page})=>{

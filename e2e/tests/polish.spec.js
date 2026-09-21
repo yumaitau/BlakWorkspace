@@ -24,11 +24,16 @@ for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, key
  for(const mode of ['light','dark']){
   await open.click();const toggle=shell.getByRole('button',{name:'Use '+mode+' theme'});if(await toggle.isVisible())await toggle.click();
   await expect(page.locator('html')).toHaveAttribute('data-blak-theme',mode);
+  await expect.poll(()=>page.locator('html').evaluate(el=>el.classList.contains('dark'))).toBe(mode==='dark');
   const tokens=require('../../apps/portal/theme').tokens;const palette={...tokens.dark,...tokens[mode]};
   if(name==='drive')await expect(page.getByRole('banner',{name:'Top bar'})).toHaveCSS('background-color',rgb(palette['surface-base']));
   if(name==='drive')await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--oc-role-surface').trim())).toBe(palette['surface-raised']);
   if(name==='chat')await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--rcx-color-surface-light').trim())).toBe(palette.surface);
   if(name==='crm')await expect(page.getByRole('button',{name:'Create',exact:true})).toHaveCSS('background-color',rgb(palette.primary));
+  if(name==='forms'){
+   await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--hf-foreground').trim())).toBe(palette.surface.slice(1).match(/../g).map(v=>parseInt(v,16)).join(','));
+   await expect(page.locator('h1').first()).toHaveCSS('color',rgb(palette['text-primary']));
+  }
   await page.screenshot({path:test.info().outputPath(name+'-'+mode+'.png'),fullPage:true});
   await expect(shell.locator('#panel')).toHaveScreenshot(`${name}-switcher-${mode}.png`,{animations:'disabled',maxDiffPixelRatio:0.005});
   const result=await new AxeBuilder({page}).include('#blak-workspace-shell').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();expect(result.violations).toEqual([]);
