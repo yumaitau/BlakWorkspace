@@ -62,6 +62,44 @@ and Hermes must respect source ownership and permissions; neither indexes Vault.
 | Draw / Flow / Cloud | Server-side read capability | Server-side write capability | Scoped management capability | Direct API denial; no owner bypass |
 | Search | Search permitted sources | No extra source rights | Manage app settings only | Search cannot widen source ACLs |
 
+## Knowledge native enforcement
+
+Knowledge uses Outline's native viewer, member and admin roles, mapped from
+`blak-knowledge-reader`, `blak-knowledge-writer` and `blak-knowledge-admin`.
+The controller matches the native OIDC provider and immutable subject only.
+Email cannot link an existing account to another identity. New OIDC users start
+as viewers until directory reconciliation applies their current role.
+
+The pinned native CanCan policy engine caps viewer permissions, including private
+documents and collection ownership. Readers can read permitted content, export,
+bookmark and subscribe; they cannot edit, delete, share or comment on documents.
+Personal profile and API-key controls retain their native policies. Writers use
+native member permissions. Admins manage application content and settings, but
+membership, identity providers and role authority stay in Blak ID. Humans cannot
+alter the dedicated controller or remove the team. Native object ACLs remain
+required at every role: an app grant never grants access to another user's private
+collection.
+
+Directory reconciliation runs every 60 seconds. Disabled or removed identities
+become viewers and are suspended through native APIs. The native collaboration
+processor invalidates open editors. Outline also permanently deletes API keys
+during suspension cleanup; restored users must sign in and issue new keys.
+The managed viewer cap preserves existing collection ACLs instead of permanently
+rewriting them during a temporary downgrade. Restoring writer access therefore
+restores only permissions the existing object ACL already granted.
+
+Run `scripts/deploy/deploy-knowledge-roles.sh` from a committed prepared release.
+It backs up the native database, enrolls a dedicated controller through native
+models, stores its scoped API key in a Kubernetes Secret, and upgrades the
+reconciler before activating the new configuration. The controller exposes only
+identity/role metadata and native role operations; it does not read documents.
+
+Acceptance tests are `e2e/tests/knowledge-roles.spec.js` (real OIDC, private
+ownership, existing sessions/keys, open editor, disable/remove/restore) and
+`e2e/tests/knowledge-sync.spec.js` (owner-bound private create/update/retrieve/delete
+through Hermes). Final live role acceptance is pending after the collection-ACL
+restoration fix; do not treat rollout or unit tests as certification.
+
 ## Projects native enforcement
 
 Projects uses Kaneo's Better Auth workspace permission engine. The controller
