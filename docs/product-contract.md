@@ -15,7 +15,6 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak Workspace | openDesk suite |
 | Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
-| Blak Notes | Notes |
 | Blak Chat | Rocket.Chat (OIDC via Blak ID; openDesk seed still documents Element) |
 | Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
