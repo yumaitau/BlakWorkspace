@@ -110,6 +110,7 @@ function appIcon(a, cls) {
 function scriptJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function wordmark() { return `<div class=brand><div class=mark>B</div><div><b>Blak</b> <span>Workspace</span></div></div>`; }
+function homeLogo() { return `<img class=home-logo src="/brand/home-logo.jpg" alt="Blak Workspace by Yuma IT" width="1200" height="630" fetchpriority="high">`; }
 function dotSun(cx, cy, r, color, opacity) {
   let s = `<g opacity="${opacity}" fill="${color}">`;
   for (let ring = 1; ring <= 4; ring++) {
@@ -125,14 +126,13 @@ function signinPage() {
   return page('Sign in', `<div class=topbar>${wordmark()}
 <div class=userchip style="margin-left:auto"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button></div></div>
 <div class=signin><div class=formpane><div class=formbox>
-<div class=mark style="width:44px;height:44px;font-size:24px">B</div>
 <h2>Your work. Your workspace.</h2>
 <p>A digital workplace with a distinct Blak identity.</p>
 <p>One login for files, docs, sites and search — Blak ID, powered by Authentik.</p>
 <p><a class=btn href="/login">Sign in with Blak ID</a></p>
 <p style="font-size:13px">Blak Workspace by Yuma IT · currently in early development</p>
 </div></div>
-<div class=artpane><img class=scene src="/brand/banner.png" alt="Blak Workspace banner artwork"><div class=strap><b>Our People. Our Data. A Stronger Tomorrow.</b><span>SOVEREIGN · OPEN · TOGETHER</span></div></div></div>
+<div class=artpane>${homeLogo()}<div class=strap><b>Our People. Our Data.<br>A Stronger Tomorrow.</b><span>Sovereign · Open · Together</span></div></div></div>
 `);
 }
 function navGroups(active) {
@@ -265,7 +265,7 @@ function homePage(user) {
 <div class=apphead>${appIcon(a, 'tile-ic')}<span class=dot data-dot="${a.id}"> </span></div>
 <h3>${esc(a.name)}</h3><p>${esc(a.desc)}</p><p class=be>${esc(a.backend)}</p>
 <a href="${a.url}">Open →</a></div>`).join('');
-  return shell(user, 'home', 'Home', `<div class=hero><img src="/brand/banner.png" alt="Blak Workspace banner artwork"><div class=cap><b>Your work. Your workspace.</b><span>SOVEREIGN · OPEN · TOGETHER</span></div></div>
+  return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
 <h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="https://drive.workspace.example.com">Open Blak Drive</a></p></div>
@@ -483,11 +483,11 @@ async function handleRequest(req, res) {
     res.end();
     return;
   }
-  if (url.pathname === '/brand/banner.png') {
+  if (url.pathname === '/brand/banner.png' || url.pathname === '/brand/home-logo.jpg') {
     try {
-      const fs = require('fs');
-      const img = fs.readFileSync(__dirname + '/brand-banner.png');
-      res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
+      const isLogo = url.pathname === '/brand/home-logo.jpg';
+      const img = fs.readFileSync(path.join(__dirname, isLogo ? 'brand-home-logo.jpg' : 'brand-banner.png'));
+      res.writeHead(200, { 'content-type': isLogo ? 'image/jpeg' : 'image/png', 'cache-control': 'public, max-age=86400' });
       res.end(img);
     } catch (e) { res.writeHead(404); res.end(); }
     return;
