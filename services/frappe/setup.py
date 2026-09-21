@@ -60,7 +60,7 @@ try:
         'user_id_property': 'sub', 'sign_ups': 'Deny',
     })
     provider.save()
-    for item in json.loads(os.environ['CRM_USERS']):
+    for item in ([] if frappe.conf.get('blak_role_controller_user') else json.loads(os.environ['CRM_USERS'])):
         user = frappe.get_doc('User', item['email']) if frappe.db.exists('User', item['email']) else frappe.new_doc('User')
         user.update({'email': item['email'], 'first_name': item['name'] or item['email'],
                      'enabled': 1, 'send_welcome_email': 0, 'user_type': 'System User',

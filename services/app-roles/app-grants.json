@@ -18,7 +18,12 @@
     ]
   },
   "crm": {
-    "group": "Blak CRM users"
+    "group": "Blak CRM users",
+    "roleGroups": [
+      "blak-crm-reader",
+      "blak-crm-writer",
+      "blak-crm-admin"
+    ]
   },
   "drive": {
     "group": "Blak Drive users"
