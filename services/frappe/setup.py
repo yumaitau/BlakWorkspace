@@ -23,6 +23,25 @@ if not (SITES / SITE / 'site_config.json').exists():
                     '--install-app', 'crm'])
     if created.returncode:
         raise RuntimeError('CRM site creation failed; credentials omitted')
+import frappe
+
+# Keep an exact pre-migration identity journal across failed/retried init containers.
+# A migration may update native records, but must never silently drop SSO bindings.
+identity_journal = SITES / SITE / '.blak-identity-migration.json'
+previous_cwd = Path.cwd()
+os.chdir(SITES)
+frappe.init(site=SITE, sites_path=str(SITES))
+frappe.connect()
+try:
+    if not identity_journal.exists():
+        bindings = frappe.get_all('User Social Login', filters={'provider': 'blak_id'},
+                                  fields=['parent', 'userid'])
+        with identity_journal.open('x', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
+            json.dump(bindings, stream)
+    bindings = json.loads(identity_journal.read_text())
+finally:
+    frappe.destroy()
+    os.chdir(previous_cwd)
 subprocess.run(['bench', '--site', SITE, 'migrate'], check=True)
 subprocess.run(['bench', '--site', SITE, 'enable-scheduler'], check=True)
 
@@ -67,7 +86,12 @@ try:
                      'default_app': 'crm'})
         user.save()
         user.add_roles('Sales Manager' if item['manager'] else 'Sales User')
+    current_bindings = {(row.parent, row.userid) for row in frappe.get_all('User Social Login',
+                        filters={'provider': 'blak_id'}, fields=['parent', 'userid'])}
+    if any((row['parent'], row['userid']) not in current_bindings for row in bindings):
+        raise RuntimeError('CRM migration changed native Blak ID bindings; restore exact bindings from backup')
     frappe.db.commit()
+    identity_journal.unlink()
     frappe.clear_cache()
 finally:
     frappe.destroy()

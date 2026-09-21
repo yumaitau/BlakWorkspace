@@ -34,6 +34,19 @@ patch('model/document.py', 'df0926c92a95130c427ab425ee2f4eb726601d29cc0976f735f1
 patch('handler.py', '2be0178117dedc70eca3d0249beed62b325db6bd956a9ad70f69cff06f74541b', [
     ('\tcmd = frappe.override_whitelisted_method(cmd)',
      '\tcmd = frappe.override_whitelisted_method(cmd)\n\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc(cmd)'),
+    ('def upload_file():\n', 'def upload_file():\n\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc("upload_file")\n'),
+])
+patch('api/v1.py', 'fee2b7523a88dfbf049fd352396815c3fdf47a6a1e4883345c9c1990ccb16ee5', [
+    ('\tmethod = method or frappe.form_dict.pop("run_method")',
+     '\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc("run_doc_method")\n\tmethod = method or frappe.form_dict.pop("run_method")'),
+])
+patch('api/v2.py', '9bddd2585230f60c1bd2854d14205e3458d37190127cd262e950a5537b6ac78a', [
+    ('\tmethod = frappe.override_whitelisted_method(method)',
+     '\tmethod = frappe.override_whitelisted_method(method)\n\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc(method)'),
+    ('\tmethod = method or frappe.form_dict.pop("run_method")',
+     '\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc("run_doc_method")\n\tmethod = method or frappe.form_dict.pop("run_method")'),
+    ('\tif isinstance(document, str):',
+     '\tfrom crm.blak_roles import authorize_rpc\n\tauthorize_rpc("run_doc_method")\n\tif isinstance(document, str):'),
 ])
 patch('utils/oauth.py', 'b13d3e33804773b5293313f761f8891eff00db2fa236bd6c8ad9b78eeadf6924', [
     ('\tuser = get_email(data).lower()',

@@ -67,6 +67,49 @@ class NativeRoleTests(unittest.TestCase):
         with self.assertRaisesRegex(PermissionError, 'role denied'):
             execute('crm.api.doc.remove_assignments')
 
+    def test_alternate_document_methods_and_upload_deny_before_side_effects(self):
+        def deny(method):
+            self.assertIn(method, ('run_doc_method', 'upload_file'))
+            raise PermissionError('role denied')
+        self.module.authorize_rpc = deny
+        for path, name, arguments in (
+            ('api/v1.py', 'execute_doc_method', ('CRM Lead', 'owned', 'mutator')),
+            ('api/v2.py', 'execute_doc_method', ('CRM Lead', 'owned', 'mutator')),
+            ('api/v2.py', 'run_doc_method', ('mutator', {})),
+            ('handler.py', 'upload_file', ()),
+        ):
+            with self.subTest(path=path, name=name):
+                execute = function(path, name, {'Any': object})
+                with self.assertRaisesRegex(PermissionError, 'role denied'):
+                    execute(*arguments)
+
+    def test_v2_rpc_denies_before_dispatch(self):
+        def deny(method):
+            self.assertEqual(method, 'crm.api.doc.remove_assignments')
+            raise PermissionError('role denied')
+        self.module.authorize_rpc = deny
+        module = types.ModuleType('frappe.modules.utils')
+        module.load_doctype_module = lambda name: None
+        from unittest.mock import patch
+        with patch.dict(sys.modules, {'frappe.modules.utils': module}):
+            execute = function('api/v2.py', 'handle_rpc_call', {'frappe': types.SimpleNamespace(
+                override_whitelisted_method=lambda method: method)})
+            with self.assertRaisesRegex(PermissionError, 'role denied'):
+                execute('crm.api.doc.remove_assignments')
+
+    def test_even_controller_saves_cannot_drop_existing_subject(self):
+        def throw(message, error):
+            raise error(message)
+        frappe = types.SimpleNamespace(get_all=lambda *args, **kwargs: ['original-subject'],
+                                       throw=throw, PermissionError=PermissionError)
+        protect = function('../../crm/crm/blak_roles.py', 'protect_user',
+                           {'frappe': frappe, 'role_for': lambda: 'controller'})
+        user = types.SimpleNamespace(is_new=lambda: False, name='native-user', social_logins=[])
+        with self.assertRaisesRegex(PermissionError, 'binding cannot be replaced'):
+            protect(user)
+        user.social_logins = [types.SimpleNamespace(provider='blak_id', userid='original-subject')]
+        protect(user)
+
     def test_native_oidc_login_uses_immutable_account_instead_of_incoming_email(self):
         signed_in = []
         self.module.resolve_oidc_user = lambda provider, data, email: 'original@example.invalid'

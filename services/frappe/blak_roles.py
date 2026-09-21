@@ -48,6 +48,12 @@ def resolve_oidc_user(provider, data, email):
 
 
 def protect_user(user):
+    if not user.is_new():
+        existing = set(frappe.get_all('User Social Login',
+            filters={'parent': user.name, 'parenttype': 'User', 'provider': 'blak_id'}, pluck='userid'))
+        incoming = {row.userid for row in user.social_logins if row.provider == 'blak_id'}
+        if existing and existing != incoming:
+            frappe.throw('Native Blak ID binding cannot be replaced or removed', frappe.PermissionError)
     if role_for() in {'unmanaged', 'controller', 'operator'}:
         return
     if user.is_new() or user.name != frappe.session.user:
