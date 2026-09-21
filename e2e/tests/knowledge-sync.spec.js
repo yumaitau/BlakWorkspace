@@ -15,7 +15,6 @@ test('Knowledge native permissions preserve private Hermes indexing and deletion
   await page.goto(origin + '/auth/oidc');
   await authentikLogin(page);
   await page.waitForURL(url => url.origin === origin && !url.pathname.startsWith('/auth'));
-  await page.waitForLoadState('networkidle');
   // Freeze one real browser session and its matching CSRF cookie in an isolated
   // request context. Background page GETs otherwise rotate that cookie mid-call.
   const state = await context.storageState();
