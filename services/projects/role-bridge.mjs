@@ -45,6 +45,19 @@ export function rolePermissions(builtInRoles) {
   };
 }
 
+export async function withNativeSession(auth, userId, operation) {
+  const context = await auth.$context;
+  // Admin endpoints require a persisted native session, not a synthetic API-key
+  // session. Let Better Auth create and destroy this short-lived server session.
+  const session = await context.internalAdapter.createSession(userId);
+  if (!session?.token) throw Error('Native controller session unavailable');
+  try {
+    return await operation(new Headers({ authorization: 'Bearer ' + session.token, origin: context.baseURL.replace(/\/api\/auth\/?$/, '') }));
+  } finally {
+    await context.internalAdapter.deleteSession(session.token);
+  }
+}
+
 export async function reconcile({ api, snapshot, desired, controller, workspaceIds, permissions, closeConnections }) {
   const plans = planUsers(snapshot.users, snapshot.links, desired, controller);
   for (const workspaceId of workspaceIds) {
@@ -116,9 +129,9 @@ export function installRoleBridge(router, { auth, database, schema, eq, builtInR
       const links = await database.select({ userId: schema.accountTable.userId, subject: schema.accountTable.accountId }).from(schema.accountTable).where(eq(schema.accountTable.providerId, 'custom'));
       const members = await database.select({ id: schema.workspaceUserTable.id, userId: schema.workspaceUserTable.userId, workspaceId: schema.workspaceUserTable.workspaceId, role: schema.workspaceUserTable.role }).from(schema.workspaceUserTable);
       const roles = await database.select({ workspaceId: schema.workspaceRoleTable.workspaceId, role: schema.workspaceRoleTable.role, permission: schema.workspaceRoleTable.permission }).from(schema.workspaceRoleTable);
-      const result = await reconcile({ snapshot: { users, links, members, roles }, desired, controller, workspaceIds,
+      const result = await withNativeSession(auth, controller, headers => reconcile({ snapshot: { users, links, members, roles }, desired, controller, workspaceIds,
         permissions: rolePermissions(builtInRoles), closeConnections,
-        api: (name, body) => auth.api[name](name === 'addMember' ? { body } : { headers, body }) });
+        api: (name, body) => auth.api[name](name === 'addMember' ? { body } : { headers, body }) }));
       return c.json(result);
     } catch (error) {
       // Native error objects may contain request details; never serialize them.

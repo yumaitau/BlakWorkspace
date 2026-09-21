@@ -20,7 +20,6 @@ umask 077
 kubectl -n "$NS" exec deploy/postgres -- sh -ec 'pg_dump -U "$POSTGRES_USER" -d kaneo -Fc' > ".backups/projects-$REVISION-$(date +%s).dump"
 python3 scripts/deploy/provision-id.py
 python3 scripts/deploy/provision-role-reader.py
-python3 scripts/deploy/provision-projects-roles.py --prepare-only
 python3 - <<'PY' | kubectl -n "$NS" apply -f -
 import os,yaml
 from pathlib import Path
@@ -28,6 +27,10 @@ manifest=next(d for d in yaml.safe_load_all(Path('deploy/k3s/micro/91-kaneo.yaml
 next(c for c in manifest['spec']['template']['spec']['containers'] if c['name']=='kaneo')['image']=os.environ['PROJECTS_IMAGE']
 print(yaml.safe_dump(manifest))
 PY
+kubectl -n "$NS" rollout status deploy/projects --timeout=300s
+python3 scripts/deploy/provision-projects-roles.py --prepare-only
+# Native credentials are environment variables; load them after first enrollment.
+kubectl -n "$NS" rollout restart deploy/projects
 kubectl -n "$NS" rollout status deploy/projects --timeout=300s
 # Upgrade the controller before activating its new configuration format.
 kubectl -n "$NS" set image deploy/blak-app-role-sync "roles=$ROLE_IMAGE"

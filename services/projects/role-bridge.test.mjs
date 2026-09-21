@@ -1,6 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { authorized, directoryMembers, planUsers, reconcile } from './role-bridge.mjs';
+import { withNativeSession } from './role-bridge.mjs';
+test('privileged controller operations use and clean up persisted native sessions', async () => {
+  const deleted = [];
+  const auth = { $context: Promise.resolve({ baseURL: 'https://projects.example.test/api/auth', internalAdapter: {
+    createSession: async id => { assert.equal(id, 'controller'); return { token: 'temporary-native-token' }; },
+    deleteSession: async token => deleted.push(token),
+  } }) };
+  await assert.rejects(withNativeSession(auth, 'controller', async headers => {
+    assert.equal(headers.get('authorization'), 'Bearer temporary-native-token');
+    assert.equal(headers.get('origin'), 'https://projects.example.test');
+    throw Error('Native operation failed');
+  }));
+  assert.deepEqual(deleted, ['temporary-native-token']);
+});
 const controller = 'controller', person = 'native-person', workspace = 'workspace';
 function fixture() {
   const snapshot = {
