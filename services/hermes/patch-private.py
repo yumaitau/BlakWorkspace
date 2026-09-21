@@ -29,7 +29,7 @@ for relative, digest in pins.items():
         offsets.append(offsets[-1] + len(line))
     functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
     future_end = max((node.end_lineno for node in tree.body if isinstance(node, ast.ImportFrom) and node.module == '__future__'), default=0)
-    edits = [(offsets[future_end], offsets[future_end], 'from open_webui.utils.blak_private import blak_content_admin\n')]
+    edits = [(offsets[future_end], offsets[future_end], 'from open_webui.utils.blak_private import blak_content_admin, blak_knowledge_admin\n')]
     for node in ast.walk(tree):
         if not isinstance(node, ast.Compare) or len(node.ops) != 1:
             continue
@@ -40,7 +40,9 @@ for relative, digest in pins.items():
         enclosing = [fn for fn in functions if fn.lineno <= node.lineno <= fn.end_lineno]
         if any(fn.name in keep_app_admin for fn in enclosing):
             continue
-        text = 'blak_content_admin(user)' if isinstance(node.ops[0], ast.Eq) else 'not blak_content_admin(user)'
+        scoped = any(fn.name in {'update_knowledge_by_id', 'update_knowledge_access_by_id', 'delete_knowledge_by_id'} for fn in enclosing)
+        check = '(await blak_knowledge_admin(user, knowledge, db))' if scoped else 'blak_content_admin(user)'
+        text = check if isinstance(node.ops[0], ast.Eq) else 'not ' + check
         edits.append((offsets[node.lineno - 1] + node.col_offset,
                       offsets[node.end_lineno - 1] + node.end_col_offset, text))
     for function in functions:

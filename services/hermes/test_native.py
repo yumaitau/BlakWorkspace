@@ -24,6 +24,7 @@ def native_function(path, name, namespace):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         namespace.setdefault('blak_content_admin', module.blak_content_admin)
+        namespace.setdefault('blak_knowledge_admin', module.blak_knowledge_admin)
     node = next(n for n in ast.parse((ROOT / path).read_text()).body
                 if isinstance(n, ast.AsyncFunctionDef) and n.name == name)
     node.decorator_list = []
