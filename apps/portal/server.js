@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
 const { APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps } = require('./catalog');
 const flowEngine = require('./flow-engine');
+const { INTEGRATIONS, allowedApps, launchURL, routeApp } = require('./integration');
 const { supportsAccessFilter, accessFilter } = require('./search-access');
 const { readBody, MAX_UPLOAD_BYTES } = require('./request-body');
 const { request: upstreamRequest, textRequest } = require('./http-client');
@@ -29,6 +30,33 @@ const CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET || '';
 const REDIRECT_URI = process.env.OIDC_REDIRECT_URI || 'http://portal.workspace.example.com/callback';
 
 const { CSS, themeScript, blakTheme, tokens } = require('./theme');
+
+const oidc = require('./oidc').createOIDC({ issuer: process.env.OIDC_ISSUER || `${OIDC_BASE}/blak-portal/`, clientId: CLIENT_ID });
+const sessions = require('./session-store').createSessionStore(process.env.SESSION_STORE || (FLOW_STORE ? path.join(path.dirname(FLOW_STORE), 'sessions.enc') : ''), process.env.SESSION_SECRET || 'dev-only-change-me');
+const refreshes = new Map();
+async function sessionUser(req) {
+  const cookie = verifySession(req);
+  const session = cookie?.sid && sessions.get(cookie.sid);
+  if (!session) return null;
+  if (!session.checkedAt || Date.now() - session.checkedAt > 30000) {
+    if (!refreshes.has(cookie.sid)) refreshes.set(cookie.sid, (async () => {
+      if (session.refreshToken && Date.now() >= session.accessExpiresAt - 30000) {
+        const result = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'refresh_token', refresh_token: session.refreshToken, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+        const token = JSON.parse(result.body);
+        if (result.status !== 200 || !token.access_token) throw new Error('Session refresh rejected');
+        if (token.id_token) await oidc.refreshedIdentity(token.id_token, session.sub);
+        if (!sessions.update(cookie.sid, { accessToken: token.access_token, refreshToken: token.refresh_token || session.refreshToken, idToken: token.id_token || session.idToken, accessExpiresAt: Date.now() + Number(token.expires_in || 300) * 1000 })) throw new Error('Session revoked');
+      }
+      const ui = await getJson(`${OIDC_BASE}/userinfo/`, session.accessToken);
+      if (ui.sub !== session.sub || ui.blak_id !== session.identity || ui.blak_active === false) throw new Error('Identity changed');
+      session.apps = Array.isArray(ui.blak_apps) ? ui.blak_apps : [];
+      session.name = ui.name; session.email = ui.email; session.checkedAt = Date.now();
+    })().finally(() => refreshes.delete(cookie.sid)));
+    try { await refreshes.get(cookie.sid); } catch { sessions.revoke(cookie.sid); return null; }
+  }
+  if (!sessions.get(cookie.sid)) return null;
+  return { sub: session.sub, identity: session.identity, name: session.name, email: session.email, apps: session.apps, sessionId: cookie.sid };
+}
 
 const pending = new Map(); // state -> {nonce, ts}
 
@@ -135,15 +163,15 @@ function signinPage() {
 <div class=artpane>${homeLogo()}<div class=strap><b>Our People. Our Data.<br>A Stronger Tomorrow.</b><span>Sovereign · Open · Together</span></div></div></div>
 `);
 }
-function navGroups(active) {
+function navGroups(active, user) {
   const groups = ['Workspace', 'Organise', 'Platform'];
   return groups.map((g) => {
-    const items = APPS.filter((a) => a.group === g);
+    const items = allowedApps(APPS, user).filter((a) => a.group === g);
     if (!items.length) return '';
     const links = items.map((a) => {
       const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.png" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || 'var(--text-muted)'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
       return a.url
-        ? `<a class=nav-item href="${a.url}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.name)}">${inner}</a>`
+        ? `<a class=nav-item href="${launchURL(a)}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.name)}">${inner}</a>`
         : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}</span>`;
     }).join('');
     return `<div class=nav-sec>${g}</div>${links}`;
@@ -151,9 +179,9 @@ function navGroups(active) {
 }
 function shell(user, active, title, main) {
   const initial = esc((user.name || user.sub || '?').trim().charAt(0).toUpperCase());
-  const drawer = APPS.map((a) => {
+  const drawer = allowedApps(APPS, user).map((a) => {
     const inner = `${appIcon(a, 'tile-ic')}<span><span class=t>${esc(a.name)}</span><br><span class=d>${esc(a.backend || 'Coming soon')}</span></span>`;
-    return a.url ? `<a class=appitem href="${a.url}" data-app="${a.id}">${inner}</a>` : `<span class="appitem soon" data-app="${a.id}">${inner}</span>`;
+    return a.url ? `<a class=appitem href="${launchURL(a)}" data-app="${a.id}">${inner}</a>` : `<span class="appitem soon" data-app="${a.id}">${inner}</span>`;
   }).join('');
   return page(title, `<div class=topbar>
 <button class=waffle id=wbtn aria-expanded="false" aria-controls="drawer" aria-label="App launcher" data-testid="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button>
@@ -162,7 +190,7 @@ ${wordmark()}
 <div class=userchip data-testid="userchip"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button><span class=nm>${esc(user.name || user.sub)}</span><span class=avatar>${initial}</span><a href="/logout">Sign out</a></div>
 </div><div class=shell><nav class=sidebar>
 <a class=nav-item href="/" ${active === 'home' ? 'data-active="true"' : ''} title="Blak Home"><span class=ric>⌂</span><span class=lbl>Blak Home</span><span class=swatch style="background:${ACCENT.workspace}"></span></a>
-${navGroups(active)}
+${navGroups(active, user)}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
 <main>${main}</main></div>
@@ -175,7 +203,7 @@ ${navGroups(active)}
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(APPS.filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: a.url })).concat([{ t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -261,16 +289,16 @@ function flowActivityPage(user, flowId) {
 ${flowTabs('activity')}${body}`);
 }
 function homePage(user) {
-  const live = liveApps();
+  const live = allowedApps(APPS, user);
   const cards = live.map((a) => `<div class=card data-app="${a.id}" data-name="${esc((a.name + ' ' + a.desc).toLowerCase())}">
 <div class=apphead>${appIcon(a, 'tile-ic')}<span class=dot data-dot="${a.id}"> </span></div>
 <h3>${esc(a.name)}</h3><p>${esc(a.desc)}</p><p class=be>${esc(a.backend)}</p>
-<a href="${a.url}">Open →</a></div>`).join('');
+<a href="${launchURL(a)}">Open →</a></div>`).join('');
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
-<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="https://drive.workspace.example.com">Open Blak Drive</a></p></div>
+${live.some(a=>a.id==='drive') ? `<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="/launch/drive">Open Blak Drive</a></p></div>` : ''}
 <h3 class=sec>Announcements</h3><div class=statusrow><span class=pill>Welcome to Blak Workspace — currently in early development.</span></div>
 <h3 class=sec>System status</h3><div class=statusrow id=pills><span class=pill>checking…</span></div>
 <script>
@@ -366,7 +394,10 @@ ${queues}`;
 
 async function handleRequest(req, res) {
   const url = new URL(req.url, 'http://x');
-  const user = verifySession(req);
+  const user = await sessionUser(req);
+  res.setHeader('cache-control', 'no-store');
+  const requiredApp = routeApp(url.pathname);
+  if (user && requiredApp && !allowedApps(APPS, user).some(a => a.id === requiredApp)) { res.writeHead(403); res.end('Application access not granted'); return; }
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) && req.headers.origin && req.headers.origin !== new URL(REDIRECT_URI).origin) {
     res.writeHead(403); res.end('Cross-origin request rejected'); return;
   }
@@ -386,10 +417,13 @@ async function handleRequest(req, res) {
     } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
     return;
   }
+  if (url.pathname === '/account') {
+    res.writeHead(302, { location: user ? new URL('/if/user/#/settings', OIDC_BASE).href : '/login' }); res.end(); return;
+  }
   if (url.pathname === '/welcome') {
     if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
     res.setHeader('content-type','text/html; charset=utf-8');
-    res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(APPS)));return;
+    res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(allowedApps(APPS, user).map(a => ({ ...a, url: launchURL(a) })))));return;
   }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');
@@ -400,7 +434,7 @@ async function handleRequest(req, res) {
     const rows = health.sources.map(source => `<tr><th scope="row">${esc(source.label)}</th><td>${esc(source.status)}</td><td>${source.last_success ? esc(new Date(source.last_success*1000).toISOString().replace('T',' ').slice(0,19))+' UTC' : 'Not yet synced'}</td><td>${source.documents}</td><td>${source.expires_at ? esc(new Date(source.expires_at*1000).toISOString().slice(0,10)) : 'Not reported by source'}</td></tr>`).join('');
     const warning = !health.enrolled ? health.message : health.healthy ? 'Your connected sources are up to date.' : 'Some sources need attention. Answers may omit unavailable or outdated content.';
     res.setHeader('content-type','text/html; charset=utf-8');
-    res.end(shell(user,'hermes','Hermes sync status',`<h1>Hermes sync status</h1><p role="status">${esc(warning)}</p><p>Private to your account. Sync runs every five minutes. More than 15 minutes without success is marked stale.</p><div style="overflow-x:auto"><table><caption>Connected sources</caption><thead><tr><th>Source</th><th>Status</th><th>Last success</th><th>Documents</th><th>Credential expiry</th></tr></thead><tbody>${rows}</tbody></table></div><h2>Connect or repair a source</h2><p>Ask your workspace administrator to enrol credentials belonging to your account. Never send passwords or API keys through chat. Revoked credentials need renewal; expiry dates are shown where supplied.</p><p><a href="https://hermes.workspace.example.com">Open Hermes</a> and select <strong>Blak Workspace</strong> to use your connected sources.</p>`)); return;
+    res.end(shell(user,'hermes','Hermes sync status',`<h1>Hermes sync status</h1><p role="status">${esc(warning)}</p><p>Private to your account. Sync runs every five minutes. More than 15 minutes without success is marked stale.</p><div style="overflow-x:auto"><table><caption>Connected sources</caption><thead><tr><th>Source</th><th>Status</th><th>Last success</th><th>Documents</th><th>Credential expiry</th></tr></thead><tbody>${rows}</tbody></table></div><h2>Connect or repair a source</h2><p>Ask your workspace administrator to enrol credentials belonging to your account. Never send passwords or API keys through chat. Revoked credentials need renewal; expiry dates are shown where supplied.</p><p><a href="/launch/hermes">Open Hermes</a> and select <strong>Blak Workspace</strong> to use your connected sources.</p>`)); return;
   }
   if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
     res.setHeader('content-type', 'application/json');
@@ -438,27 +472,57 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/me') {
     if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ sub: user.sub, name: user.name, email: user.email }));
+    res.end(JSON.stringify({ sub: user.sub, name: user.name, email: user.email, identity: user.identity, apps: user.apps }));
     return;
   }
   if (url.pathname === '/api/modules' || url.pathname === '/api/status') {
+    const origin = req.headers.origin;
+    if (origin) {
+      const origins = new Set(APPS.filter(a => a.url).map(a => new URL(a.url, REDIRECT_URI).origin));
+      origins.add(new URL(REDIRECT_URI).origin);
+      if (!origins.has(origin)) { res.writeHead(403); res.end(); return; }
+      res.setHeader('access-control-allow-origin', origin);
+      res.setHeader('access-control-allow-credentials', 'true');
+      res.setHeader('vary', 'Origin');
+    }
     if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
     if (url.pathname === '/api/modules') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ modules: APPS.map((a) => ({ id: a.id, name: a.name, backend: a.backend, url: a.url, status: a.status, oidcClient: a.oidcClient, enabled: a.status === 'live' })) }));
+      res.end(JSON.stringify({ modules: allowedApps(APPS, user).map((a) => ({ id: a.id, name: a.name, backend: a.backend, url: new URL(launchURL(a), REDIRECT_URI).href, status: a.status, oidcClient: a.oidcClient, enabled: a.status === 'live' })) }));
       return;
     }
-    const checks = await Promise.all(APPS.map(async (a) => ({ id: a.id, status: a.check ? await probe(a.check) : a.status === 'live' ? 'up' : a.status })));
+    const checks = await Promise.all(allowedApps(APPS, user).map(async (a) => ({ id: a.id, status: a.check ? await probe(a.check) : a.status === 'live' ? 'up' : a.status })));
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ status: Object.fromEntries(checks.map((c) => [c.id, c.status])) }));
+    return;
+  }
+  if (url.pathname.startsWith('/launch/')) {
+    const app = APPS.find(a => a.id === url.pathname.slice('/launch/'.length));
+    if (!app) { res.writeHead(404); res.end(); return; }
+    if (!user) { res.writeHead(302, { location: '/login?app=' + encodeURIComponent(app.id) }); res.end(); return; }
+    if (!allowedApps(APPS, user).includes(app)) { res.writeHead(403); res.end('Application access not granted'); return; }
+    const entry = INTEGRATIONS[app.id].login;
+    res.writeHead(302, { location: entry ? new URL(entry, app.url).href : app.url }); res.end(); return;
+  }
+  if (url.pathname === '/oidc/backchannel-logout') {
+    if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+    try {
+      const body = new URLSearchParams((await readBody(req, 16384)).toString());
+      const claims = await oidc.logout(body.get('logout_token'));
+      sessions.revokeIdentity(claims);
+      res.writeHead(200); res.end();
+    } catch { res.writeHead(400); res.end('Invalid logout request'); }
     return;
   }
   if (url.pathname === '/login') {
     const state = crypto.randomBytes(16).toString('hex');
     const nonce = crypto.randomBytes(16).toString('hex');
     for (const [key, value] of pending) if (Date.now() - value.ts >= LOGIN_TTL_MS) pending.delete(key);
-    pending.set(state, { nonce, ts: Date.now() });
-    const q = new URLSearchParams({ client_id: CLIENT_ID, response_type: 'code', scope: 'openid profile email', redirect_uri: REDIRECT_URI, state, nonce });
+    const verifier = crypto.randomBytes(32).toString('base64url');
+    const requestedApp = url.searchParams.get('app');
+    const returnTo = APPS.some(a => a.id === requestedApp) ? '/launch/' + requestedApp : '/';
+    pending.set(state, { nonce, verifier, returnTo, ts: Date.now() });
+    const q = new URLSearchParams({ client_id: CLIENT_ID, response_type: 'code', scope: 'openid profile email offline_access', redirect_uri: REDIRECT_URI, state, nonce, code_challenge_method: 'S256', code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url') });
     res.writeHead(302, { location: `${AUTH_URL}?${q}`, 'set-cookie': loginCookie(state, REDIRECT_URI) });
     res.end();
     return;
@@ -471,13 +535,16 @@ async function handleRequest(req, res) {
     pending.delete(state);
     if (!code || !p || browserState !== state || Date.now() - p.ts >= LOGIN_TTL_MS) { res.writeHead(400, { 'content-type': 'text/plain' }); res.end('bad login state'); return; }
     try {
-      const tok = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+      const tok = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'authorization_code', code, code_verifier: p.verifier, redirect_uri: REDIRECT_URI, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
       const tj = JSON.parse(tok.body);
       if (tok.status !== 200 || !tj.access_token) throw new Error('token exchange rejected');
+      const identity = await oidc.identity(tj.id_token, p.nonce);
       const ui = await getJson(`${OIDC_BASE}/userinfo/`, tj.access_token);
-      if (!ui.sub || typeof ui.sub !== 'string') throw new Error('invalid identity');
-      const sess = sign({ sub: ui.preferred_username || ui.sub, name: ui.name, email: ui.email, exp: Date.now() + SESSION_TTL_MS });
-      res.writeHead(302, { location: '/', 'set-cookie': [`${COOKIE}=${sess}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${REDIRECT_URI.startsWith('https:') ? '; Secure' : ''}`, loginCookie('', REDIRECT_URI)] });
+      if (!ui.sub || ui.sub !== identity.sub || typeof ui.blak_id !== 'string' || ui.blak_active === false) throw new Error('invalid identity');
+      const exp = Date.now() + SESSION_TTL_MS;
+      const sid = sessions.create({ sub: ui.sub, identity: ui.blak_id, name: ui.name, email: ui.email, apps: Array.isArray(ui.blak_apps) ? ui.blak_apps : [], exp, oidcSid: identity.sid, accessToken: tj.access_token, refreshToken: tj.refresh_token, accessExpiresAt: Date.now() + Number(tj.expires_in || 300) * 1000, idToken: tj.id_token, checkedAt: Date.now() });
+      const sess = sign({ sub: ui.sub, sid, exp });
+      res.writeHead(302, { location: p.returnTo, 'set-cookie': [`${COOKIE}=${sess}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${REDIRECT_URI.startsWith('https:') ? '; Secure' : ''}`, loginCookie('', REDIRECT_URI)] });
       res.end();
     } catch (e) {
       res.writeHead(502, { 'content-type': 'text/plain' });
@@ -486,9 +553,20 @@ async function handleRequest(req, res) {
     return;
   }
   if (url.pathname === '/logout') {
-    res.writeHead(302, { location: '/', 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; Max-Age=0` });
-    res.end();
+    const session = user && sessions.get(user.sessionId);
+    if (user) sessions.revoke(user.sessionId);
+    const config = await oidc.discovery();
+    const end = new URL(config.end_session_endpoint);
+    end.searchParams.set('client_id', CLIENT_ID);
+    end.searchParams.set('post_logout_redirect_uri', new URL('/', REDIRECT_URI).href);
+    if (session?.idToken) end.searchParams.set('id_token_hint', session.idToken);
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${REDIRECT_URI.startsWith('https:') ? '; Secure' : ''}` });
+    res.end(page('Sign out', require('./logout-page').logoutPage(APPS, end.href)));
     return;
+  }
+  if (url.pathname === '/brand/logout.js') {
+    res.writeHead(200, { 'content-type': 'text/javascript', 'x-content-type-options': 'nosniff' });
+    res.end(fs.readFileSync(path.join(__dirname, 'logout.js'))); return;
   }
   if (url.pathname === '/brand/login-background.png') {
     res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
@@ -704,7 +782,7 @@ const server = http.createServer((req, res) => {
   });
 });
 
-module.exports = { shell, signinPage, navGroups, page, sign, verifySession, APPS, liveApps };
+module.exports = { server, shell, signinPage, navGroups, page, sign, verifySession, APPS, liveApps };
 
 if (require.main === module) {
   server.listen(port, HOST, () => console.log(`blak-portal listening on ${HOST}:${port}`));

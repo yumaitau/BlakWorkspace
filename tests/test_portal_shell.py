@@ -33,7 +33,7 @@ class TestPortalShell(unittest.TestCase):
         self.assertIn("Blak Home", html)
         self.assertIn("Blak Admin", html)
         self.assertIn("Blak Flow", html)
-        self.assertIn('href="/flow"', html)
+        self.assertIn('href="/launch/flow"', html)
         self.assertIn("class=nav-sec", html)
         self.assertIn("Workspace", data["nav"])
         self.assertIn("Organise", data["nav"])

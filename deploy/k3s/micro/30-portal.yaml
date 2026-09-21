@@ -17,6 +17,7 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
+  # The encrypted session journal has one writer; retain it across restarts.
   strategy:
     type: Recreate
   selector: { matchLabels: { app: portal } }

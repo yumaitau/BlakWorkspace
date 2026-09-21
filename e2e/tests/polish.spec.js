@@ -56,6 +56,6 @@ test('Hermes health is owner-private and renders useful enrolment and status sta
  const health=await (await page.request.get('/api/sync-health')).json();expect(health.enrolled).toBe(true);expect(health.sources).toHaveLength(9);expect(JSON.stringify(health)).not.toMatch(/token|api_secret|file_id|headers/);
  await page.goto('/sync');await expect(page.getByRole('heading',{name:'Hermes sync status',exact:true})).toBeVisible();
  const result=await new AxeBuilder({page}).include('main').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();expect(result.violations).toEqual([]);
- await context.addCookies([{name:'blak_session',value:session('polish-other-owner'),url:'https://portal.workspace.example.com'}]);
+ await context.addCookies([{name:'blak_session',value:await session('polish-other-owner'),url:'https://portal.workspace.example.com'}]);
  const other=await (await page.request.get('/api/sync-health')).json();expect(other.enrolled).toBe(false);expect(other.sources).toEqual([]);
 });

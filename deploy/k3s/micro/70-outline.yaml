@@ -27,7 +27,7 @@ spec:
           hostnames: [id.workspace.example.com]
       containers:
         - name: outline
-          image: outlinewiki/outline:latest
+          image: outlinewiki/outline@sha256:832051f039b446c87aa23929cf92c00980c66aaa2d744d118c48c016ec816ad8
           ports: [{ containerPort: 3000 }]
           resources:
             requests: { cpu: 500m, memory: 1Gi }

@@ -12,6 +12,7 @@ import urllib.request
 import unittest
 
 from repo import ROOT
+from portal_fixture import portal_session
 
 
 def _free_port() -> int:
@@ -37,6 +38,7 @@ class TestSsoGate(unittest.TestCase):
         env["OIDC_AUTH_URL"] = "http://id.example.test/application/o/authorize/"
         env["OIDC_CLIENT_ID"] = "blak-portal"
         env["FLOW_STORE"] = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"blak-flow-sso-{cls.port}.json")
+        cls.session_directory, cls.token = portal_session(env)
         cls.proc = subprocess.Popen(
             ["node", str(ROOT / "apps" / "portal" / "server.js")],
             cwd=str(ROOT),
@@ -64,6 +66,8 @@ class TestSsoGate(unittest.TestCase):
                 cls.proc.wait(timeout=3)
             except subprocess.TimeoutExpired:
                 cls.proc.kill()
+
+        cls.session_directory.cleanup()
 
     def _get(self, path: str, cookie: str | None = None, follow: bool = True):
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}")
@@ -108,17 +112,7 @@ class TestSsoGate(unittest.TestCase):
         self.assertTrue(location.endswith("/login") or location == "/login", location)
 
     def test_signed_in_flow_renders_builder_chrome(self):
-        token = subprocess.check_output(
-            [
-                "node",
-                "-e",
-                "const s=require('./apps/portal/server.js');"
-                f"process.stdout.write(s.sign({{sub:'ada',name:'Ada Example',email:'ada@example.test',exp:Date.now()+3600000}}));",
-            ],
-            cwd=str(ROOT),
-            env={**os.environ, "SESSION_SECRET": self.secret},
-            text=True,
-        )
+        token = self.token
         resp = self._get("/flow", cookie=f"blak_session={token}")
         body = resp.read().decode("utf-8")
         self.assertEqual(self._status(resp), 200)

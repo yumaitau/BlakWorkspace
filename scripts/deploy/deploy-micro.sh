@@ -21,6 +21,7 @@ scripts/deploy/build-frappe.sh
 python3 scripts/deploy/polish-identities.py
 python3 scripts/deploy/ensure-docs-proof-key.py
 python3 scripts/deploy/provision-workspace-apps.py
+python3 scripts/deploy/provision-id.py
 kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
   NS="$NS" scripts/deploy/migrate-flow-store.sh

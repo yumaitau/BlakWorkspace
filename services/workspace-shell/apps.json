@@ -54,6 +54,12 @@
     "backend": "Powered by Kaneo"
   },
   {
+    "id": "idp",
+    "name": "Blak Admin",
+    "url": "https://id.workspace.example.com/",
+    "backend": "Powered by Authentik"
+  },
+  {
     "id": "flow",
     "name": "Blak Flow",
     "url": "https://portal.workspace.example.com/flow",
