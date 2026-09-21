@@ -48,7 +48,7 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
     expect(collection.user_id).toBe(account.owner_id);
     expect(collection.access_grants).toEqual([]);
     const query = async () => {
-      const response = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'What is the verification phrase in hermes-e2e-' + id + '?', k: 20 } });
+      const response = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'What is the verification phrase in hermes-e2e-' + id + '?', k: 20, k_reranker: 20 } });
       expect(response.ok()).toBeTruthy();
       return JSON.stringify(await response.json());
     };
@@ -120,7 +120,7 @@ test('sync includes private team-channel and Projects task data', async ({ playw
     for (const name of ['Blak Workspace · Chat', 'Blak Workspace · Projects']) {
       const collection = collections.find(item => item.name === name);
       expect(collection.access_grants).toEqual([]);
-      const result = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'Workspace test marker ' + phrase, k: 5 } });
+      const result = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'Workspace test marker ' + phrase, k: 5, k_reranker: 5 } });
       expect(result.ok()).toBeTruthy();
       expect(JSON.stringify(await result.json())).toContain(phrase);
     }

@@ -18,7 +18,7 @@ token=json.load(sys.stdin)['token']
 base='http://127.0.0.1:8080/api/v1/tasks/config'
 headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'}
 def request(url,data=None):
-    with urllib.request.urlopen(urllib.request.Request(url,headers=headers,data=json.dumps(data).encode() if data is not None else None),timeout=30) as response:return json.load(response)
+    with urllib.request.urlopen(urllib.request.Request(url,headers=headers,data=json.dumps(data).encode() if data is not None else None),timeout=180) as response:return json.load(response)
 config=request(base)
 keys=['ENABLE_TITLE_GENERATION','ENABLE_TAGS_GENERATION','ENABLE_FOLLOW_UP_GENERATION','ENABLE_RETRIEVAL_QUERY_GENERATION']
 if any(config[key] for key in keys):
@@ -28,9 +28,11 @@ verified=request(base)
 assert all(verified[key] is False for key in keys)
 # Open WebUI retrieves top-k per attached collection, not across the workspace.
 # Nine sources at the default three chunks overflow the small 4096-token model.
-# Hybrid matching includes filenames; no extra reranker model is downloaded.
+# Retrieve a wider candidate set, then use a small local cross-encoder to select
+# one relevant chunk per collection. Embedding similarity alone loses exact names.
 rag_base='http://127.0.0.1:8080/api/v1/retrieval/config'
-desired={'TOP_K':1,'TOP_K_RERANKER':1,'ENABLE_RAG_HYBRID_SEARCH':True,
+desired={'TOP_K':8,'TOP_K_RERANKER':1,'ENABLE_RAG_HYBRID_SEARCH':True,
+         'RAG_RERANKING_ENGINE':'','RAG_RERANKING_MODEL':'cross-encoder/ms-marco-MiniLM-L6-v2',
          'ENABLE_RAG_HYBRID_SEARCH_ENRICHED_TEXTS':True,'RAG_FULL_CONTEXT':False}
 # The upstream template permits answers from the model's own knowledge when a
 # source is missing. Workspace answers must stay grounded in private sources.

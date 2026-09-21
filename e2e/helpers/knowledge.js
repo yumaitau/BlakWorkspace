@@ -16,7 +16,7 @@ async function privateKnowledge(playwright) {
   }
   async function query(label, phrase) {
     const item = await collection(label);
-    const response = await client.post('/api/v1/retrieval/query/collection', { data: { collection_names: [item.id], query: phrase, k: 20 } });
+    const response = await client.post('/api/v1/retrieval/query/collection', { data: { collection_names: [item.id], query: phrase, k: 20, k_reranker: 20 } });
     expect(response.ok()).toBeTruthy();
     return JSON.stringify(await response.json());
   }

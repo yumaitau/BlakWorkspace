@@ -22,11 +22,15 @@ retained for recovery.
 Run `BLAK_SYNC_ACCOUNT=<configured-name> python scripts/deploy/configure-hermes-tasks.py`
 after provisioning. It disables background model tasks and configures one
 filename-aware hybrid retrieval chunk per source, with a concise source-only
-answer template. Open WebUI retrieves top-k **per collection**; the default three
+answer template. Eight candidates per collection are ranked by the small local
+`cross-encoder/ms-marco-MiniLM-L6-v2` model before selecting that one chunk.
+This avoids relying on embedding similarity alone for named records.
+Open WebUI retrieves top-k **per collection**; the default three
 chunks across nine sources can exceed the small model's 4096-token context.
 This setting favours focused document questions. Broad comparisons may need
 follow-up questions or a larger owner-selected model and context budget. No
-extra reranker or external inference service is enabled.
+external inference service is enabled; the reranker runs on the homelab CPU.
+Its first configuration downloads the model to the persistent Hermes cache.
 
 The rationale follows [Open WebUI's RAG troubleshooting guidance](https://docs.openwebui.com/troubleshooting/rag/).
 Validate with both a real sourced answer in the browser and create/update/delete
