@@ -154,3 +154,18 @@ its owner journal before enabling the role controller. Enroll a dedicated native
 controller with `scripts/deploy/provision-hermes-roles.py`; credentials are stored
 in Kubernetes Secrets. Enrollment preserves other configured native apps. Native
 role acceptance is recorded separately from image builds and unit tests.
+
+Use `scripts/deploy/deploy-hermes-roles.sh` on the homelab host from a prepared
+release for the scoped rollout. It preserves other enrolled app configurations,
+requires a successful indexer job, and waits for controller readiness. Fresh
+native accounts default to `pending` until reconciled. The current native token
+lifetime is four weeks; role enforcement is checked against current native state,
+not deferred until token expiry.
+
+Live acceptance on 2026-09-22 verified native reader/writer/admin transitions,
+writer denial of membership changes, reader denial of edits to their own shared
+upload, controller protection, disabled users, cross-app isolation, and removal
+with the same native token. Separate source-revocation acceptance verified native
+file, retrieval, model-reference and per-file vector cleanup while retaining the
+user's authorized Hermes session. These checks cover Hermes; the remaining native
+application mappings above require their own acceptance.

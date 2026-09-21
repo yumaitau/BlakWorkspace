@@ -40,7 +40,9 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
   }
   async function denied(method, path, data) {
     const result = await response(token, method, path, data);
-    expect([401, 403, 404]).toContain(result.status);
+    if (result.status === 400) {
+      expect((await result.json()).detail).toBe('You do not have permission to access this resource. Please contact your administrator for assistance.');
+    } else expect([401, 403, 404]).toContain(result.status);
   }
   try {
     await context.addCookies(await identityCookies(key, 'Hermes native role fixture', ['hermes'], { hermes: 'writer' }));
@@ -76,6 +78,10 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     await denied('DELETE', '/api/v1/files/' + uploaded.id);
     await denied('POST', '/api/v1/retrieval/process/file', { file_id: uploaded.id, content: 'forbidden' });
     await denied('POST', '/api/v1/retrieval/process/files/batch', { files: [{ ...uploaded, data: { content: 'forbidden' } }], collection_name: 'file-' + uploaded.id });
+    expect((await api(operator['api-key'], 'GET', knowledgePath)).description).toBe(key);
+    const retained = await api(operator['api-key'], 'GET', '/api/v1/files/' + uploaded.id);
+    expect(retained.filename).toBe(key + '.txt');
+    expect(JSON.stringify(retained.data)).not.toContain('forbidden');
     updateIdentity(key, { roles: { hermes: 'admin' } });
     await waitRole('admin');
     expect((await response(token, 'GET', '/api/v1/users/')).status).toBe(200);
