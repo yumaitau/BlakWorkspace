@@ -78,17 +78,24 @@ email, _ = ScopeMapping.objects.update_or_create(name='Blak Vault directory emai
 provider.property_mappings.remove(*ScopeMapping.objects.filter(
     pk__in=provider.property_mappings.values('pk'), scope_name='email'))
 provider.property_mappings.add(email)
+# Vaultwarden's native single-provider identifier also selects its enrollment policy.
+VAULTWARDEN_SSO_IDENTIFIER = '00000000-01DC-01DC-01DC-000000000000'
 app, _ = Application.objects.update_or_create(slug='blak-vault', defaults={
     'name': 'Blak Vault', 'provider': provider, 'open_in_new_tab': True,
-    'meta_launch_url': 'https://vault.workspace.example.com/#/sso?identifier=blak',
+    'meta_launch_url': 'https://vault.workspace.example.com/#/sso?identifier=' + VAULTWARDEN_SSO_IDENTIFIER,
     'meta_icon': 'https://vault.workspace.example.com/images/blak-logo.svg',
     'policy_engine_mode': 'all',
 })
 groups = ['blak-vault-' + role for role in ['reader', 'writer', 'admin']]
 for name in groups:
     Group.objects.get_or_create(name=name)
+admin_group = Group.objects.get(name='blak-vault-admin')
+if not admin_group.attributes.get('blak_initial_operator_seeded'):
+    admin_group.users.add(*[u for u in User.objects.filter(is_active=True) if u.is_superuser])
+    admin_group.attributes = {**admin_group.attributes, 'blak_initial_operator_seeded': True}
+    admin_group.save(update_fields=['attributes'])
 policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: blak-vault', defaults={
-    'expression': 'return request.user.is_active and (request.user.is_superuser or any(ak_is_group_member(request.user, name=g) for g in ' + repr(groups) + '))',
+    'expression': 'return request.user.is_active and any(ak_is_group_member(request.user, name=g) for g in ' + repr(groups) + ')',
 })
 PolicyBinding.objects.update_or_create(target=app, policy=policy, defaults={'order': 0, 'enabled': True})
 owners = [u.email for u in User.objects.filter(is_active=True).exclude(email='') if u.is_superuser]
