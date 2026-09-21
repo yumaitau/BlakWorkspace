@@ -40,6 +40,7 @@ provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults=
     'include_claims_in_id_token': True, 'issuer_mode': 'per_provider',
 })
 provider.authorization_flow = flow
+provider.grant_types = ['authorization_code', 'refresh_token']
 provider.access_token_validity = 'minutes=10'
 provider.refresh_token_validity = 'days=7'
 provider.save()
