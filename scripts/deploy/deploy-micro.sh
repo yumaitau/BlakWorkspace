@@ -21,6 +21,7 @@ scripts/deploy/build-frappe.sh
 python3 scripts/deploy/polish-identities.py
 python3 scripts/deploy/ensure-docs-proof-key.py
 python3 scripts/deploy/provision-workspace-apps.py
+python3 scripts/deploy/provision-id.py
 kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
   NS="$NS" scripts/deploy/migrate-flow-store.sh
@@ -45,7 +46,7 @@ selected = {
     '51-app-themes.yaml': {'blak-app-themes'},
     '90-rocketchat.yaml': {'chat', 'mongo'},
     '91-kaneo.yaml': {'projects'},
-    '92-hermes.yaml': {'hermes'},
+    '92-hermes.yaml': {'hermes', 'hermes-sessions'},
     '93-hermes-sync.yaml': {'hermes-sync-state', 'hermes-workspace-sync'},
     '94-forms.yaml': {'forms-cache-data', 'forms-data', 'forms-cache', 'forms'},
     '95-crm.yaml': {'frappe-cache-data', 'frappe-db-data', 'frappe-sites', 'frappe-db', 'frappe-cache', 'frappe-crm'},
@@ -72,7 +73,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal collabora opencloud outline chat projects hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud outline chat projects hermes-sessions hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.

@@ -37,7 +37,8 @@ for(const width of [390,768,1440])test(`shell fits ${width}px`,async({signedIn:p
 test('catalog, launcher and live tiles agree',async({signedIn:page})=>{
   await page.goto('/');await page.getByRole('button',{name:'App launcher'}).click();
   await expect(page.getByRole('button',{name:'App launcher'})).toHaveAttribute('aria-expanded','true');
-  for(const app of APPS){const item=page.locator(`#drawer [data-app="${app.id}"]`);await expect(item).toContainText(app.name);if(app.url)await expect(item).toHaveAttribute('href',app.url);else await expect(item).not.toHaveAttribute('href');}
+  const granted=(await (await page.request.get('/api/modules')).json()).modules.map(a=>a.id);
+  for(const app of APPS.filter(a=>granted.includes(a.id))){const item=page.locator(`#drawer [data-app="${app.id}"]`);await expect(item).toContainText(app.name);if(app.url)await expect(item).toHaveAttribute('href','/launch/'+app.id);else await expect(item).not.toHaveAttribute('href');}
   await page.keyboard.press('Escape');await expect(page.locator('#drawer')).toBeHidden();
 });
 test('command palette search, empty state and keyboard navigation',async({signedIn:page})=>{
@@ -50,7 +51,7 @@ test('home filter and workspace search',async({signedIn:page})=>{
 });
 test('special characters in account name do not break scripts',async({page,context,baseURL,account})=>{
   const name="Ada O'Neil \\ <script>\nTest";
-  await context.addCookies([{name:'blak_session',value:session(account,name),url:baseURL}]);
+  await context.addCookies([{name:'blak_session',value:await session(account,name),url:baseURL}]);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#greet')).toContainText("Ada O'Neil");expect(errors).toEqual([]);
 });
 test('sign out clears session and preserves theme',async({signedIn:page})=>{

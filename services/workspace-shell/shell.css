@@ -1,6 +1,7 @@
 /* Scope native adapters to app chrome; document canvases retain document formatting. */
 html[data-blak-app] { color-scheme:dark; --primary:var(--blak-primary);--primary-foreground:var(--blak-sand-50);--ring:var(--blak-focus);--background:var(--blak-surface);--foreground:var(--blak-text-primary);--card:var(--blak-surface-raised);--card-foreground:var(--blak-text-primary);--popover:var(--blak-surface-raised);--popover-foreground:var(--blak-text-primary);--muted:var(--blak-surface-hover);--muted-foreground:var(--blak-text-secondary);--accent:var(--blak-surface-selected);--accent-foreground:var(--blak-text-primary);--border:var(--blak-border);--input:var(--blak-border);--sidebar:var(--blak-surface-base);--sidebar-foreground:var(--blak-text-primary);--sidebar-accent:var(--blak-surface-hover);--sidebar-border:var(--blak-border); }
-html[data-blak-app] body {font-family:Inter,system-ui,sans-serif;background:var(--blak-surface);color:var(--blak-text-primary)}
+html[data-blak-app] body {font-family:Inter,system-ui,sans-serif}
+html[data-blak-app]:not([data-blak-app=sites]) body {background:var(--blak-surface);color:var(--blak-text-primary)}
 html[data-blak-app] :focus-visible {outline:3px solid var(--blak-focus);outline-offset:2px}
 html[data-blak-app] [role=dialog] {border-color:var(--blak-border);border-radius:12px}
 html[data-blak-app] button,html[data-blak-app] input {font-variant-numeric:tabular-nums}
@@ -13,22 +14,14 @@ html[data-blak-app=crm] :is(.border-gray-100,.border-gray-200,.border-gray-300,.
 html[data-blak-app=crm] button:is(.bg-gray-900,.bg-gray-800,.bg-surface-gray-7,.bg-surface-gray-8,.bg-surface-gray-9,.bg-surface-gray-10),html[data-blak-app=crm] .btn-primary{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
 html[data-blak-app=crm] input,html[data-blak-app=crm] select,html[data-blak-app=crm] textarea{background:var(--blak-surface-raised)!important;color:var(--blak-text-primary)!important;border-color:var(--blak-border)!important}
 /* Outline exposes structural landmarks; leave editor blocks/embedded content alone. */
-html[data-blak-app=sites] :is(aside,nav,[role=navigation]){background:var(--blak-surface-base)!important;color:var(--blak-text-primary)!important}
-html[data-blak-app=sites] :is(main,[role=main],[role=dialog]){background:var(--blak-surface)!important;color:var(--blak-text-primary)!important}
-html[data-blak-app=sites] :is(input,textarea){background:var(--blak-surface-raised)!important;color:var(--blak-text-primary)!important}
-html[data-blak-app=sites] :is(nav,aside,[role=navigation]) :is(a,button){color:var(--blak-text-primary)!important}
+/* Outline owns its surfaces through the native ?theme override. Partial generic
+   surface paints leave styled-component children in the opposite palette. */
 html[data-blak-app=chat] .rcx-sidebar--main{background:var(--blak-surface-base)!important}
 /* Collabora chrome only: never recolour the user's page/cells/slides. */
 html[data-blak-app=docs] :is(#toolbar-up,#toolbar-down,#main-menu,#notebookbar,.notebookbar,.tabs-container){background:var(--blak-surface)!important;color:var(--blak-text-primary)!important}
 html[data-blak-app=docs] :is(#toolbar-up,#toolbar-down,#main-menu,#notebookbar) button{color:var(--blak-text-primary)!important}
 @media(prefers-reduced-motion:reduce){html[data-blak-app] :is(button,a){transition:none!important;animation:none!important}}
 
-/* Pinned Outline structural component IDs, never editor content. */
-html[data-blak-app=sites] :is(body,body>div,.sc-eONNys){background:var(--blak-surface)!important;color:var(--blak-text-primary)!important}
-html[data-blak-app=sites] .sc-fThUAz{background:var(--blak-surface-base)!important;color:var(--blak-text-primary)!important}
-html[data-blak-app=sites] .sc-fThUAz :is(a,button,span,svg){color:var(--blak-text-secondary)!important}
-html[data-blak-app=sites] .sc-fThUAz a{background:transparent!important}
-html[data-blak-app=sites] .sc-fThUAz a:hover{background:var(--blak-surface-hover)!important}
 html[data-blak-app=crm]{--surface-gray-1:var(--blak-surface);--surface-gray-2:var(--blak-surface-raised);--surface-gray-3:var(--blak-surface-hover);--surface-gray-4:var(--blak-surface-selected);--surface-gray-7:var(--blak-primary);--ink-gray-8:var(--blak-text-primary);--ink-gray-6:var(--blak-text-secondary)}
 html[data-blak-app=crm] button.bg-ink-gray-9{background:var(--blak-primary)!important;color:var(--blak-sand-50)!important}
 html[data-blak-app=crm] .bg-surface-sidebar{background-color:var(--blak-surface-base)!important}

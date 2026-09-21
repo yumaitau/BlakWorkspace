@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import unittest
 
 from repo import ROOT
+from portal_fixture import portal_session
 
 
 def _free_port() -> int:
@@ -83,6 +84,7 @@ class TestCloudObject(unittest.TestCase):
             "FLOCI_SECRET": "test",
             "OIDC_AUTH_URL": "http://id.example.test/application/o/authorize/",
         })
+        cls.session_directory, cls.token = portal_session(env)
         cls.portal = subprocess.Popen(
             ["node", str(ROOT / "apps" / "portal" / "server.js")],
             cwd=str(ROOT),
@@ -112,20 +114,11 @@ class TestCloudObject(unittest.TestCase):
                 cls.portal.kill()
         if cls.s3httpd:
             cls.s3httpd.shutdown()
+            cls.s3httpd.server_close()
+        cls.session_directory.cleanup()
 
     def _cookie(self) -> str:
-        token = subprocess.check_output(
-            [
-                "node",
-                "-e",
-                "const s=require('./apps/portal/server.js');"
-                "process.stdout.write(s.sign({sub:'ada',name:'Ada',email:'ada@example.test',exp:Date.now()+3600000}));",
-            ],
-            cwd=str(ROOT),
-            env={**os.environ, "SESSION_SECRET": self.secret},
-            text=True,
-        )
-        return f"blak_session={token}"
+        return f"blak_session={self.token}"
 
     def _request(self, method: str, path: str, data: bytes | None = None, cookie: str | None = None):
         req = urllib.request.Request(

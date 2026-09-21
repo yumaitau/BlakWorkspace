@@ -18,10 +18,10 @@ test('server rejects invalid flow action and short name',async({signedIn:page})=
 });
 test('owner cannot read, change, run or delete another account flow',async({signedIn:page,context,baseURL,account})=>{
   const path=await create(page);
-  await context.addCookies([{name:'blak_session',value:session(account+'-other'),url:baseURL}]);
+  await context.addCookies([{name:'blak_session',value:await session(account+'-other'),url:baseURL}]);
   expect((await page.request.get(path)).status()).toBe(404);
   for(const action of ['enable','disable','run','delete'])expect((await page.request.post(`${path}/${action}`)).status()).toBe(404);
-  await context.addCookies([{name:'blak_session',value:session(account),url:baseURL}]);
+  await context.addCookies([{name:'blak_session',value:await session(account),url:baseURL}]);
 });
 test('missing and prototype flow names return 404',async({signedIn:page})=>{
   for(const id of ['0000000000000000','constructor','__proto__'])expect((await page.request.get(`/flow/${id}`)).status()).toBe(404);

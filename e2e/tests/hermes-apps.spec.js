@@ -12,7 +12,7 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
   const crm = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
   const exporter = await playwright.request.newContext({ baseURL: PORTAL, ignoreHTTPSErrors: true, extraHTTPHeaders: { authorization: 'Bearer ' + knowledge.account.sources.draw.token } });
   const other = await browser.newContext({ ignoreHTTPSErrors: true });
-  await other.addCookies([{ name: 'blak_session', value: session('hermes-other-' + Date.now()), url: PORTAL }]);
+  await other.addCookies([{ name: 'blak_session', value: await session('hermes-other-' + Date.now()), url: PORTAL }]);
   const suffix = crypto.randomBytes(5).toString('hex');
   const first = 'APPS-FIRST-' + suffix.toUpperCase(), changed = 'APPS-UPDATED-' + suffix.toUpperCase(), privatePhrase = 'PRIVATE-' + suffix;
   const objectName = 'hermes-' + suffix + '.txt';

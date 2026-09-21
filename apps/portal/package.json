@@ -1,1 +1,1 @@
-{"name":"@blak/portal","version":"0.1.0","private":true,"scripts":{"dev":"node server.js","start":"node server.js"},"dependencies":{}}
+{"name":"@blak/portal","version":"0.1.0","private":true,"scripts":{"dev":"node server.js","start":"node server.js"},"dependencies":{"jose":"6.2.2"}}

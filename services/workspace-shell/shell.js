@@ -6,6 +6,21 @@
   const app = location.hostname === 'docs.workspace.example.com' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
   if (!app) return;
   const portalURL=apps.find(a=>a.id==='portal').url;
+  window.addEventListener('storage',event=>{
+    if(event.key==='blak-last-signout' && event.newValue) location.replace(portalURL);
+  });
+  // Rocket.Chat 7.9's native Meteor OAuth API creates and verifies its own state.
+  if(app.id==='chat' && new URL(location.href).searchParams.get('blak_launch')==='1') {
+    const start=Date.now();
+    const launch=setInterval(()=>{
+      if(window.Meteor?.userId?.()) {clearInterval(launch);history.replaceState(null,'','/home');return;}
+      if(typeof window.Meteor?.loginWithBlakid==='function') {
+        clearInterval(launch);history.replaceState(null,'','/home');
+        window.Meteor.loginWithBlakid({loginStyle:'redirect'});
+      } else if(Date.now()-start>15000) clearInterval(launch);
+    },100);
+  }
+
   const root = document.documentElement, cookieName = 'blak-theme';
   const cookieTheme = () => document.cookie.split('; ').find(s => s.startsWith(cookieName + '='))?.split('=')[1];
   let mode = cookieTheme();
@@ -13,6 +28,7 @@
   if (!['light','dark'].includes(mode)) mode = 'dark';
   function apply(value, persist = false) {
     mode = value === 'light' ? 'light' : 'dark';
+    root.dataset.blakTheme = mode;
     if (root.dataset.theme !== mode) root.dataset.theme = mode;
     root.dataset.blakApp = app.id;
     root.classList.toggle('dark', mode === 'dark');
@@ -28,6 +44,13 @@
     if (persist) document.cookie = `${cookieName}=${mode}; Domain=workspace.example.com; Path=/; Max-Age=31536000; Secure; SameSite=Lax`;
     if(app.id==='sites') {
       try {const settings=JSON.parse(localStorage.getItem('UI_STORE')||'{}');settings.theme=mode;const value=JSON.stringify(settings);localStorage.setItem('UI_STORE',value);window.dispatchEvent(new StorageEvent('storage',{key:'UI_STORE',newValue:value,storageArea:localStorage}));} catch {}
+      // Outline's native theme query override updates React's theme provider,
+      // including dialogs, without reloading a document or rewriting its content.
+      const url=new URL(location.href);
+      if(url.searchParams.get('theme')!==mode) {
+        url.searchParams.set('theme',mode);history.replaceState(history.state,'',url);
+        window.dispatchEvent(new PopStateEvent('popstate',{state:history.state}));
+      }
     }
     window.dispatchEvent(new CustomEvent('blak-theme-change',{detail:mode}));
     const toggle = document.querySelector('#blak-workspace-shell')?.shadowRoot?.querySelector('#theme');
@@ -46,15 +69,31 @@
   const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; panel.append(heading);
   const home=document.createElement('a');home.id='home';home.href=portalURL;home.textContent='Workspace home';panel.append(home);
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Switch app');
-  for(const item of apps.filter(a=>a.id!=='portal')) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
+  let permittedIds=new Set();
+  async function refreshNavigation() {
+    nav.replaceChildren();
+    try {
+      const response=await fetch(new URL('/api/modules',portalURL),{credentials:'include',cache:'no-store'});
+      if(!response.ok) throw Error('Workspace session unavailable');
+      const {modules}=await response.json();
+      permittedIds=new Set(modules.map(item=>item.id));
+      for(const item of modules) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
+    } catch {
+      permittedIds=new Set();
+      const link=document.createElement('a');link.href=new URL('/login',portalURL).href;link.textContent='Sign in to workspace';nav.append(link);
+    }
+    const health=panel.querySelector('#health');if(health)health.hidden=!permittedIds.has('hermes');
+  }
+  await refreshNavigation();
   panel.append(nav);
   const welcome=document.createElement('a');welcome.href=new URL('/welcome',portalURL).href;welcome.textContent='Getting started with Blak';welcome.style.display='block';panel.append(welcome);
-  const health=document.createElement('a');health.href=new URL('/sync',portalURL).href;health.textContent='Hermes sync status';health.style.display='block';panel.append(health);
+  const health=document.createElement('a');health.id='health';health.href=new URL('/sync',portalURL).href;health.textContent='Hermes sync status';health.hidden=!permittedIds.has('hermes');panel.append(health);
   const toggle=document.createElement('button');toggle.id='theme';toggle.type='button';toggle.addEventListener('click',()=>apply(mode==='dark'?'light':'dark',true));panel.append(toggle);
+  const logout=document.createElement('a');logout.href=new URL('/logout',portalURL).href;logout.textContent='Sign out of workspace';logout.style.display='block';panel.append(logout);
   const footer=document.createElement('div');footer.className='footer';footer.textContent=app.backend;panel.append(footer);
   const button=document.createElement('button');button.id='open';button.type='button';button.textContent='Blak Workspace';button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','panel');
   const close=()=>{panel.hidden=true;button.setAttribute('aria-expanded','false');button.focus();};
-  button.addEventListener('click',()=>{panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)home.focus();});
+  button.addEventListener('click',()=>{panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){home.focus();refreshNavigation();}});
   shadow.addEventListener('click',e=>e.stopPropagation());
   shadow.addEventListener('keydown',e=>e.stopPropagation());
   // Native mobile apps may move focus to their editor after navigation. Escape

@@ -1,3 +1,4 @@
+"""Run through the provisioning runner, which supplies reconcile_provider."""
 """Run only through provision-workspace-apps.py; stdout contains a credential."""
 import json
 import secrets
@@ -8,7 +9,7 @@ from authentik.providers.oauth2.models import (
     OAuth2Provider, ScopeMapping, RedirectURI, RedirectURIMatchingMode,
 )
 
-provider, created = OAuth2Provider.objects.get_or_create(
+provider, created = reconcile_provider(slug='blak-forms',
     name='Blak Forms',
     defaults={
         'authorization_flow': Flow.objects.get(slug='default-provider-authorization-implicit-consent'),
@@ -26,7 +27,7 @@ provider, created = OAuth2Provider.objects.get_or_create(
         'issuer_mode': 'per_provider',
     },
 )
-provider.property_mappings.set(ScopeMapping.objects.filter(scope_name__in=['openid', 'profile', 'email']))
+provider.property_mappings.add(*ScopeMapping.objects.filter(scope_name__in=['openid', 'profile', 'email']).exclude(name__startswith='Blak Workspace '))
 Application.objects.update_or_create(slug='blak-forms', defaults={
     'name': 'Blak Forms', 'provider': provider,
     'meta_launch_url': 'https://forms.workspace.example.com', 'open_in_new_tab': True,

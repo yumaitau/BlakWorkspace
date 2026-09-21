@@ -79,6 +79,8 @@ spec:
           ports: [{ containerPort: 8080 }]
           env:
             - { name: OLLAMA_BASE_URL, value: http://ollama:11434 }
+            - { name: REDIS_URL, value: redis://hermes-sessions:6379/0 }
+            - { name: REDIS_KEY_PREFIX, value: blak-hermes }
             - { name: WEBUI_NAME, value: 'Blak Hermes' }
             - { name: WEBUI_SECRET_KEY, valueFrom: { secretKeyRef: { name: blak-hermes, key: session-secret } } }
             - { name: ENABLE_API_KEYS, value: "true" }
@@ -114,3 +116,51 @@ metadata:
 spec:
   selector: { app: hermes }
   ports: [{ port: 8080, targetPort: 8080 }]
+---
+# Persistent revocation journal: cache eviction must never restore a logged-out JWT.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: hermes-sessions, namespace: blak-micro }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hermes-sessions, namespace: blak-micro }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: hermes-sessions } }
+  template:
+    metadata: { labels: { app: hermes-sessions } }
+    spec:
+      containers:
+        - name: valkey
+          image: valkey/valkey@sha256:9acdf6f0ae1771ea63c401e127054b2d1779227b9230dcfae37fa684610eaa4f
+          args: [valkey-server, --appendonly, "yes", --appendfsync, always, --maxmemory, 128mb, --maxmemory-policy, noeviction]
+          ports: [{ containerPort: 6379 }]
+          readinessProbe: { exec: { command: [valkey-cli, ping] }, periodSeconds: 5 }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: hermes-sessions } }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: hermes-sessions, namespace: blak-micro }
+spec:
+  selector: { app: hermes-sessions }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: hermes-sessions, namespace: blak-micro }
+spec:
+  podSelector: { matchLabels: { app: hermes-sessions } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: hermes } } }]
+      ports: [{ protocol: TCP, port: 6379 }]
+  egress: []

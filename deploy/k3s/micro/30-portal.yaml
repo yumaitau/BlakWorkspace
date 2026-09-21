@@ -17,6 +17,7 @@ metadata:
   namespace: blak-micro
 spec:
   replicas: 1
+  # The encrypted session journal has one writer; retain it across restarts.
   strategy:
     type: Recreate
   selector: { matchLabels: { app: portal } }
@@ -48,7 +49,7 @@ spec:
             - { name: PORT, value: "3000" }
             - { name: KNOWLEDGE_EXPORT_ACCOUNTS, value: /exports/accounts.json }
             - { name: FLOW_STORE, value: /data/blak-flow.json }
-            - { name: OIDC_ISSUER, value: https://id.workspace.example.com/application/o/blak-portal }
+            - { name: OIDC_ISSUER, value: https://id.workspace.example.com/application/o/blak-portal/ }
             - { name: OIDC_AUTH_URL, value: https://id.workspace.example.com/application/o/authorize/ }
             - { name: OIDC_CLIENT_ID, value: blak-portal }
             - { name: OIDC_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: oidc-secret } } }

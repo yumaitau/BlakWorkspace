@@ -7,7 +7,11 @@ COPY theme-tokens.json /theme-tokens.json
 RUN npm run build && mkdir -p dist/excalidraw && cp -R node_modules/@excalidraw/excalidraw/dist/prod/fonts dist/excalidraw/
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json server.js catalog.js flow-engine.js cloud-object.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY integration.js session-store.js oidc.js ./
+COPY logout-page.js logout.js ./
+COPY server.js catalog.js flow-engine.js cloud-object.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
 COPY brand-icons/ ./brand-icons/
 COPY brand-home-logo.jpg brand.js welcome.js login-background.png ./
 COPY sync-health.js draw-store.js knowledge-export.js ./

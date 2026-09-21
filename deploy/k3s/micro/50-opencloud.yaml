@@ -57,13 +57,13 @@ spec:
             - { name: OC_EXCLUDE_RUN_SERVICES, value: idp }
             - { name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD, value: jwt }
             - { name: PROXY_OIDC_REWRITE_WELLKNOWN, value: "true" }
-            - { name: PROXY_USER_OIDC_CLAIM, value: preferred_username }
+            - { name: PROXY_USER_OIDC_CLAIM, value: sub }
             - { name: PROXY_USER_CS3_CLAIM, value: username }
             - { name: PROXY_AUTOPROVISION_ACCOUNTS, value: "true" }
-            - { name: PROXY_AUTOPROVISION_CLAIM_USERNAME, value: preferred_username }
+            - { name: PROXY_AUTOPROVISION_CLAIM_USERNAME, value: sub }
             - { name: PROXY_AUTOPROVISION_CLAIM_EMAIL, value: email }
             # Basic-auth and OIDC both provide preferred_username; basic-auth has no name claim.
-            - { name: PROXY_AUTOPROVISION_CLAIM_DISPLAYNAME, value: preferred_username }
+            - { name: PROXY_AUTOPROVISION_CLAIM_DISPLAYNAME, value: name }
             - { name: GRAPH_USERNAME_MATCH, value: none }
             - { name: GRAPH_LDAP_SERVER_WRITE_ENABLED, value: "true" }
             - { name: PROXY_ROLE_ASSIGNMENT_DRIVER, value: default }

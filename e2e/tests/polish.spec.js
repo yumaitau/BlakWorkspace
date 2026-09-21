@@ -7,15 +7,10 @@ const rgb=hex=>'rgb('+hex.slice(1).match(/../g).map(value=>parseInt(value,16)).j
 const apps=[['portal','https://portal.workspace.example.com/'],['crm','https://crm.workspace.example.com/login?redirect-to=/crm'],['forms','https://forms.workspace.example.com/'],['projects','https://projects.workspace.example.com/'],['knowledge','https://sites.workspace.example.com/'],['drive','https://drive.workspace.example.com/'],['hermes','https://hermes.workspace.example.com/'],['chat','https://chat.workspace.example.com/']];
 async function portalLogin(page){await page.goto('https://portal.workspace.example.com/login');await authentikLogin(page);await page.waitForURL(u=>u.hostname==='portal.workspace.example.com'&&u.pathname==='/');}
 for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, keyboard, responsive and accessible`,async({page})=>{
- test.setTimeout(120000);await portalLogin(page);await page.goto(url);
- if(name==='crm')await page.getByRole('link',{name:/Blak ID/}).click();
- if(name==='forms')await page.getByRole('button',{name:'Blak ID',exact:true}).click();
- if(name==='hermes')await page.getByRole('button',{name:'Continue with Blak ID'}).click();
- if(name==='projects'){const login=page.getByRole('button',{name:/Continue with OIDC/i});await Promise.race([page.waitForURL(/\/onboarding|\/workspace/, {timeout:15000}),login.waitFor({timeout:15000})]).catch(()=>{});if(await login.isVisible())await login.click();}
- if(name==='chat'){const login=page.getByRole('button',{name:/Blak ID|blakid/i});await login.waitFor();await login.click();}
+ test.setTimeout(120000);await portalLogin(page);await page.goto(name==='portal'?url:'https://portal.workspace.example.com/launch/'+(name==='knowledge'?'sites':name));
  await page.waitForURL(u=>u.hostname===new URL(url).hostname&&!/login|sign-in|oauth|callback/.test(u.pathname));
  if(name==='knowledge'){await page.waitForURL(u=>u.hostname==='sites.workspace.example.com'&&u.pathname!=='/'&&!/auth|login/.test(u.pathname));await expect(page.getByRole('link',{name:'Home',exact:true})).toBeVisible();}
- if(name==='projects')await expect(page.getByRole('button',{name:'Create workspace',exact:true})).toBeVisible();
+ if(name==='projects')await expect(page.getByRole('button',{name:/Create workspace|Create project/}).first()).toBeVisible();
  if(name==='drive')await expect(page.getByRole('heading',{name:'Personal',exact:true})).toBeVisible();
  if(name==='crm')await expect(page.getByRole('button',{name:'Create',exact:true})).toBeVisible();
  if(name==='hermes')await expect(page.locator('#chat-input')).toBeVisible();
@@ -25,7 +20,7 @@ for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, key
  await open.click();await expect(shell.getByRole('link',{name:'Workspace home',exact:true})).toBeFocused();await page.keyboard.press('Escape');await expect(open).toBeFocused();
  for(const mode of ['light','dark']){
   await open.click();const toggle=shell.getByRole('button',{name:'Use '+mode+' theme'});if(await toggle.isVisible())await toggle.click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme',mode);
+  await expect(page.locator('html')).toHaveAttribute('data-blak-theme',mode);
   const tokens=require('../../apps/portal/theme').tokens;const palette={...tokens.dark,...tokens[mode]};
   if(name==='drive')await expect(page.getByRole('banner',{name:'Top bar'})).toHaveCSS('background-color',rgb(palette['surface-base']));
   if(name==='drive')await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--oc-role-surface').trim())).toBe(palette['surface-raised']);
@@ -56,6 +51,6 @@ test('Hermes health is owner-private and renders useful enrolment and status sta
  const health=await (await page.request.get('/api/sync-health')).json();expect(health.enrolled).toBe(true);expect(health.sources).toHaveLength(9);expect(JSON.stringify(health)).not.toMatch(/token|api_secret|file_id|headers/);
  await page.goto('/sync');await expect(page.getByRole('heading',{name:'Hermes sync status',exact:true})).toBeVisible();
  const result=await new AxeBuilder({page}).include('main').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();expect(result.violations).toEqual([]);
- await context.addCookies([{name:'blak_session',value:session('polish-other-owner'),url:'https://portal.workspace.example.com'}]);
+ await context.addCookies([{name:'blak_session',value:await session('polish-other-owner'),url:'https://portal.workspace.example.com'}]);
  const other=await (await page.request.get('/api/sync-health')).json();expect(other.enrolled).toBe(false);expect(other.sources).toEqual([]);
 });
