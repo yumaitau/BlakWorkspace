@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from access import snapshot as directory_snapshot
 from hermes import HermesRoles
+from knowledge import KnowledgeRoles
 import hermes_copies
 import projects
 import crm
@@ -43,7 +44,7 @@ def reconcile(session):
               Path(os.environ['BLAK_ID_TOKEN_FILE']).read_text().strip())
     aliases = json.loads(Path(os.environ['BLAK_ID_SUBJECTS_FILE']).read_text())
     directory = directory_snapshot(api, aliases)
-    if not config or not set(config) <= {'vault', 'hermes', 'projects', 'crm'}:
+    if not config or not set(config) <= {'vault', 'hermes', 'projects', 'knowledge', 'crm'}:
         raise ValueError('Unknown or empty native role configuration')
     failures = []
     if config.get('hermes'):
@@ -74,6 +75,14 @@ def reconcile(session):
             print('CRM roles reconciled ' + json.dumps(result, sort_keys=True), flush=True)
         except Exception as error:
             failures.append('CRM:' + type(error).__name__)
+    if config.get('knowledge'):
+        try:
+            knowledge = config['knowledge']
+            native = API(knowledge['base'], knowledge['token'])
+            result = KnowledgeRoles(native, knowledge['controller_user_id']).reconcile(directory)
+            print('Knowledge roles reconciled ' + json.dumps(result, sort_keys=True), flush=True)
+        except Exception as error:
+            failures.append('Knowledge:' + type(error).__name__)
     if config.get('vault'):
         try:
             reconcile_vault(config['vault'], {member['identity']: member for member in directory.values()}, session)

@@ -35,7 +35,12 @@
     "group": "Blak Chat users"
   },
   "sites": {
-    "group": "Blak Knowledge users"
+    "group": "Blak Knowledge users",
+    "roleGroups": [
+      "blak-knowledge-reader",
+      "blak-knowledge-writer",
+      "blak-knowledge-admin"
+    ]
   },
   "projects": {
     "group": "Blak Projects users",
