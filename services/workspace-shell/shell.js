@@ -57,9 +57,9 @@
     if (toggle) toggle.textContent = mode === 'dark' ? 'Use light theme' : 'Use dark theme';
   }
   apply(mode);
-  // Native apps can restore a saved/system theme after their first render.
-  // Keep their class-based palette aligned with the shared workspace preference.
-  new MutationObserver(() => {
+  // HeyForm restores its system theme after first render. Other native apps
+  // observe this attribute themselves, so a global observer creates a loop.
+  if(app.id==='forms') new MutationObserver(() => {
     if(root.classList.contains('dark') !== (mode==='dark')) root.classList.toggle('dark',mode==='dark');
     if(root.dataset.theme!==mode) root.dataset.theme=mode;
   }).observe(root,{attributes:true,attributeFilter:['class','data-theme']});
