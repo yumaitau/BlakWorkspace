@@ -38,6 +38,12 @@ OpenProject provides a particularly concrete example: the deployment sets `OPENP
 
 **Implication for Blak:** “Continue with Blak ID works” and “launching any app opens the requested work immediately” are separate acceptance criteria. The latter requires a deliberate entry route or a native automatic-login setting for each application. Keep a controlled administrator recovery route; do not simulate login by injecting credentials or hiding a second password form with CSS.
 
+## Access and account lifecycle are separate from login
+
+openDesk manages coarse application access and group membership centrally, while fine-grained resource permissions remain primarily inside each application. Its documentation describes user attributes generating managed application groups; those memberships control portal visibility and the OIDC claims needed for access. Knowing an application URL should therefore not bypass the entitlement check. Direct group edits can be overwritten by attribute-based reconciliation. The documentation also warns that application integrations process direct memberships rather than nested groups. [Roles and permissions](https://docs.opendesk.eu/operations/permissions/).
+
+For Blak, separate three questions: can this user authenticate, may they use this app, and may they read this particular file or record? Require all three in the relevant layer. Account creation, renaming, disabling and session revocation need their own verified workflows; a successful first OIDC login does not prove them. Preserve source permissions when exposing content through Search or Hermes.
+
 ## Navigation and cross-application authentication
 
 The Nubus portal exposes central navigation, enabled with a server-side shared secret. The portal configuration also supplies newsfeed integration and an Intercom silent-login URL. [Nubus portal settings](https://gitlab.opencode.de/bmi/opendesk/deployment/opendesk/-/blob/bd1b36f81f0982debf4e37c10ca890fb5b239fdb/helmfile/apps/nubus/values-nubus.yaml.gotmpl).
