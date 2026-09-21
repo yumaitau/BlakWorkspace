@@ -14,6 +14,7 @@ input{background:#172123!important;border-color:#304043!important;color:#F4EBDD!
 """
 brand = Brand.objects.get(default=True)
 brand.branding_title = "Blak ID"
+brand.branding_default_flow_background = "/_blak/login-background.png"
 brand.branding_logo = "/_blak/logo.svg"
 brand.branding_favicon = "/_blak/logo.svg"
 brand.branding_custom_css = CSS
