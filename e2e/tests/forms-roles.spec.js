@@ -87,7 +87,10 @@ test('native Forms roles cap owners, aliases, uploads and existing sessions', as
       input: { name: key, projectName: key },
     })).createTeam;
     projectId = (await accepted('query($input:TeamDetailInput!){projects(input:$input){id}}', { input: { teamId } })).projects[0].id;
-    formId = (await accepted('mutation($input:CreateFormInput!){createForm(input:$input)}', { input: { projectId, name: key } })).createForm;
+    // Native HeyForm enums: INTERACTIVE=2, SURVEY=1.
+    formId = (await accepted('mutation($input:CreateFormInput!){createForm(input:$input)}', {
+      input: { projectId, name: key, interactiveMode: 2, kind: 1 },
+    })).createForm;
     await accepted(update, rename(key + '-writer'));
     await denied('mutation($input:UpdateTeamInput!){updateTeam(input:$input)}', { input: { teamId, name: key + '-forbidden' } });
     await denied('mutation($input:CreateProjectInput!){createProject(input:$input)}', { input: { teamId, name: key, memberIds: ['foreign'] } });
