@@ -43,7 +43,7 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     if (!result.ok) throw Error('Native Knowledge fixture returned HTTP ' + result.status + ' at ' + path);
     return result.json();
   }
-  let native, token, collection, document, group, csrf, verifiedFixture = false;
+  let native, token, collection, document, group, verifiedFixture = false;
   async function waitRole(role) {
     const expected = { reader: 'viewer', writer: 'member', admin: 'admin' };
     await expect.poll(async () => {
@@ -57,6 +57,9 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     expect([401, 403, 404]).toContain(result.status);
   }
   async function cookieAPI(path, data = {}) {
+    const cookies = await context.cookies(origin);
+    const csrf = (cookies.find(cookie => cookie.name === '__Host-csrfToken') || cookies.find(cookie => cookie.name === 'csrfToken'))?.value;
+    if (!csrf) throw Error('Native Knowledge CSRF cookie unavailable');
     return page.request.post(origin + '/api/' + path, { data, headers: { origin, 'x-csrf-token': csrf } });
   }
   try {
@@ -64,8 +67,6 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     const portal = await (await page.request.get('/api/me')).json();
     await page.goto(origin + '/auth/oidc');
     await page.waitForURL(url => url.origin === origin && !url.pathname.startsWith('/auth'), { timeout: 60000 });
-    csrf = (await context.cookies(origin)).find(cookie => /csrfToken$/.test(cookie.name))?.value;
-    if (!csrf) throw Error('Native Knowledge CSRF cookie unavailable');
     const profile = await cookieAPI('auth.info');
     expect(profile.ok()).toBeTruthy();
     native = (await profile.json()).data.user;
@@ -74,6 +75,11 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     verifiedFixture = true;
     await waitRole('admin');
     const createdKey = await cookieAPI('apiKeys.create', { name: key });
+    if (!createdKey.ok()) {
+      const failure = await createdKey.json().catch(() => ({}));
+      const code = typeof failure.error === 'string' && /^[a-z_]+$/.test(failure.error) ? failure.error : 'unclassified';
+      throw Error('Native API-key creation returned HTTP ' + createdKey.status() + ' (' + code + ')');
+    }
     expect(createdKey.status(), 'Native API-key creation must succeed for its configured role').toBe(200);
     token = (await createdKey.json()).data.value;
     expect(typeof token).toBe('string');
