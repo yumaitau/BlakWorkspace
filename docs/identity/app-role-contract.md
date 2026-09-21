@@ -282,12 +282,16 @@ connections; subsequent cookie and API-key requests evaluate current permissions
 Disabled or removed members become disabled native users. Restoration retains
 the original native account and its ownership.
 
-The scoped deployment backs up MariaDB before migration. Startup journals exact
+The scoped deployment backs up MariaDB before migration and rejects a site name
+that differs from the live deployment. Prepare tailnet releases with
+`--crm-site <existing-site-directory>`: public DNS must not select a different
+Frappe database. Startup refuses to create a new site when another site already
+exists on the volume. Startup journals exact
 native Blak ID bindings and fails if migration or setup loses one; ordinary user
 saves cannot remove or replace an existing binding. Recovery must use the exact
 original native binding, never inferred email matching. The dedicated controller
 and built-in Administrator are separate from human app administrators.
 
-Validation so far: 299 repository tests, eight actual native Python entry-point
+Validation so far: 299 repository tests, nine actual native Python entry-point
 tests and the native realtime-consumer test pass. Authenticated live acceptance
 is still pending; deployment alone does not certify CRM roles.

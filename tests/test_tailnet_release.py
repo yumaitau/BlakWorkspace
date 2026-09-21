@@ -14,6 +14,29 @@ class TailnetReleaseTests(unittest.TestCase):
     def test_rejects_unrelated_host_before_touching_release(self):
         with self.assertRaises(ValueError):tailnet.configure(Path('/missing'),'bad.example.net','100.64.0.1')
 
+    def test_existing_crm_database_site_is_independent_of_public_dns(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            (root/'.deployment.json').write_text(json.dumps({'domain':'workspace.example.com','revision':'test'}))
+            for relative in ('services/frappe/setup.py', 'services/frappe/enroll-roles.py',
+                             'services/workspace-shell/nginx.conf', 'deploy/k3s/micro/95-crm.yaml'):
+                path=root/relative
+                path.parent.mkdir(parents=True,exist_ok=True)
+                path.write_text((ROOT/relative).read_text())
+            origins=tailnet.configure(root,'demo.tail123.ts.net','100.64.0.1','crm.original.internal')
+            for relative in ('services/frappe/setup.py','services/frappe/enroll-roles.py'):
+                self.assertIn("SITE = 'crm.original.internal'",(root/relative).read_text())
+            self.assertIn(repr(origins['crm']),(root/'services/frappe/setup.py').read_text())
+            deployment=next(doc for doc in tailnet.yaml.safe_load_all((root/'deploy/k3s/micro/95-crm.yaml').read_text())
+                            if doc and doc.get('kind')=='Deployment' and doc['metadata']['name']=='frappe-crm')
+            for container in deployment['spec']['template']['spec']['containers']:
+                for env in container.get('env',[]):
+                    if env['name']=='FRAPPE_SITE_NAME_HEADER':
+                        self.assertEqual(env['value'],'crm.original.internal')
+                for header in container.get('readinessProbe',{}).get('httpGet',{}).get('httpHeaders',[]):
+                    if header['name']=='Host':self.assertEqual(header['value'],'crm.original.internal')
+            self.assertEqual(json.loads((root/'.deployment.json').read_text())['crm_site'],'crm.original.internal')
+
     def test_origins_remain_distinct_and_preserve_site_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
