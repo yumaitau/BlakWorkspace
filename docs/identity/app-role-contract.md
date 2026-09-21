@@ -76,8 +76,9 @@ The controller binds accounts only through the native `custom` OIDC account's
 immutable subject. Human global instance-admin roles are removed before applying
 workspace roles. Disabled identities, removed app grants, and unbound local
 accounts are banned through Better Auth. An explicit controller account is the
-only exception. Existing independently owned workspaces are preserved; these
-managed role guarantees apply to the enrolled workspace. App-wide removal still
+only exception. Existing independently owned workspaces are preserved. The
+current app role caps their native object permissions too: ownership or a local
+custom role cannot let a reader edit content or manage members. App-wide removal
 bans access to all workspaces.
 
 The pinned native patch disables the five-minute cookie permission cache,

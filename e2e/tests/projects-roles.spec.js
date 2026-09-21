@@ -35,7 +35,7 @@ test('native Projects roles constrain existing keys, sessions and managed author
     if (!result.ok) throw Error('Native Projects fixture returned HTTP ' + result.status + ' at ' + path);
     return result.json();
   }
-  let native, token, project;
+  let native, token, project, privateWorkspace, privateProject;
   const organizationPath = '/api/auth/organization/get-full-organization?organizationId=' + workspaceId;
   async function waitRole(role) {
     await expect.poll(async () => {
@@ -64,6 +64,15 @@ test('native Projects roles constrain existing keys, sessions and managed author
     expect(createdKey.ok()).toBeTruthy();
     token = (await createdKey.json()).key;
     project = await api(token, 'POST', '/api/project', { workspaceId, name: key, slug: 'E2E' + crypto.randomBytes(4).toString('hex').toUpperCase(), icon: 'folder' });
+    privateWorkspace = await api(operator['session-token'], 'POST', '/api/auth/organization/create', { name: key + '-private', slug: key + '-private' });
+    const fixture = JSON.stringify({ userId: native.id, subject: portal.sub, workspaceId: privateWorkspace.id });
+    const source = `import { blakNativeAuth as auth, blakNativeDatabase as db, blakNativeSchema as schema, blakNativeEq as eq } from '/app/apps/api/dist/index.js';
+      const fixture = ${fixture};
+      const links = await db.select({ provider: schema.accountTable.providerId, subject: schema.accountTable.accountId }).from(schema.accountTable).where(eq(schema.accountTable.userId, fixture.userId));
+      if (!links.some(link => link.provider === 'custom' && link.subject === fixture.subject)) throw Error('Fixture immutable identity mismatch');
+      await auth.api.addMember({ body: { userId: fixture.userId, organizationId: fixture.workspaceId, role: 'owner' } }); process.exit(0);`;
+    execFileSync('kubectl', ['-n', 'blak-micro', 'exec', '-i', 'deploy/projects', '-c', 'kaneo', '--', 'node', '--input-type=module'], { input: source, stdio: ['pipe', 'pipe', 'pipe'] });
+    privateProject = await api(token, 'POST', '/api/project', { workspaceId: privateWorkspace.id, name: key + '-private', slug: 'PRIVATE', icon: 'folder' });
     const board = await api(token, 'GET', '/api/task/tasks/' + project.id);
     await api(token, 'POST', '/api/task/' + project.id, { title: key, description: 'Disposable native role fixture', priority: 'medium', status: board.data.columns[0].slug });
     await denied('POST', '/api/auth/organization/invite-member', { organizationId: workspaceId, email: key + '@example.invalid', role: 'admin' });
@@ -85,11 +94,13 @@ test('native Projects roles constrain existing keys, sessions and managed author
     expect((await response(token, 'GET', '/api/task/tasks/' + project.id)).status).toBe(200);
     await denied('POST', '/api/task/' + project.id, { title: 'forbidden', priority: 'medium', status: board.data.columns[0].slug });
     await denied('DELETE', '/api/project/' + project.id);
+    await denied('DELETE', '/api/project/' + privateProject.id);
+    await denied('POST', '/api/auth/organization/update', { organizationId: privateWorkspace.id, data: { name: 'forbidden-owner-update' } });
     const cookieWrite = await page.request.post(origin + '/api/task/' + project.id, { data: { title: 'forbidden-cookie', priority: 'medium', status: board.data.columns[0].slug }, headers: { origin } });
     expect(cookieWrite.status()).toBe(403);
     updateIdentity(key, { roles: { projects: 'admin' } });
     await waitRole('admin');
-    await api(token, 'PUT', '/api/project/' + project.id, { name: key + '-admin', slug: project.slug, icon: 'folder' });
+    await api(token, 'PUT', '/api/project/' + project.id, { name: key + '-admin', slug: project.slug, icon: 'folder', description: '', isPublic: false });
     const organization = await api(operator['session-token'], 'GET', organizationPath);
     const membership = organization.members.find(member => member.userId === native.id);
     await denied('POST', '/api/auth/organization/update-member-role', { organizationId: workspaceId, memberId: membership.id, role: 'owner' });
@@ -98,7 +109,7 @@ test('native Projects roles constrain existing keys, sessions and managed author
     await denied('POST', '/api/auth/organization/delete', { organizationId: workspaceId });
     updateIdentity(key, { roles: { projects: 'reader' } });
     await waitRole('reader');
-    await denied('PUT', '/api/project/' + project.id, { name: 'forbidden', slug: project.slug, icon: 'folder' });
+    await denied('PUT', '/api/project/' + project.id, { name: 'forbidden', slug: project.slug, icon: 'folder', description: '', isPublic: false });
     updateIdentity(key, { active: false });
     await waitRole(null);
     await denied('GET', '/api/task/tasks/' + project.id);
@@ -113,8 +124,12 @@ test('native Projects roles constrain existing keys, sessions and managed author
     await waitRole(null);
     await denied('GET', '/api/task/tasks/' + project.id);
   } finally {
-    if (project) await api(operator['session-token'], 'DELETE', '/api/project/' + project.id);
-    if (native) await api(operator['session-token'], 'POST', '/api/auth/admin/remove-user', { userId: native.id });
-    await api(operator['session-token'], 'POST', '/api/auth/sign-out', {});
+    try {
+      if (project) await api(operator['session-token'], 'DELETE', '/api/project/' + project.id);
+      if (privateWorkspace) await api(operator['session-token'], 'POST', '/api/auth/organization/delete', { organizationId: privateWorkspace.id });
+      if (native) await api(operator['session-token'], 'POST', '/api/auth/admin/remove-user', { userId: native.id });
+    } finally {
+      await api(operator['session-token'], 'POST', '/api/auth/sign-out', {});
+    }
   }
 });

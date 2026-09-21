@@ -32,6 +32,13 @@ test('native session wrapper rejects a freshly banned user', async () => {
   });
   assert.equal(await getSession(new Headers()), null);
 });
+test('native permission engine checks the application cap before local ownership or admin bypass', async () => {
+  const hasPermission = extract('async function hasWorkspacePermission(c, permissions)', 'function requireWorkspacePermission', {
+    applicationAllows: async () => false, database_default: {}, schema: {}, eq2() {}, builtInRoles: {},
+    isInstanceAdmin: async () => { throw Error('Application cap must run first'); },
+  });
+  assert.equal(await hasPermission({ get: () => 'private-owner' }, { task: ['update'] }), false);
+});
 test('both native WebSocket heartbeat handlers answer pings without accepting commands', () => {
   const handlers = [...source.matchAll(/onMessage\(evt\) \{([\s\S]*?)\n        \},\n        onClose/g)];
   assert.equal(handlers.length, 2);

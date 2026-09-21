@@ -45,6 +45,24 @@ export function rolePermissions(builtInRoles) {
   };
 }
 
+export async function applicationRole(userId, { database, schema, eq, env = process.env }) {
+  if (!userId) return null;
+  if (userId === env.BLAK_ROLE_CONTROLLER_ID) return 'controller';
+  const workspaces = JSON.parse(env.BLAK_ROLE_WORKSPACES || '[]');
+  const members = await database.select({ workspaceId: schema.workspaceUserTable.workspaceId, role: schema.workspaceUserTable.role })
+    .from(schema.workspaceUserTable).where(eq(schema.workspaceUserTable.userId, userId));
+  const roles = members.filter(member => workspaces.includes(member.workspaceId)).map(member => member.role);
+  return [...ROLE_NAMES].reverse().find(role => roles.includes('blak-' + role)) || null;
+}
+
+export async function applicationAllows(userId, permissions, dependencies) {
+  const role = await applicationRole(userId, dependencies);
+  if (role === 'controller' || role === 'admin') return true;
+  if (!role) return false;
+  const grants = rolePermissions(dependencies.builtInRoles)[role];
+  return Object.entries(permissions).every(([resource, actions]) => actions.every(action => grants[resource]?.includes(action)));
+}
+
 export async function withNativeSession(auth, userId, operation) {
   const context = await auth.$context;
   // Admin endpoints require a persisted native session, not a synthetic API-key
@@ -160,11 +178,13 @@ export async function protectsManagedAuthority(ctx, { database, schema, eq, getS
   // not grant a reader owner/admin authority between reconciliation passes.
   const authorityPaths = ['/organization/invite-member', '/organization/update-member-role',
     '/organization/remove-member', '/organization/create-role', '/organization/update-role',
-    '/organization/delete-role', '/organization/leave'];
+    '/organization/delete-role', '/organization/leave', '/organization/update', '/organization/delete'];
   if (authorityPaths.includes(path)) {
     const session = await getSessionFromCtx(ctx, { disableRefresh: true });
     const workspaceId = body.organizationId || session?.session?.activeOrganizationId;
-    if (workspaceIds.includes(workspaceId) && session?.user?.id !== controller) return true;
+    if (workspaceIds.includes(workspaceId) && !['/organization/update'].includes(path) && session?.user?.id !== controller) return true;
+    const role = await applicationRole(session?.user?.id, { database, schema, eq, env });
+    if (role !== 'controller' && role !== 'admin') return true;
   }
   if (path === '/organization/delete' && workspaceIds.includes(body.organizationId)) protectedTarget = true;
   if (['/organization/update-role', '/organization/delete-role'].includes(path)) {

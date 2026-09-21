@@ -2,6 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { authorized, directoryMembers, planUsers, reconcile } from './role-bridge.mjs';
 import { withNativeSession } from './role-bridge.mjs';
+import { applicationAllows } from './role-bridge.mjs';
+test('application role caps private ownership and arbitrary local workspace roles', async () => {
+  const schema = { workspaceUserTable: { workspaceId: 'workspace', role: 'role', userId: 'user' } };
+  const rows = [{ workspaceId: 'managed', role: 'blak-reader' }, { workspaceId: 'private', role: 'owner' }];
+  const dependencies = { schema, eq() {}, env: { BLAK_ROLE_CONTROLLER_ID: 'controller', BLAK_ROLE_WORKSPACES: '["managed"]' },
+    builtInRoles: { viewer: { statements: { task: ['read'] } }, member: { statements: {} }, admin: { statements: {} } },
+    database: { select() { return { from() { return { where: async () => rows }; } }; } } };
+  assert.equal(await applicationAllows('person', { task: ['read'] }, dependencies), true);
+  assert.equal(await applicationAllows('person', { task: ['update'] }, dependencies), false);
+  rows[0].role = 'blak-writer';
+  assert.equal(await applicationAllows('person', { task: ['update'] }, dependencies), true);
+  assert.equal(await applicationAllows('person', { member: ['update'] }, dependencies), false);
+  rows.shift();
+  assert.equal(await applicationAllows('person', { task: ['read'] }, dependencies), false);
+  assert.equal(await applicationAllows('controller', { task: ['update'] }, dependencies), true);
+});
 test('privileged controller operations use and clean up persisted native sessions', async () => {
   const deleted = [];
   const auth = { $context: Promise.resolve({ baseURL: 'https://projects.example.test/api/auth', internalAdapter: {
