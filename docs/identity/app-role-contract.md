@@ -263,3 +263,31 @@ mappings are rejected before native data access or deletion. Once a source listi
 has established current access, transient processing failures preserve tracked
 copies for retry; explicit access denial still revokes them. A failed source
 listing remains fail-closed because continuing source access cannot be verified.
+
+## CRM native enforcement (acceptance pending)
+
+CRM uses pinned Frappe 15.121.0 and CRM 1.84.0. The controller binds accounts
+through native `User Social Login` records using the immutable Blak ID subject.
+Existing email collisions fail closed; email changes cannot relink an account.
+Human admin maps to Sales Manager, never System Manager. Directory-managed role
+markers cap native document permissions, including owner and ignore-permission
+paths. Native object permissions still apply.
+
+Reader retains read, select, print, export and report operations plus explicitly
+reviewed read RPCs. Both API versions, document-method dispatch and uploads apply
+the same role bounds. Writer and admin cannot change identity links, role
+profiles, directory roles or another user's authority. Native field metadata
+marks reader inputs read-only. Role changes close the user's native realtime
+connections; subsequent cookie and API-key requests evaluate current permissions.
+Disabled or removed members become disabled native users. Restoration retains
+the original native account and its ownership.
+
+The scoped deployment backs up MariaDB before migration. Startup journals exact
+native Blak ID bindings and fails if migration or setup loses one; ordinary user
+saves cannot remove or replace an existing binding. Recovery must use the exact
+original native binding, never inferred email matching. The dedicated controller
+and built-in Administrator are separate from human app administrators.
+
+Validation so far: 299 repository tests, eight actual native Python entry-point
+tests and the native realtime-consumer test pass. Authenticated live acceptance
+is still pending; deployment alone does not certify CRM roles.

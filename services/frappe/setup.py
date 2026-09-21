@@ -36,7 +36,7 @@ try:
     if not identity_journal.exists():
         bindings = frappe.get_all('User Social Login', filters={'provider': 'blak_id'},
                                   fields=['parent', 'userid'])
-        with identity_journal.open('x', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
+        with open(identity_journal, 'x', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
             json.dump(bindings, stream)
     bindings = json.loads(identity_journal.read_text())
 finally:
