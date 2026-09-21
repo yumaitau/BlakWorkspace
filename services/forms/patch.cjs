@@ -33,4 +33,6 @@ sources['model/user.model.js'] += '\nexports.UserSchema.add({ blakRole: { type: 
 sources['controller/index.js'] += '\nexports.BlakRoleController = require("./blak-role-controller.cjs").BlakRoleController;\n';
 replace('resolver/user/user-detail.resolver.js', 'id: user.id,', 'id: user.id,\n            blakRole: user.blakRole || null,');
 sources['common/graphql/user.graphql.js'] += '\n(0, graphql_1.Field)(() => String, { nullable: true })(UserDetailType.prototype, "blakRole");\n';
+replace('main.js', "app.use('/graphql', bodyParser.json({ limit: '1mb' }));",
+  "app.use('/graphql', bodyParser.json({ limit: '1mb' }));\n    app.use('/api/blak/roles', bodyParser.json({ limit: '1mb' }));");
 for (const [file, source] of Object.entries(sources)) fs.writeFileSync(path.join(root, file), source);
