@@ -106,7 +106,10 @@
     if(app.id==='portal') return;
     const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI'}[app.id];
     let title=document.title;
-    if(upstream) title=title.replaceAll(upstream,app.name);
+    if(upstream) {
+      if(title.includes(app.name)) title=title.replaceAll(' ('+upstream+')','');
+      title=title.replaceAll(upstream,app.name);
+    }
     if(!title.includes(app.name)) title=(title?title+' — ':'')+app.name;
     if(document.title!==title) document.title=title;
     let icon=document.querySelector('link[rel="icon"]');
