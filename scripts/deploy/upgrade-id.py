@@ -26,6 +26,7 @@ def main():
     args = parser.parse_args()
     result = json.loads((args.rehearsal / 'result.json').read_text())
     assert result['status'] == 'passed' and result['versions'] == VERSIONS
+    assert result.get('lifecycle') is True and result.get('server_ready') is True, 'A full lifecycle and server-startup rehearsal is required'
     assert args.id_origin.startswith('https://')
     os.umask(0o077)
     stamp = str(int(time.time()))

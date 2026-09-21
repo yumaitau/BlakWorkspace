@@ -64,7 +64,7 @@ def main():
     kube('wait', '--for=condition=Ready', 'pod/' + pod_name, '--timeout=240s')
     print('Passed real server startup and HTTP readiness', flush=True)
     kube('delete', 'pod', pod_name, '--wait=false')
-    (directory/'result.json').write_text(json.dumps({'database':database,'versions':VERSIONS,'status':'passed','policy':policy['metadata']['name']}))
+    (directory/'result.json').write_text(json.dumps({'database':database,'versions':VERSIONS,'status':'passed','lifecycle':True,'server_ready':True,'policy':policy['metadata']['name']}))
     print('REHEARSAL_PASSED '+str(directory), flush=True)
 
 if __name__ == '__main__': main()

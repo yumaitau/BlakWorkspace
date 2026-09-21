@@ -28,6 +28,7 @@
   if (!['light','dark'].includes(mode)) mode = 'dark';
   function apply(value, persist = false) {
     mode = value === 'light' ? 'light' : 'dark';
+    root.dataset.blakTheme = mode;
     if (root.dataset.theme !== mode) root.dataset.theme = mode;
     root.dataset.blakApp = app.id;
     root.classList.toggle('dark', mode === 'dark');
@@ -68,21 +69,25 @@
   const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; panel.append(heading);
   const home=document.createElement('a');home.id='home';home.href=portalURL;home.textContent='Workspace home';panel.append(home);
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Switch app');
+  let permittedIds=new Set();
   async function refreshNavigation() {
     nav.replaceChildren();
     try {
       const response=await fetch(new URL('/api/modules',portalURL),{credentials:'include',cache:'no-store'});
       if(!response.ok) throw Error('Workspace session unavailable');
       const {modules}=await response.json();
+      permittedIds=new Set(modules.map(item=>item.id));
       for(const item of modules) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
     } catch {
+      permittedIds=new Set();
       const link=document.createElement('a');link.href=new URL('/login',portalURL).href;link.textContent='Sign in to workspace';nav.append(link);
     }
+    const health=panel.querySelector('#health');if(health)health.hidden=!permittedIds.has('hermes');
   }
   await refreshNavigation();
   panel.append(nav);
   const welcome=document.createElement('a');welcome.href=new URL('/welcome',portalURL).href;welcome.textContent='Getting started with Blak';welcome.style.display='block';panel.append(welcome);
-  const health=document.createElement('a');health.href=new URL('/sync',portalURL).href;health.textContent='Hermes sync status';health.style.display='block';panel.append(health);
+  const health=document.createElement('a');health.id='health';health.href=new URL('/sync',portalURL).href;health.textContent='Hermes sync status';health.hidden=!permittedIds.has('hermes');panel.append(health);
   const toggle=document.createElement('button');toggle.id='theme';toggle.type='button';toggle.addEventListener('click',()=>apply(mode==='dark'?'light':'dark',true));panel.append(toggle);
   const logout=document.createElement('a');logout.href=new URL('/logout',portalURL).href;logout.textContent='Sign out of workspace';logout.style.display='block';panel.append(logout);
   const footer=document.createElement('div');footer.className='footer';footer.textContent=app.backend;panel.append(footer);

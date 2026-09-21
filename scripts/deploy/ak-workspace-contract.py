@@ -7,6 +7,8 @@ user-editable attributes. New accounts use their immutable UUID from creation.
 import json
 from django.db import transaction
 from authentik.core.models import Application, Group, User
+from authentik.flows.models import Flow, FlowStageBinding
+from authentik.stages.user_logout.models import UserLogoutStage
 from authentik.policies.models import PolicyBinding
 from authentik.policies.expression.models import ExpressionPolicy
 from authentik.providers.oauth2.models import ScopeMapping, RedirectURI, RedirectURIMatchingMode
@@ -49,6 +51,13 @@ with transaction.atomic():
             provider.property_mappings.add(stable)
         provider.property_mappings.add(access)
         if slug == 'blak-portal':
+            flow, _ = Flow.objects.update_or_create(slug='blak-workspace-invalidation', defaults={
+                'name': 'Blak Workspace logout', 'title': 'Signing out of Blak Workspace',
+                'designation': 'invalidation',
+            })
+            stage, _ = UserLogoutStage.objects.get_or_create(name='blak-workspace-logout')
+            FlowStageBinding.objects.update_or_create(target=flow, stage=stage, defaults={'order': 0})
+            provider.invalidation_flow = flow
             provider.property_mappings.add(*ScopeMapping.objects.filter(scope_name='offline_access'))
             provider.logout_uri = 'http://portal.blak-micro.svc.cluster.local:3000/oidc/backchannel-logout'
             provider.logout_method = 'backchannel'

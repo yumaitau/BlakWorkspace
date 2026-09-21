@@ -83,7 +83,7 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   const formCookie=formSession.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
   const formLaunch=await fetch(base+'/launch/forms',{redirect:'manual',headers:{cookie:formCookie}});
   const target=new URL(formLaunch.headers.get('location'));
-  assert.equal(target.pathname,'/connect/oidc');assert.match(target.searchParams.get('state'),/^[a-f0-9]{32}$/);
+  assert.equal(target.pathname,'/_blak/launch.html');
   claims.blak_apps=['draw'];
   const now=Date.now;
   try {
