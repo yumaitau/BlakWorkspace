@@ -27,6 +27,12 @@ class CRMRolePolicyTests(unittest.TestCase):
             self.assertFalse(policy.rpc_allowed('reader', method))
         self.assertFalse(policy.rpc_allowed(None, 'crm.api.doc.get_data'))
 
+    def test_reader_can_load_native_detail_metadata_and_view_history(self):
+        for method in ('frappe.client.get_doc_permissions', 'crm.api.activities.get_activities',
+                       'crm.api.notifications.get_notifications', 'crm.api.doc.add_seen'):
+            self.assertTrue(policy.rpc_allowed('reader', method))
+        self.assertFalse(policy.rpc_allowed('reader', 'frappe.client.set_value'))
+
     def test_directory_requires_complete_unique_typed_members(self):
         member = {'subject': 'immutable', 'email': 'person@example.invalid', 'role': 'reader', 'active': True}
         self.assertEqual(policy.directory_members([member]), {'immutable': member})

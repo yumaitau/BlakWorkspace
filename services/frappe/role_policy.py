@@ -8,7 +8,14 @@ READ_PERMISSIONS = {'read', 'select', 'print', 'export', 'report'}
 DIRECTORY_TYPES = {'Role', 'Role Profile', 'Has Role', 'User Social Login', 'Social Login Key',
                    'DocPerm', 'Custom DocPerm', 'System Settings', 'Server Script'}
 READ_METHODS = frozenset({
-    'frappe.auth.get_logged_user', 'frappe.client.get', 'frappe.client.get_list',
+    'frappe.auth.get_logged_user',
+    'frappe.client.get_doc_permissions', 'frappe.onboarding.get_onboarding_status',
+    'frappe.apps.get_apps', 'crm.api.notifications.get_notifications',
+    'crm.api.activities.get_activities', 'crm.api.contact.search_emails',
+    'crm.api.get_user_signature', 'crm.api.whatsapp.is_whatsapp_installed',
+    'crm.api.whatsapp.is_whatsapp_enabled', 'crm.integrations.api.is_call_integration_enabled',
+    # Native read tracking checks document read permission before updating only _seen.
+    'crm.api.doc.add_seen', 'frappe.client.get', 'frappe.client.get_list',
     'frappe.realtime.get_user_info', 'frappe.realtime.can_subscribe_doc', 'frappe.realtime.can_subscribe_doctype',
     'frappe.client.get_count', 'frappe.client.get_value', 'frappe.client.get_single_value',
     'frappe.desk.form.load.getdoc', 'frappe.desk.form.load.getdoctype',

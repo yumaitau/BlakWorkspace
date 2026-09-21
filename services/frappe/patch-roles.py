@@ -81,4 +81,9 @@ patch('../../crm/crm/fcrm/doctype/crm_fields_layout/crm_fields_layout.py', '7174
      'def get_field_obj(field):\n\tfrom crm.blak_roles import role_for\n'
      '\tif role_for() == "reader":\n\t\tfield = frappe._dict(field)\n\t\tfield.read_only = 1\n'),
 ])
+# CRM's current telemetry plugin calls APIs absent from the pinned Frappe 15.
+patch('../../crm/frontend/src/main.js', 'e8c0cc577d1c855aa6db2361287a6de31567652e26e3e80e823480b3c143b412', [
+    ("import { telemetryPlugin } from 'frappe-ui/frappe'\n", ''),
+    ("app.use(telemetryPlugin, { app_name: 'crm' })\n", ''),
+], python_source=False)
 print('Native CRM identity and role limits installed')

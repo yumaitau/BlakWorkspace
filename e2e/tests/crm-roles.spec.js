@@ -43,6 +43,12 @@ test('native CRM roles cap owners, RPCs and existing keys and restore the same i
     const csrf = await page.evaluate(() => window.csrf_token);
     return page.request.fetch(origin + path, { method, data, headers: { 'X-Frappe-CSRF-Token': csrf || '', Origin: origin, Referer: page.url() } });
   }
+  page.on('response', async response => {
+    if (new URL(response.url()).origin !== origin || response.status() < 400) return;
+    const failure = await response.json().catch(() => ({}));
+    console.log('Native browser failure', new URL(response.url()).pathname, response.status(), failure.exc_type || '',
+      failure.exc ? JSON.parse(failure.exc).join('\n').split('\n').filter(line => line.includes('File ')) : []);
+  });
   page.on('websocket', connection => { if (connection.url().includes('/socket.io/')) socket = connection; });
   try {
     await context.addCookies(await identityCookies(key, 'CRM native role fixture', ['crm'], { crm: 'writer' }));
@@ -83,6 +89,18 @@ test('native CRM roles cap owners, RPCs and existing keys and restore the same i
     await denied('GET', resource('CRM Lead', lead.name) + '?run_method=delete');
     await denied('GET', '/api/v2/document/CRM%20Lead/' + encodeURIComponent(lead.name) + '/method/delete');
     expect((await request('POST', '/api/v2/method/upload_file', {})).status).toBe(403);
+
+    expect((await cookieAPI('PUT', resource('CRM Lead', lead.name), { job_title: 'forbidden-old-cookie' })).status()).toBe(403);
+    await page.goto(origin + '/_blak/launch.html');
+    await page.waitForURL(url => url.origin === origin && url.pathname.startsWith('/crm'), { timeout: 60000 });
+    const readerLogin = await cookieAPI('GET', '/api/method/frappe.auth.get_logged_user');
+    console.log('Reader native cookie identity', readerLogin.status(), (await readerLogin.json()).message === nativeId);
+    const readerRPC = await request('POST', '/api/method/frappe.client.get', { doctype: 'CRM Lead', name: lead.name });
+    console.log('Reader native key RPC', readerRPC.status);
+    console.log('Reader browser identity', await page.evaluate(async () => {
+      const response = await fetch('/api/method/frappe.auth.get_logged_user');
+      return { status: response.status, csrfPresent: !!window.csrf_token };
+    }));
 
     await page.goto(origin + '/crm/leads/' + encodeURIComponent(lead.name));
     await expect.poll(() => page.locator('input').evaluateAll((inputs, value) => inputs.some(input => input.value === value && (input.disabled || input.readOnly)), key), { timeout: 60000 }).toBe(true);
