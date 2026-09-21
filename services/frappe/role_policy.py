@@ -9,6 +9,7 @@ DIRECTORY_TYPES = {'Role', 'Role Profile', 'Has Role', 'User Social Login', 'Soc
                    'DocPerm', 'Custom DocPerm', 'System Settings', 'Server Script'}
 READ_METHODS = frozenset({
     'frappe.auth.get_logged_user', 'frappe.client.get', 'frappe.client.get_list',
+    'frappe.realtime.get_user_info', 'frappe.realtime.can_subscribe_doc', 'frappe.realtime.can_subscribe_doctype',
     'frappe.client.get_count', 'frappe.client.get_value', 'frappe.client.get_single_value',
     'frappe.desk.form.load.getdoc', 'frappe.desk.form.load.getdoctype',
     'frappe.desk.search.search_link', 'frappe.desk.search.search_widget',
@@ -19,6 +20,8 @@ READ_METHODS = frozenset({
     'crm.api.doc.get_quick_filters', 'crm.api.doc.get_data', 'crm.api.doc.get_assigned_users',
     'crm.api.doc.get_fields', 'crm.api.doc.get_linked_docs_of_document',
     'crm.api.views.get_views',
+    'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
+    'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
 })
 
 

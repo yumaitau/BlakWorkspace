@@ -7,7 +7,7 @@ import sys
 root = Path(sys.argv[1] if len(sys.argv) > 1 else '/home/frappe/frappe-bench/apps/frappe/frappe')
 
 
-def patch(path, digest, replacements):
+def patch(path, digest, replacements, python_source=True):
     target = root / path
     source = target.read_text()
     if hashlib.sha256(source.encode()).hexdigest() != digest:
@@ -16,7 +16,8 @@ def patch(path, digest, replacements):
         if source.count(before) != 1:
             raise ValueError('Ambiguous native Frappe patch: ' + path)
         source = source.replace(before, after)
-    ast.parse(source)
+    if python_source:
+        ast.parse(source)
     target.write_text(source)
 
 
@@ -40,5 +41,29 @@ patch('utils/oauth.py', 'b13d3e33804773b5293313f761f8891eff00db2fa236bd6c8ad9b78
 ])
 patch('core/doctype/user/user.py', '2426e52dd9a820f606a055ba64859b3691d33fd856d95ffed59c133324ff3962', [
     ('\tdef validate(self):\n', '\tdef validate(self):\n\t\tfrom crm.blak_roles import protect_user\n\t\tprotect_user(self)\n'),
+])
+patch('../realtime/index.js', '821c1d26404b02fae63fa8c6676c6c10188fdf3fd0c85a149c454e0934ab11a0', [
+    ('\t\tlet namespace = "/" + message.namespace;',
+     '\t\tlet namespace = "/" + message.namespace;\n'
+     '\t\tif (message.event === "blak_roles_changed" && typeof message.room === "string" && message.room.startsWith("user:")) {\n'
+     '\t\t\tio.of(namespace).to(message.room).emit(message.event, message.message);\n'
+     '\t\t\tio.of(namespace).in(message.room).disconnectSockets(true);\n'
+     '\t\t\treturn;\n\t\t}'),
+], python_source=False)
+patch('../../crm/frontend/src/socket.js', '3948f12b3e868f89fc111baf946ff1fc90e43d16648c64d4132c542ad0dd41c2', [
+    ('  let url = `${protocol}://${host}${port}/${siteName}`',
+     '  let url = `${protocol}://${host}${port}/${siteName}`\n'
+     '  if (!import.meta.env.DEV) url = `${window.location.origin}/${siteName}`'),
+    ("  socket.on('refetch_resource', (data) => {",
+     "  socket.on('blak_roles_changed', () => window.location.reload())\n"
+     "  socket.on('disconnect', (reason) => {\n"
+     "    if (reason === 'io server disconnect') window.location.reload()\n"
+     "  })\n"
+     "  socket.on('refetch_resource', (data) => {"),
+], python_source=False)
+patch('../../crm/crm/fcrm/doctype/crm_fields_layout/crm_fields_layout.py', '717461f4ac96a778e06f87b8f18bcccf5c5350847867e100e6d66083e2408443', [
+    ('def get_field_obj(field):\n',
+     'def get_field_obj(field):\n\tfrom crm.blak_roles import role_for\n'
+     '\tif role_for() == "reader":\n\t\tfield = frappe._dict(field)\n\t\tfield.read_only = 1\n'),
 ])
 print('Native CRM identity and role limits installed')

@@ -121,4 +121,5 @@ def reconcile(members):
         user.enabled = int(enabled)
         user.save(ignore_permissions=True)
         frappe.clear_cache(user=user.name)
+        frappe.publish_realtime('blak_roles_changed', {}, user=user.name, after_commit=True)
     return counts

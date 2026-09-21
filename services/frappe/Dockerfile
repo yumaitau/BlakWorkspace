@@ -8,8 +8,9 @@ COPY --chown=frappe:frappe role_policy.py /home/frappe/frappe-bench/apps/crm/crm
 COPY --chown=frappe:frappe blak_roles.py /home/frappe/frappe-bench/apps/crm/crm/blak_roles.py
 COPY --chown=frappe:frappe patch-roles.py /tmp/blak-patch-roles.py
 COPY --chown=frappe:frappe test-native-roles.py /tmp/blak-test-native-roles.py
+COPY --chown=frappe:frappe test-realtime-roles.cjs /tmp/blak-test-realtime-roles.cjs
 COPY --chown=frappe:frappe enroll-roles.py /tmp/blak-enroll-roles.py
-RUN python /tmp/blak-patch-roles.py && python /tmp/blak-test-native-roles.py
+RUN python /tmp/blak-patch-roles.py && python /tmp/blak-test-native-roles.py && node --check apps/frappe/realtime/index.js && node --test /tmp/blak-test-realtime-roles.cjs
 COPY --chown=frappe:frappe polish.py /tmp/blak-polish.py
 RUN python /tmp/blak-polish.py && cd apps/crm/frontend && yarn build
 # Small upgrade-safe adapter: shared theme is mounted from the generated ConfigMap.
