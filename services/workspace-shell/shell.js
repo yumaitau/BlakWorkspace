@@ -114,7 +114,12 @@
     let title=document.title;
     if(upstream) {
       if(title.includes(app.name)) title=title.replaceAll(' ('+upstream+')','');
-      title=title.replaceAll(upstream,app.name);
+      if(title===upstream) title=app.name;
+      // Preserve document titles that mention another product in their content.
+      for(const separator of [' - ',' — ',' · ',' | ']) {
+        const suffix=separator+upstream;
+        if(title.endsWith(suffix)) title=title.slice(0,-suffix.length)+separator+app.name;
+      }
     }
     if(!title.includes(app.name)) title=(title?title+' — ':'')+app.name;
     if(document.title!==title) document.title=title;
