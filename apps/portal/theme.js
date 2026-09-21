@@ -15,7 +15,7 @@ window.addEventListener('storage',event=>{if(event.key===key)apply(event.newValu
 function driveRoles(mode) {
   const t = { ...tokens.dark, ...(mode === 'light' ? tokens.light : {}) };
   return {
-    primary:t.primary,onPrimary:t['sand-50'],primaryContainer:t['earth-700'],onPrimaryContainer:tokens.dark['text-primary'],
+    primary:t.primary,onPrimary:t['on-primary'],primaryContainer:t['earth-700'],onPrimaryContainer:tokens.dark['text-primary'],
     secondary:t.secondary,onSecondary:t['sand-50'],secondaryContainer:t['water-700'],onSecondaryContainer:tokens.dark['text-primary'],
     tertiary:t.warning,onTertiary:t['blak-950'],tertiaryContainer:t['ochre-600'],onTertiaryContainer:t['blak-950'],
     error:t.danger,onError:t['blak-950'],errorContainer:t['earth-700'],onErrorContainer:tokens.dark['text-primary'],

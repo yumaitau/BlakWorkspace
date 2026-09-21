@@ -10,12 +10,15 @@ test('Blak ID renders a working vector logo, branded heading and local font',asy
   const logo=page.locator('img').first();
   await expect.poll(()=>logo.evaluate(i=>i.complete&&i.naturalWidth>0)).toBe(true);
   await expect(logo).toHaveAttribute('src',/\/_blak\/logo\.svg$/);
+  expect((await logo.boundingBox()).width).toBeLessThanOrEqual(120);
+  await expect(page.getByRole('button',{name:/log in/i})).toBeInViewport();
   await page.evaluate(()=>document.fonts.load('600 20px Inter'));
   expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
   await expect(page.getByRole('heading',{name:'Welcome to Blak ID'})).toHaveCSS('font-family',/Inter/);
   await page.screenshot({path:test.info().outputPath('blak-id-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect(page.getByRole('button',{name:/log in/i})).toBeInViewport();
   await page.screenshot({path:test.info().outputPath('blak-id-mobile.png'),fullPage:true});
 });
 

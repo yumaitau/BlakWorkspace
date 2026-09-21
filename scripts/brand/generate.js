@@ -34,7 +34,11 @@ const identityCSS = `${fontCSS}\n${tokenCSS}
 :host{color:${t['text-primary']};font-family:Inter,system-ui,sans-serif;--pf-global--FontFamily--sans-serif:Inter,system-ui,sans-serif;--pf-global--FontFamily--heading--sans-serif:Inter,system-ui,sans-serif}.pf-c-page,.pf-c-page__main,.pf-c-page__main-section,.pf-c-page__header{background:${t['surface-base']}!important;color:${t['text-primary']}!important}
 body{background:${t['surface-base']}!important;color:${t['text-primary']}!important;font-family:Inter,system-ui,sans-serif}
 [class*="login__main"],[class*="card"],[class*="modal"]{background:${t.surface}!important;border-color:${t['border-subtle']}!important}
-button[type=submit],[class*="button"][class*="primary"]{background:${t.primary}!important;color:${t['sand-50']}!important;font-weight:600!important}
+.pf-c-login__main{border-radius:16px;box-shadow:0 16px 48px #0005;overflow:hidden}
+.pf-c-login__main-header.pf-c-brand{padding-block:28px 12px}
+.branding-logo{width:104px!important;height:104px!important;max-width:100%;object-fit:contain}
+@media(max-width:600px){.branding-logo{width:72px!important;height:72px!important}.pf-c-login__main-header.pf-c-brand{padding-block:20px 8px}}
+button[type=submit],[class*="button"][class*="primary"]{background:${t.primary}!important;color:${t['on-primary']}!important;font-weight:600!important}
 button[type=submit]:hover{background:${t['primary-hover']}!important}
 h1,h2{font-family:Inter,system-ui,sans-serif!important;color:${t['text-primary']}!important}label{color:${t['text-secondary']}!important}a{color:${t.info}!important}
 input{background:${t['surface-raised']}!important;border-color:${t.border}!important;color:${t['text-primary']}!important}input:focus{border-color:${t.focus}!important}
@@ -51,6 +55,7 @@ html.dark body{background:${t.surface};color:${t['text-primary']}}
 `;
 function chatRoles(palette) {
   return {
+    'button-color-primary-default':t['on-primary'],'button-color-primary-hover':t['on-primary'],
     'button-background-primary-default':t.primary,'button-background-primary-hover':t['primary-hover'],
     'stroke-highlight':t.focus,'font-info':t.info,'surface-light':palette.surface,
     'surface-tint':palette['surface-base'],'surface-room':palette.surface,
@@ -67,8 +72,8 @@ const chatCSS = `:root,body{${chatPalette(tokens.light)};font-family:Inter,syste
 .rcx-sidebar--main{background:${t['surface-base']}!important}
 `;
 // Kaneo uses shadcn design tokens; append after its stylesheet via the deployment adapter.
-const kaneoCSS = `:root{--primary:${t.primary};--primary-foreground:${t['sand-50']};--ring:${t.focus};--background:${tokens.light.surface};--foreground:${tokens.light['text-primary']};--card:${tokens.light['surface-raised']};--card-foreground:${tokens.light['text-primary']};--border:${tokens.light.border};--input:${tokens.light.border};--muted:${tokens.light['surface-hover']};--muted-foreground:${tokens.light['text-secondary']};--accent:${tokens.light['surface-selected']};--accent-foreground:${tokens.light['text-primary']};--sidebar:${tokens.light['surface-base']};--sidebar-foreground:${tokens.light['text-primary']}}
-.dark{--background:${t.surface};--foreground:${t['text-primary']};--card:${t['surface-raised']};--card-foreground:${t['text-primary']};--popover:${t['surface-raised']};--popover-foreground:${t['text-primary']};--secondary:${t['surface-hover']};--secondary-foreground:${t['text-primary']};--muted:${t['surface-hover']};--muted-foreground:${t['text-secondary']};--accent:${t['surface-selected']};--accent-foreground:${t['text-primary']};--border:${t.border};--input:${t.border};--sidebar:${t['surface-base']};--sidebar-foreground:${t['text-primary']};--sidebar-primary:${t.primary};--sidebar-primary-foreground:${t['sand-50']};--sidebar-accent:${t['surface-hover']};--sidebar-accent-foreground:${t['text-primary']};--sidebar-border:${t.border};--sidebar-ring:${t.focus}}
+const kaneoCSS = `:root{--primary:${t.primary};--primary-foreground:${t['on-primary']};--ring:${t.focus};--background:${tokens.light.surface};--foreground:${tokens.light['text-primary']};--card:${tokens.light['surface-raised']};--card-foreground:${tokens.light['text-primary']};--border:${tokens.light.border};--input:${tokens.light.border};--muted:${tokens.light['surface-hover']};--muted-foreground:${tokens.light['text-secondary']};--accent:${tokens.light['surface-selected']};--accent-foreground:${tokens.light['text-primary']};--sidebar:${tokens.light['surface-base']};--sidebar-foreground:${tokens.light['text-primary']}}
+.dark{--background:${t.surface};--foreground:${t['text-primary']};--card:${t['surface-raised']};--card-foreground:${t['text-primary']};--popover:${t['surface-raised']};--popover-foreground:${t['text-primary']};--secondary:${t['surface-hover']};--secondary-foreground:${t['text-primary']};--muted:${t['surface-hover']};--muted-foreground:${t['text-secondary']};--accent:${t['surface-selected']};--accent-foreground:${t['text-primary']};--border:${t.border};--input:${t.border};--sidebar:${t['surface-base']};--sidebar-foreground:${t['text-primary']};--sidebar-primary:${t.primary};--sidebar-primary-foreground:${t['on-primary']};--sidebar-accent:${t['surface-hover']};--sidebar-accent-foreground:${t['text-primary']};--sidebar-border:${t.border};--sidebar-ring:${t.focus}}
 body{font-family:Inter,system-ui,sans-serif}
 `;
 const rgb = hex => hex.slice(1).match(/../g).map(value=>parseInt(value,16)).join(',');
@@ -83,7 +88,7 @@ body{font-family:Inter,system-ui,sans-serif}
 const crmCSS = `${tokenCSS}
 body{font-family:Inter,system-ui,sans-serif}
 :root{--blak-crm-accent:${t.primary}}
-.btn-primary,.bg-surface-gray-7{background-color:${t.primary}!important;color:${t['sand-50']}!important}
+.btn-primary,.bg-surface-gray-7{background-color:${t.primary}!important;color:${t['on-primary']}!important}
 .btn-primary:hover,.bg-surface-gray-7:hover{background-color:${t['primary-hover']}!important}
 :focus-visible{outline-color:${t.focus}!important}
 `;

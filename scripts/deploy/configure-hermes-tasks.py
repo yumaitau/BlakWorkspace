@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reserve dedicated CPU inference for answers, preserving unrelated task settings."""
+"""Bound CPU answer context and task work, preserving unrelated settings."""
 import base64,json,os,subprocess
 
 def kube(*args,**kwargs):
@@ -23,6 +23,17 @@ if any(config[key] for key in keys):
     request(base+'/update',config)
 verified=request(base)
 assert all(verified[key] is False for key in keys)
+# Open WebUI retrieves top-k per attached collection, not across the workspace.
+# Nine sources at the default three chunks overflow the small 4096-token model.
+# Hybrid matching includes filenames; no extra reranker model is downloaded.
+rag_base='http://127.0.0.1:8080/api/v1/retrieval/config'
+desired={'TOP_K':1,'TOP_K_RERANKER':1,'ENABLE_RAG_HYBRID_SEARCH':True,
+         'ENABLE_RAG_HYBRID_SEARCH_ENRICHED_TEXTS':True,'RAG_FULL_CONTEXT':False}
+rag=request(rag_base)
+if any(rag[key]!=value for key,value in desired.items()):
+    request(rag_base+'/update',desired)
+verified_rag=request(rag_base)
+assert all(verified_rag[key]==value for key,value in desired.items())
 '''
     kube('exec','-i','deploy/hermes','--','python','-c',code,input=json.dumps({'token':account['hermes']['token']}).encode())
     print('Hermes CPU task settings verified')

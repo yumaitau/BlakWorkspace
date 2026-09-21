@@ -18,7 +18,7 @@
           "designTokens": {
             "roles": {
               "primary": "#D65B2E",
-              "onPrimary": "#FFF9EF",
+              "onPrimary": "#0B1112",
               "primaryContainer": "#8E3525",
               "onPrimaryContainer": "#F4EBDD",
               "secondary": "#21818A",
@@ -66,7 +66,7 @@
           "designTokens": {
             "roles": {
               "primary": "#D65B2E",
-              "onPrimary": "#FFF9EF",
+              "onPrimary": "#0B1112",
               "primaryContainer": "#8E3525",
               "onPrimaryContainer": "#F4EBDD",
               "secondary": "#21818A",
