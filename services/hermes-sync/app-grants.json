@@ -33,7 +33,12 @@
     "group": "Blak Knowledge users"
   },
   "projects": {
-    "group": "Blak Projects users"
+    "group": "Blak Projects users",
+    "roleGroups": [
+      "blak-projects-reader",
+      "blak-projects-writer",
+      "blak-projects-admin"
+    ]
   },
   "flow": {
     "group": "Blak Flow users",

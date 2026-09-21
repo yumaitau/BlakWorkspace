@@ -98,19 +98,19 @@ test('sync includes private team-channel and Projects task data', async ({ playw
   const hermes = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('hermes', 8080), extraHTTPHeaders: { authorization: 'Bearer ' + account.hermes.token }, timeout: 180000 });
   const suffix = crypto.randomBytes(5).toString('hex');
   const phrase = 'TEAMDATA-' + suffix.toUpperCase();
-  let room, workspace;
+  let room, project;
   try {
     // Private test group contains only the current account; no messages reach other users.
     const createdRoom = await chat.post('/api/v1/groups.create', { data: { name: 'hermes-e2e-' + suffix, members: [] } });
     expect(createdRoom.ok()).toBeTruthy();
     room = (await createdRoom.json()).group;
     expect((await chat.post('/api/v1/chat.postMessage', { data: { roomId: room._id, text: 'Workspace test marker ' + phrase } })).ok()).toBeTruthy();
-    const createdWorkspace = await projects.post('/api/auth/organization/create', { data: { name: 'Hermes E2E ' + suffix, slug: 'hermes-e2e-' + suffix } });
-    expect(createdWorkspace.ok(), await createdWorkspace.text()).toBeTruthy();
-    workspace = await createdWorkspace.json();
+    const workspaces = await (await projects.get('/api/auth/organization/list')).json();
+    const workspace = workspaces.find(item => item.slug === 'blak-group-projects');
+    expect(workspace, 'Native Blak ID managed Projects workspace must be enrolled').toBeTruthy();
     const createdProject = await projects.post('/api/project', { data: { workspaceId: workspace.id, name: 'Sync test', slug: 'SYNC', icon: 'folder' } });
     expect(createdProject.ok(), await createdProject.text()).toBeTruthy();
-    const project = await createdProject.json();
+    project = await createdProject.json();
     const board = await (await projects.get('/api/task/tasks/' + project.id)).json();
     const status = board.data.columns[0].slug;
     const task = await projects.post('/api/task/' + project.id, { data: { title: 'Workspace test ' + phrase, description: 'Private sync verification fixture', priority: 'medium', status } });
@@ -126,7 +126,7 @@ test('sync includes private team-channel and Projects task data', async ({ playw
     }
   } finally {
     if (room) expect((await chat.post('/api/v1/groups.delete', { data: { roomId: room._id } })).ok()).toBeTruthy();
-    if (workspace) expect((await projects.post('/api/auth/organization/delete', { data: { organizationId: workspace.id } })).ok()).toBeTruthy();
+    if (project) expect((await projects.delete('/api/project/' + project.id)).ok()).toBeTruthy();
     syncNow();
     await Promise.all([chat.dispose(), projects.dispose(), hermes.dispose()]);
   }

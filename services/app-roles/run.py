@@ -6,6 +6,7 @@ from pathlib import Path
 from access import snapshot as directory_snapshot
 from hermes import HermesRoles
 import hermes_copies
+import projects
 from http_client import API
 from vault import VaultRoles
 from vault_identity import native_accounts
@@ -41,7 +42,7 @@ def reconcile(session):
               Path(os.environ['BLAK_ID_TOKEN_FILE']).read_text().strip())
     aliases = json.loads(Path(os.environ['BLAK_ID_SUBJECTS_FILE']).read_text())
     directory = directory_snapshot(api, aliases)
-    if not config or not set(config) <= {'vault', 'hermes'}:
+    if not config or not set(config) <= {'vault', 'hermes', 'projects'}:
         raise ValueError('Unknown or empty native role configuration')
     failures = []
     if config.get('hermes'):
@@ -56,6 +57,13 @@ def reconcile(session):
             print('Hermes roles reconciled ' + json.dumps({**result, 'revoked_copies': removed}, sort_keys=True), flush=True)
         except Exception as error:
             failures.append('Hermes:' + type(error).__name__)
+    if config.get('projects'):
+        try:
+            native = API(config['projects']['base'], config['projects']['token'])
+            result = projects.reconcile(native, directory)
+            print('Projects roles reconciled ' + json.dumps(result, sort_keys=True), flush=True)
+        except Exception as error:
+            failures.append('Projects:' + type(error).__name__)
     if config.get('vault'):
         try:
             reconcile_vault(config['vault'], {member['identity']: member for member in directory.values()}, session)

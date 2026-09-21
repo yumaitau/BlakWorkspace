@@ -60,7 +60,8 @@ spec:
             - { name: themes, mountPath: /theme, readOnly: true }
       containers:
         - name: kaneo
-          image: ghcr.io/usekaneo/kaneo@sha256:a85a23996c36166cfcebcb4ee161b40cc62c7b924faf06353684a84d5e84162c
+          image: blak-projects:micro
+          imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 5173 }]
           env:
             - { name: KANEO_CLIENT_URL, value: https://projects.workspace.example.com }
@@ -82,6 +83,11 @@ spec:
             - { name: CUSTOM_OAUTH_DISCOVERY_URL, value: https://id.workspace.example.com/application/o/kaneo/.well-known/openid-configuration }
             - { name: CUSTOM_OAUTH_SCOPES, value: "openid,profile,email" }
             - { name: CUSTOM_AUTH_PKCE, value: "true" }
+            - { name: DISABLE_WORKSPACE_CREATION, value: "true" }
+            - { name: BLAK_ROLE_BRIDGE_TOKEN, valueFrom: { secretKeyRef: { name: blak-projects-role-controller, key: bridge-token, optional: true } } }
+            - { name: BLAK_ROLE_CONTROLLER_ID, valueFrom: { secretKeyRef: { name: blak-projects-role-controller, key: user-id, optional: true } } }
+            - { name: BLAK_ROLE_CONTROLLER_API_KEY, valueFrom: { secretKeyRef: { name: blak-projects-role-controller, key: api-key, optional: true } } }
+            - { name: BLAK_ROLE_WORKSPACES, valueFrom: { secretKeyRef: { name: blak-projects-role-controller, key: workspaces, optional: true } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           resources:
             requests: { cpu: 250m, memory: 512Mi }
