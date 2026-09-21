@@ -1,6 +1,7 @@
 """Release checks for the vault's isolation and authentication boundaries."""
 from pathlib import Path
 import importlib.util
+import base64
 import io
 import json
 import unittest
@@ -11,6 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class VaultConfigurationTests(unittest.TestCase):
+    def test_enrollment_preserves_other_apps_and_uses_resource_version(self):
+        spec = importlib.util.spec_from_file_location('role_enrollment', ROOT / 'services/app-roles/enrollment.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        existing = {'metadata': {'resourceVersion': '42'}, 'data': {'config.json': base64.b64encode(json.dumps({'hermes': {'token': 'fixture'}}).encode()).decode()}}
+        with patch.object(module.subprocess, 'check_output', return_value=json.dumps(existing).encode()), patch.object(module.subprocess, 'run') as write:
+            module.save_app(['kubectl'], 'vault', {'organization_id': 'fixture-org'})
+        saved = json.loads(write.call_args.kwargs['input'])
+        self.assertEqual(saved['metadata']['resourceVersion'], '42')
+        self.assertEqual(json.loads(saved['stringData']['config.json']), {'hermes': {'token': 'fixture'}, 'vault': {'organization_id': 'fixture-org'}})
+
     def test_enrollment_preserves_normalized_owner_protection(self):
         spec = importlib.util.spec_from_file_location('enroll_vault_roles', ROOT / 'scripts/deploy/enroll-vault-roles.py')
         module = importlib.util.module_from_spec(spec)
@@ -30,6 +42,7 @@ class VaultConfigurationTests(unittest.TestCase):
         with patch.object(module, 'API', return_value=api), \
                 patch.object(module.Path, 'read_text', return_value=json.dumps({'domain': 'workspace.test'})), \
                 patch.object(module.sys, 'stdin', io.StringIO(json.dumps(data))), \
+                patch.object(module.subprocess, 'check_output', return_value=b''), \
                 patch.object(module.subprocess, 'run') as write, patch('builtins.print'):
             module.main()
         secret = json.loads(write.call_args.kwargs['input'])

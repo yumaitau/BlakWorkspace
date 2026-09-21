@@ -515,6 +515,7 @@ def revoke_source(hermes, owner, record, checkpoint):
         del record['files'][key]
         checkpoint()
     record['access_revoked'] = True
+    record.pop('revocation_pending', None)
     record.pop('last_error', None)
     checkpoint()
     return {'uploaded': 0, 'unchanged': 0, 'deleted': deleted}
@@ -540,6 +541,7 @@ def sync_mapping(mapping, state, checkpoint, allowed_sources):
                 continue
             source = mapping['sources'][name]
             record.pop('access_revoked', None)
+            record.pop('revocation_pending', None)
             if not record.get('collection'):
                 created = hermes.json('POST', '/api/v1/knowledge/create', {'name': 'Blak Workspace · ' + SOURCE_NAMES[name], 'description': 'Automatically synced private workspace content. Source permissions belong to this account.', 'access_grants': []})
                 record['collection'] = created['id']
@@ -673,12 +675,6 @@ def publish_health(config, state, file):
 
 
 def main():
-    from access import snapshot
-    from http_client import API as DirectoryAPI
-    directory_path = Path(os.environ.get('BLAK_DIRECTORY_PATH', '/directory'))
-    directory = snapshot(DirectoryAPI((directory_path / 'base-url').read_text().strip(),
-                                     (directory_path / 'api-token').read_text().strip()),
-                         json.loads((directory_path / 'subjects.json').read_text()))
     config = json.loads(Path(os.environ.get('SYNC_CONFIG', '/config/accounts.json')).read_text())
     state_file = Path(os.environ.get('SYNC_STATE', '/data/state.json'))
     state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -688,13 +684,26 @@ def main():
     except BlockingIOError:
         LOG.info('Another sync is active; skipping overlapping run')
         return 0
+    from access import snapshot
+    from http_client import API as DirectoryAPI
+    directory_path = Path(os.environ.get('BLAK_DIRECTORY_PATH', '/directory'))
+    directory = snapshot(DirectoryAPI((directory_path / 'base-url').read_text().strip(),
+                                     (directory_path / 'api-token').read_text().strip()),
+                         json.loads((directory_path / 'subjects.json').read_text()))
     state = json.loads(state_file.read_text()) if state_file.exists() else {}
+    owner_file = state_file.with_name('owners.json')
+    owners = json.loads(owner_file.read_text()) if owner_file.exists() else {}
     failures = 0
     for mapping in config['accounts']:
         name = mapping['name']
         try:
             account_state = state.setdefault(name, {})
             def checkpoint():
+                binding = {'native_id': mapping['owner_id'], 'subject': mapping['portal_owner']}
+                if name in owners and owners[name] != binding:
+                    raise ValueError('Cannot reassign an existing private sync state owner')
+                owners[name] = binding
+                save_state(owner_file, owners)
                 save_state(state_file, state)
                 publish_health(config, state, state_file.with_name('health.json'))
             result = sync_mapping(mapping, account_state, checkpoint, permitted_sources(mapping, directory))

@@ -13,7 +13,7 @@ const INTEGRATIONS = {
   projects: { application: 'kaneo', group: 'Blak Projects users', theme: 'kaneo' },
   idp: { admin: true, theme: 'authentik' },
   flow: { group: 'Blak Flow users', roleGroups: ['blak-flow-reader', 'blak-flow-writer', 'blak-flow-admin'], theme: 'portal' },
-  hermes: { application: 'hermes', group: 'Blak Hermes users', login: '/oauth/oidc/login', theme: 'openwebui' },
+  hermes: { application: 'hermes', group: 'Blak Hermes users', roleGroups: ['blak-hermes-reader', 'blak-hermes-writer', 'blak-hermes-admin'], login: '/oauth/oidc/login', theme: 'openwebui' },
   search: { group: 'Blak Search users', roleGroups: ['blak-search-reader', 'blak-search-writer', 'blak-search-admin'], theme: 'portal' },
   storage: { group: 'Blak Cloud users', roleGroups: ['blak-cloud-reader', 'blak-cloud-writer', 'blak-cloud-admin'], theme: 'portal' },
 };

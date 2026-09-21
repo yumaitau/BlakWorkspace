@@ -7,14 +7,15 @@ test -f .deployment.json || { echo 'Run scripts/deploy/prepare-release.py first'
 REVISION_FULL=$(python3 -c 'import json; print(json.load(open(".deployment.json"))["revision"])')
 NS="blak-micro"
 REVISION="${REVISION_FULL:0:12}"
-export SHELL_IMAGE="blak-workspace-shell:$REVISION"
+export SHELL_IMAGE="blak-workspace-shell:$REVISION" HERMES_IMAGE="blak-hermes:$REVISION"
 export PORTAL_IMAGE="blak-portal:$REVISION" SYNC_IMAGE="blak-hermes-sync:$REVISION"
 docker info >/dev/null
 node scripts/brand/generate.js --check
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$PORTAL_IMAGE" apps/portal
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$SYNC_IMAGE" services/hermes-sync
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$SHELL_IMAGE" services/workspace-shell
-docker save "$PORTAL_IMAGE" "$SYNC_IMAGE" "$SHELL_IMAGE" | sudo k3s ctr images import -
+docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$HERMES_IMAGE" services/hermes
+docker save "$HERMES_IMAGE" "$PORTAL_IMAGE" "$SYNC_IMAGE" "$SHELL_IMAGE" | sudo k3s ctr images import -
 python3 scripts/deploy/persist-hermes-session-key.py
 scripts/deploy/backup-twenty.sh
 scripts/deploy/build-frappe.sh
@@ -63,6 +64,8 @@ for file, names in selected.items():
             secret_version = subprocess.check_output(['kubectl', '-n', 'blak-micro', 'get', 'secret', 'blak-frappe', '-o', 'jsonpath={.metadata.resourceVersion}'])
             setup_hash = hashlib.sha256(Path('services/frappe/setup.py').read_bytes() + secret_version).hexdigest()
             document['spec']['template']['metadata']['annotations']['blak.workspace/setup-sha'] = setup_hash
+        if document['metadata']['name'] == 'hermes' and document['kind'] == 'Deployment':
+            document['spec']['template']['spec']['containers'][0]['image'] = os.environ['HERMES_IMAGE']
         if document['metadata']['name'] == 'portal' and document['kind'] == 'Deployment':
             document['spec']['template']['spec']['containers'][0]['image'] = os.environ['PORTAL_IMAGE']
         if document['metadata']['name'] == 'workspace-shell' and document['kind'] == 'Deployment':

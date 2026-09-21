@@ -96,9 +96,11 @@ with transaction.atomic():
             provider.redirect_uris = redirects
             provider.save()
         if item.get('group'):
-            policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: ' + slug, defaults={
-                'expression': 'return request.user.is_active and (request.user.is_superuser or ak_is_group_member(request.user, name=' + repr(item['group']) + '))',
-            })
+            if item.get('roleGroups'):
+                login_policy = 'return request.user.is_active and any(ak_is_group_member(request.user, name=name) for name in ' + repr(item['roleGroups']) + ')'
+            else:
+                login_policy = 'return request.user.is_active and (request.user.is_superuser or ak_is_group_member(request.user, name=' + repr(item['group']) + '))'
+            policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: ' + slug, defaults={'expression': login_policy})
             PolicyBinding.objects.update_or_create(target=app, policy=policy, defaults={'order': 0, 'enabled': True})
             app.policy_engine_mode = 'all'
             app.save(update_fields=['policy_engine_mode'])

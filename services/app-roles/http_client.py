@@ -6,6 +6,12 @@ import urllib.parse
 import urllib.request
 
 
+class NativeAPIError(RuntimeError):
+    def __init__(self, code):
+        self.code = code
+        super().__init__('Native API rejected request with HTTP ' + str(code))
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -35,7 +41,7 @@ class API:
             response = self.opener.open(request, timeout=30)
         except urllib.error.HTTPError as error:
             if error.code not in (301, 302, 303):
-                raise RuntimeError('Native API rejected request with HTTP ' + str(error.code)) from None
+                raise NativeAPIError(error.code) from None
             response = error
         with response:
             body = response.read(8 * 1024 * 1024 + 1)

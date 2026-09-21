@@ -31,7 +31,8 @@ class NativeAccessTests(unittest.TestCase):
         self.user.update(is_superuser=True, groups=[])
         result = self.snapshot()[self.identity]
         self.assertNotIn('draw', result['apps'])
-        self.assertIn('hermes', result['apps'])  # Existing legacy contract, until native migration.
+        self.assertNotIn('hermes', result['apps'])
+        self.assertIn('drive', result['apps'])  # Existing legacy contract, until native migration.
     def test_disabled_user_has_no_grants(self):
         self.user['is_active'] = False
         self.assertEqual(self.snapshot()[self.identity]['apps'], [])

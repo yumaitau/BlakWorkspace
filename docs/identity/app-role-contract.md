@@ -112,3 +112,45 @@ credentials and already copied native Hermes knowledge still need source-grant
 revocation reconciliation; portal session checks and Search filtering do not
 provide that guarantee. The remaining native-app work must test these credentials
 and existing native tokens after role removal, not just a fresh OIDC login.
+
+## Hermes native enforcement
+
+`blak-hermes-reader`, `blak-hermes-writer` and `blak-hermes-admin` map to native
+Open WebUI groups and user roles. The controller reconciles every 60 seconds.
+Native users link through their stored OIDC subject, including the frozen subject
+aliases used before the UUID migration. Email does not establish that link.
+Unlinked, disabled and removed users become native `pending`, which rejects data
+requests made with existing tokens. Only the explicitly enrolled service
+controller is exempt. Other native group memberships are removed because native
+permissions are additive; Blak ID is authoritative for Hermes membership.
+
+Readers can chat and read shared group knowledge. Writers can create and edit
+knowledge; only collection owners or app admins can change collection access or
+delete the collection itself. Native personal resources retain owner capabilities.
+An uploaded file attached to shared knowledge requires current write access to
+**every** containing shared collection, even for its uploader. This check covers
+content updates, renames, deletion and ingestion APIs. App admins have native
+administrative visibility; do not grant this role to ordinary knowledge writers.
+
+The pinned upstream image has small, hash-checked native patches. Image builds
+fail if upstream permission/deletion code changes and run tests against the
+patched functions. Vector and storage failures keep file metadata available for
+retry; per-file vector collections are actually deleted rather than silently
+left behind. Shared knowledge membership changes cannot be smuggled through the
+metadata update endpoint. The enrolled controller alone may reconcile the
+original human administrator's role, and other app admins cannot edit or delete
+that controller.
+
+The role controller shares only the indexer's state volume and immutable owner
+journal; it does not receive source credentials. When source access is removed,
+it pauses the affected native account before attempting the indexing lock,
+removes only tracked copies owned by that account, and detaches their model
+references before restoring permitted Hermes access. A partial cleanup leaves
+the account paused and reports unhealthy reconciliation. The indexer also checks
+current directory grants on every run. Neither component indexes Vault.
+
+Deploy the new identity contract and run the indexer successfully to establish
+its owner journal before enabling the role controller. Enroll a dedicated native
+controller with `scripts/deploy/provision-hermes-roles.py`; credentials are stored
+in Kubernetes Secrets. Enrollment preserves other configured native apps. Native
+role acceptance is recorded separately from image builds and unit tests.

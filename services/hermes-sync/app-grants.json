@@ -44,7 +44,12 @@
     ]
   },
   "hermes": {
-    "group": "Blak Hermes users"
+    "group": "Blak Hermes users",
+    "roleGroups": [
+      "blak-hermes-reader",
+      "blak-hermes-writer",
+      "blak-hermes-admin"
+    ]
   },
   "search": {
     "group": "Blak Search users",

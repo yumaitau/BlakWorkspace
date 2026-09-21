@@ -11,6 +11,7 @@ function write(file, contents) {
     if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== contents) throw new Error(`Stale generated theme: ${file}`);
   } else fs.writeFileSync(target, contents);
 }
+write('services/app-roles/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
 write('services/hermes-sync/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
 const { INTEGRATIONS } = require('../../apps/portal/integration');
 const grants = JSON.stringify(Object.fromEntries(Object.entries(INTEGRATIONS).filter(([, value]) => value.group || value.roleGroups).map(([app, { group, roleGroups }]) => [app, { group, roleGroups }])), null, 2) + '\n';

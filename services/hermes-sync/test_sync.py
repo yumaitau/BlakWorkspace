@@ -206,8 +206,6 @@ class HealthPublicationTests(unittest.TestCase):
             record=sync.json.loads(text)['accounts'][0]['sources'][0]
             self.assertEqual(record['documents'],1);self.assertEqual(record['expires_at'],500)
 
-if __name__ == "__main__":
-    unittest.main()
 
 class SearchTests(unittest.TestCase):
     def test_structured_exports_have_readable_previews(self):
@@ -292,3 +290,6 @@ class SourceRevocationTests(unittest.TestCase):
         record = {'files': {'doc': {'file_id': 'already-deleted'}}}
         sync.revoke_source(Hermes(), 'owner', record, lambda: None)
         self.assertEqual(record['files'], {})
+
+if __name__ == "__main__":
+    unittest.main()
