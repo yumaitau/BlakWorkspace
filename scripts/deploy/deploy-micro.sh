@@ -9,7 +9,7 @@ NS="blak-micro"
 REVISION="${REVISION_FULL:0:12}"
 export SHELL_IMAGE="blak-workspace-shell:$REVISION" HERMES_IMAGE="blak-hermes:$REVISION"
 export PROJECTS_IMAGE="blak-projects:$REVISION"
-export KNOWLEDGE_IMAGE="blak-knowledge:$REVISION"
+export KNOWLEDGE_IMAGE="blak-knowledge:$REVISION" FORMS_IMAGE="blak-forms:$REVISION"
 export PORTAL_IMAGE="blak-portal:$REVISION" SYNC_IMAGE="blak-hermes-sync:$REVISION"
 docker info >/dev/null
 node scripts/brand/generate.js --check
@@ -19,7 +19,8 @@ docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$SHE
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$HERMES_IMAGE" services/hermes
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$PROJECTS_IMAGE" services/projects
 docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$KNOWLEDGE_IMAGE" services/knowledge
-docker save "$KNOWLEDGE_IMAGE" "$PROJECTS_IMAGE" "$HERMES_IMAGE" "$PORTAL_IMAGE" "$SYNC_IMAGE" "$SHELL_IMAGE" | sudo k3s ctr images import -
+docker build --label "org.opencontainers.image.revision=$REVISION_FULL" -t "$FORMS_IMAGE" services/forms
+docker save "$FORMS_IMAGE" "$KNOWLEDGE_IMAGE" "$PROJECTS_IMAGE" "$HERMES_IMAGE" "$PORTAL_IMAGE" "$SYNC_IMAGE" "$SHELL_IMAGE" | sudo k3s ctr images import -
 python3 scripts/deploy/persist-hermes-session-key.py
 scripts/deploy/backup-twenty.sh
 scripts/deploy/build-frappe.sh
@@ -28,6 +29,7 @@ python3 scripts/deploy/ensure-docs-proof-key.py
 python3 scripts/deploy/provision-workspace-apps.py
 python3 scripts/deploy/provision-id.py
 python3 scripts/deploy/provision-role-reader.py
+python3 scripts/deploy/provision-forms-roles.py --prepare-only
 kubectl -n "$NS" create configmap blak-frappe-setup --from-file=setup.py=services/frappe/setup.py --dry-run=client -o yaml | kubectl apply -f -
 if kubectl -n "$NS" get deploy portal >/dev/null 2>&1; then
   NS="$NS" scripts/deploy/migrate-flow-store.sh
@@ -74,6 +76,8 @@ for file, names in selected.items():
             document['spec']['template']['spec']['containers'][0]['image'] = os.environ['PROJECTS_IMAGE']
         if document['metadata']['name'] == 'outline' and document['kind'] == 'Deployment':
             document['spec']['template']['spec']['containers'][0]['image'] = os.environ['KNOWLEDGE_IMAGE']
+        if document['metadata']['name'] == 'forms' and document['kind'] == 'Deployment':
+            document['spec']['template']['spec']['containers'][0]['image'] = os.environ['FORMS_IMAGE']
         if document['metadata']['name'] == 'portal' and document['kind'] == 'Deployment':
             document['spec']['template']['spec']['containers'][0]['image'] = os.environ['PORTAL_IMAGE']
         if document['metadata']['name'] == 'workspace-shell' and document['kind'] == 'Deployment':
@@ -121,3 +125,6 @@ kubectl -n "$NS" logs "$POD"
 kubectl -n "$NS" logs "$POD" | grep -q 'Sync complete'
 scripts/deploy/backup/install.sh
 printf 'Deployed commit %s\n' "$REVISION"
+
+# Activate the native Forms controller after the app is healthy.
+scripts/deploy/deploy-forms-roles.sh

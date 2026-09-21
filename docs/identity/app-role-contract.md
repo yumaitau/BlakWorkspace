@@ -314,3 +314,37 @@ Nineteen patched native-function tests passed, including destructive-operation
 rejection before storage calls. The CRM/Draw/Flow/Cloud source regression passed
 in 2.6 minutes against the preceding privacy image; the final image additionally
 fixes sessionless shared-knowledge metadata updates, exercised by live acceptance.
+
+## Forms native enforcement
+
+Forms derives from HeyForm 3.0.3 at the pinned upstream digest in
+`services/forms/Dockerfile`. Blak ID role grants cap native resolver operations
+and authenticated uploads, including existing sessions and workspace owners.
+Resolver identities determine authorization, so GraphQL aliases, batches and
+query-labelled operations do not bypass the cap. Native team/project membership
+checks still determine which content a user can access.
+
+Readers can inspect forms and submissions. Writers can create and edit content;
+admin additionally permits native workspace membership and integration operations.
+Native ownership requirements remain in force for administration. Creating a
+project cannot smuggle extra members through a writer operation. Password, email
+and account-deletion flows cannot replace directory authority.
+
+The dedicated controller binds accounts using the native issuer/subject identity
+key. Forms uses `user_uuid` subjects; the controller uses directory UUIDs rather
+than the portal's frozen legacy aliases. It rejects email collisions and ambiguous links before mutation. Missing,
+disabled or ungranted identities have no effective role; restoration updates the
+same native account without changing team ownership or existing content. Human
+sessions cannot invoke controller endpoints. The scoped deployment backs up the
+Forms MongoDB database and retains its upload volume.
+
+Ten tests execute native entry points and reconciliation logic; two repository
+adapter tests check complete directory snapshots and invalid native responses.
+Live acceptance on 2026-09-22 passed in 8.6 minutes against the native image
+built from `a21b646` and controller adapter from `db8a4f0`. It covered native Blak ID
+login, owner downgrades, aliased GraphQL writes, query-labelled mutations, upload
+denial, existing sessions, admin boundaries, disabled accounts, cross-app grants,
+email changes and restoration of the same account. The separate two-test Forms
+publishing and Hermes journey passed in 43 seconds: create, publish, anonymous
+response, review, indexing and deletion. All 303 repository tests, manifest
+validation and generated-theme checks passed.
