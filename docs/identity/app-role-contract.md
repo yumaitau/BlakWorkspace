@@ -83,7 +83,7 @@ all apps are integrated while any mapping above remains unimplemented.
 Draw, Flow, Cloud and Search use `blak-draw-*`, `blak-flow-*`, `blak-cloud-*`
 and `blak-search-*` groups. Their signed `blak_roles` claims are re-read from
 Blak ID userinfo every 30 seconds, alongside active status and app grants. The
-portal requires both the app grant and the role on every local data operation.
+portal requires both the app grant and the role on every interactive local data operation.
 Reader cannot mutate data, invoke a flow, create buckets/queues or send messages.
 Draw uses native Excalidraw view mode; private drawing and flow ownership checks
 remain in force even for app admins. Cloud buckets are shared app storage.
@@ -104,3 +104,11 @@ ownership, workspace visibility and expiry. A Search admin role grants no source
 access. Removing a source grant hides its cached results after the same session
 refresh interval; unknown sources and Vault are excluded. Source labels are shared
 with the indexer through a generated catalog to prevent mapping drift.
+
+## Remaining delegated-access work
+
+Hermes source enrollment uses separate owner-bound machine credentials. Those
+credentials and already copied native Hermes knowledge still need source-grant
+revocation reconciliation; portal session checks and Search filtering do not
+provide that guarantee. The remaining native-app work must test these credentials
+and existing native tokens after role removal, not just a fresh OIDC login.
