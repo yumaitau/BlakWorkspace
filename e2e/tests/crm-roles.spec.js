@@ -73,10 +73,11 @@ test('native CRM roles cap owners, RPCs and existing keys and restore the same i
     await denied('POST', '/api/method/frappe.client.set_value', { doctype: 'CRM Lead', name: lead.name, fieldname: 'job_title', value: 'forbidden' });
     const bypass = new URLSearchParams({ doctype: 'CRM Lead', name: lead.name, assignees: '[]', ignore_permissions: 'true' });
     await denied('GET', '/api/method/crm.api.doc.remove_assignments?' + bypass);
-    await denied('GET', '/api/v2/method/crm.api.doc.remove_assignments?' + bypass);
+    expect((await request('GET', '/api/v2/document/CRM%20Lead/' + encodeURIComponent(lead.name) + '/')).status).toBe(200);
+    expect((await request('GET', '/api/v2/method/crm.api.doc.remove_assignments?' + bypass)).status).toBe(403);
     await denied('GET', resource('CRM Lead', lead.name) + '?run_method=delete');
     await denied('GET', '/api/v2/document/CRM%20Lead/' + encodeURIComponent(lead.name) + '/method/delete');
-    await denied('POST', '/api/v2/method/upload_file', {});
+    expect((await request('POST', '/api/v2/method/upload_file', {})).status).toBe(403);
 
     await page.goto(origin + '/crm/leads/' + encodeURIComponent(lead.name));
     await expect.poll(() => page.locator('input').evaluateAll((inputs, value) => inputs.some(input => input.value === value && (input.disabled || input.readOnly)), key), { timeout: 60000 }).toBe(true);

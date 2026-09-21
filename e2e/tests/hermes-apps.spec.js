@@ -5,6 +5,7 @@ const { authentikLogin } = require('../helpers/auth');
 const { session } = require('../helpers/fixtures');
 const { syncNow, serviceURL } = require('../helpers/sync');
 const { privateKnowledge, indexedName } = require('../helpers/knowledge');
+test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another owner', async ({ page, browser, playwright, baseURL }) => {
   const PORTAL = new URL(baseURL).origin;
   test.setTimeout(600000);
@@ -41,9 +42,9 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
     expect((await page.request.post(PORTAL + '/cloud/bucket', { form: { name: 'blak-hermes-e2e' } })).ok()).toBeTruthy();
     expect((await page.request.put(objectURL, { data: first })).ok()).toBeTruthy();
     syncNow();
-    for (const label of ['CRM', 'Draw', 'Cloud files']) expect(await knowledge.query(label, first)).toContain(first);
-    expect(await knowledge.query('Flow', 'Hermes Flow ' + suffix)).toContain('Hermes Flow ' + suffix);
-    expect(await knowledge.query('Draw', privatePhrase)).not.toContain(privatePhrase);
+    for (const label of ['CRM', 'Draw', 'Cloud files']) expect((await knowledge.query(label, first)).includes(first)).toBe(true);
+    expect((await knowledge.query('Flow', 'Hermes Flow ' + suffix)).includes('Hermes Flow ' + suffix)).toBe(true);
+    expect((await knowledge.query('Draw', privatePhrase)).includes(privatePhrase)).toBe(false);
     await page.goto(PORTAL+'/search?q='+encodeURIComponent('Hermes Flow '+suffix));
     const found=page.locator('.search-results').getByRole('link',{name:'Hermes Flow '+suffix,exact:true});
     await expect(found).toHaveAttribute('href',PORTAL+flowPath);
@@ -54,8 +55,8 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
       messages: [{ role: 'user', content: 'What is the exact job title of the CRM lead Hermes CRM ' + suffix + '? Return its job title.' }] } });
     expect(answer.ok()).toBeTruthy();
     const completion = await answer.json();
-    expect(completion.choices[0].message.content).toContain(first);
-    expect(JSON.stringify(completion.sources)).toContain(first);
+    expect(completion.choices[0].message.content.includes(first)).toBe(true);
+    expect(JSON.stringify(completion.sources).includes(first)).toBe(true);
     expect((await crm.put('/api/resource/CRM%20Lead/' + lead.name, { data: { job_title: changed } })).ok()).toBeTruthy();
     const updatedBoard = await page.request.put(PORTAL + '/api/draw/' + board.id, { data: { revision: board.revision, scene: scene(changed) } });
     expect(updatedBoard.ok()).toBeTruthy(); board = await updatedBoard.json();
@@ -64,7 +65,7 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
     syncNow();
     for (const label of ['CRM', 'Draw', 'Cloud files']) {
       const result = await knowledge.query(label, changed);
-      expect(result).toContain(changed); expect(result).not.toContain(first);
+      expect(result.includes(changed)).toBe(true); expect(result.includes(first)).toBe(false);
     }
   } finally {
     if (lead) expect((await crm.delete('/api/resource/CRM%20Lead/' + lead.name)).ok()).toBeTruthy();
