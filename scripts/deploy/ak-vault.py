@@ -11,6 +11,27 @@ from authentik.stages.authenticator_totp.models import AuthenticatorTOTPStage
 from authentik.stages.authenticator_validate.models import AuthenticatorValidateStage
 from authentik.stages.authenticator_webauthn.models import AuthenticatorWebAuthnStage
 
+
+def copy_binding(binding, target, order):
+    fields = ['policy_engine_mode', 'evaluate_on_plan', 're_evaluate_policies', 'invalid_response_action']
+    copied, _ = FlowStageBinding.objects.update_or_create(target=target, stage=binding.stage,
+        defaults={**{field: getattr(binding, field) for field in fields}, 'order': order})
+    for policy in PolicyBinding.objects.filter(target=binding):
+        fields = ['expires', 'enabled', 'expiring', 'negate', 'timeout', 'failure_result']
+        PolicyBinding.objects.update_or_create(target=copied, policy=policy.policy,
+            group=policy.group, user=policy.user, order=policy.order,
+            defaults={field: getattr(policy, field) for field in fields})
+
+
+# Native password/identification stages are reused. MFA is enforced exactly once
+# by Vault's authorization flow, including when an existing Blak ID session is used.
+authentication, _ = Flow.objects.update_or_create(slug='blak-vault-authentication', defaults={
+    'name': 'Blak Vault sign-in', 'title': 'Welcome to Blak ID', 'designation': 'authentication',
+})
+for binding in FlowStageBinding.objects.filter(target__slug='default-authentication-flow'):
+    if not isinstance(binding.stage, AuthenticatorValidateStage):
+        copy_binding(binding, authentication, binding.order)
+
 flow, _ = Flow.objects.update_or_create(slug='blak-vault-authorization', defaults={
     'name': 'Blak Vault verification', 'title': 'Verify your identity for Blak Vault',
     'designation': 'authorization', 'authentication': 'require_authenticated',
@@ -27,8 +48,7 @@ mfa.configuration_stages.set([totp, webauthn])
 FlowStageBinding.objects.update_or_create(target=flow, stage=mfa, defaults={'order': 0})
 standard = Flow.objects.get(slug='default-provider-authorization-implicit-consent')
 for binding in FlowStageBinding.objects.filter(target=standard):
-    FlowStageBinding.objects.update_or_create(target=flow, stage=binding.stage,
-                                            defaults={'order': binding.order + 100})
+    copy_binding(binding, flow, binding.order + 100)
 provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults={
     'authorization_flow': flow,
     'invalidation_flow': Flow.objects.get(slug='default-provider-invalidation-flow'),
@@ -40,6 +60,7 @@ provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults=
     'include_claims_in_id_token': True, 'issuer_mode': 'per_provider',
 })
 provider.authorization_flow = flow
+provider.authentication_flow = authentication
 provider.grant_types = ['authorization_code', 'refresh_token']
 provider.access_token_validity = 'minutes=10'
 provider.refresh_token_validity = 'days=7'
