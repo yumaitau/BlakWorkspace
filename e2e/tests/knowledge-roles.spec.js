@@ -109,7 +109,9 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     updateIdentity(key, { roles: { sites: 'admin' } });
     await waitRole('admin');
     group = (await api(token, 'groups.create', { name: key })).data;
-    await denied('users.update_role', { id: native.id, role: 'viewer' });
+    // Use another identity: upstream rejects self-role changes before its
+    // authorization policy runs, which would only exercise input validation.
+    await denied('users.update_role', { id: operator.id, role: 'viewer' });
     await denied('users.suspend', { id: operator.id });
     await denied('users.delete', { id: operator.id });
     updateIdentity(key, { roles: { sites: 'reader' } });
