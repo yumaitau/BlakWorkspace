@@ -69,7 +69,9 @@ projectTest('Projects overview, projects, members and invitations keep workspace
    for(const section of ['Overview','Projects','Members','Invitations']) {
     // Overview leaves the workspace context; return before testing its subpages.
     await page.goto('https://projects.workspace.example.com/dashboard/workspace/'+projectWorkspace.id);
-    await page.getByRole('button',{name:section,exact:true}).and(page.locator('button[data-sidebar="menu-button"]')).click();
+    const named=page.getByRole('button',{name:section,exact:true});
+    const navigation=section==='Projects'?named.and(page.locator('button')):named;
+    await expect(navigation).toBeVisible();await navigation.click();
     await expect(page.locator('#blak-workspace-shell')).toBeVisible();
     await expect(page).toHaveTitle(/Blak Projects/);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),section).toBe(true);
