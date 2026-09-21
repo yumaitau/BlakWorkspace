@@ -18,6 +18,11 @@ test('Hermes SSO opens a usable workspace chat', async ({ page }) => {
   await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
   await expect(page.getByRole('link', { name: /New Chat/i }).or(page.getByRole('button', { name: /New Chat/i })).first()).toBeVisible();
   await expect(page.locator('#chat-input')).toBeVisible();
+  const modelLogo=page.locator('img[src*="/api/v1/models/model/profile/image"]').first();
+  await expect(modelLogo).toBeVisible();
+  await expect.poll(()=>modelLogo.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  const logo=await page.request.get(await modelLogo.evaluate(img=>img.src));
+  expect(logo.headers()['content-type']).toContain('image/svg+xml');
   await page.screenshot({ path: test.info().outputPath('hermes-chat.png'), fullPage: true });
 });
 
