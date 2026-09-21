@@ -19,6 +19,19 @@ while other sources continue. Failed sources are detached from the private
 workspace model until repaired; their previous private collection snapshot is
 retained for recovery.
 
+Run `BLAK_SYNC_ACCOUNT=<configured-name> python scripts/deploy/configure-hermes-tasks.py`
+after provisioning. It disables background model tasks and configures one
+filename-aware hybrid retrieval chunk per source, with a concise source-only
+answer template. Open WebUI retrieves top-k **per collection**; the default three
+chunks across nine sources can exceed the small model's 4096-token context.
+This setting favours focused document questions. Broad comparisons may need
+follow-up questions or a larger owner-selected model and context budget. No
+extra reranker or external inference service is enabled.
+
+The rationale follows [Open WebUI's RAG troubleshooting guidance](https://docs.openwebui.com/troubleshooting/rag/).
+Validate with both a real sourced answer in the browser and create/update/delete
+sync tests; successful indexing alone does not prove answer quality.
+
 ## Credentials and ownership
 
 Secret `blak-hermes-sync`, key `accounts.json`, contains an `accounts` array.
