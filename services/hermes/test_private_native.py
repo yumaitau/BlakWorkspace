@@ -1,5 +1,6 @@
 """Run actual native content functions with app-admin and controller identities."""
 import os
+import sys
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -89,6 +90,21 @@ class PrivateAdminTests(unittest.IsolatedAsyncioTestCase):
             KnowledgeAccessListResponse=lambda **value: value))
         await call(page=1, user=self.admin, db=None)
         self.assertEqual(search.await_args.kwargs['filter'], {'user_id': self.admin.id})
+
+    async def test_shared_writer_metadata_update_works_without_request_database_session(self):
+        env = self.env.copy()
+        env.update(Knowledges=NS(get_knowledge_by_id=AsyncMock(return_value=self.knowledge),
+                                update_knowledge_by_id=AsyncMock(return_value=self.knowledge),
+                                get_file_metadatas_by_id=AsyncMock(return_value=[])),
+                   embed_knowledge_base_metadata=AsyncMock(), publish_event=AsyncMock(),
+                   EVENTS=NS(KNOWLEDGE_UPDATED='updated'))
+        self.knowledge.name, self.knowledge.description = 'fixture', 'fixture'
+        self.grants.return_value = True
+        call = native_function('routers/knowledge.py', 'update_knowledge_by_id', env)
+        module = NS(normalize_access_grants=lambda value: value)
+        with patch.dict(sys.modules, {'open_webui.models.access_grants': module}):
+            result = await call(None, 'private-kb', NS(access_grants=None), NS(id='shared-writer', role='user'))
+        self.assertEqual(result['id'], 'private-kb')
 
     async def test_knowledge_export_checks_native_access_before_reading_files(self):
         call = native_function('routers/knowledge.py', 'export_knowledge_by_id', dict(

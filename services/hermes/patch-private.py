@@ -40,8 +40,9 @@ for relative, digest in pins.items():
         enclosing = [fn for fn in functions if fn.lineno <= node.lineno <= fn.end_lineno]
         if any(fn.name in keep_app_admin for fn in enclosing):
             continue
-        scoped = any(fn.name in {'update_knowledge_by_id', 'update_knowledge_access_by_id', 'delete_knowledge_by_id'} for fn in enclosing)
-        check = '(await blak_knowledge_admin(user, knowledge, db))' if scoped else 'blak_content_admin(user)'
+        scoped = next((fn for fn in enclosing if fn.name in {'update_knowledge_by_id', 'update_knowledge_access_by_id', 'delete_knowledge_by_id'}), None)
+        database = 'db' if scoped and any(arg.arg == 'db' for arg in scoped.args.args) else 'None'
+        check = '(await blak_knowledge_admin(user, knowledge, ' + database + '))' if scoped else 'blak_content_admin(user)'
         text = check if isinstance(node.ops[0], ast.Eq) else 'not ' + check
         edits.append((offsets[node.lineno - 1] + node.col_offset,
                       offsets[node.end_lineno - 1] + node.end_col_offset, text))
