@@ -6,6 +6,7 @@ from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import AsyncMock
 import os
+import importlib.util
 
 ROOT = Path(os.environ.get('HERMES_BACKEND', '/app/backend/open_webui'))
 
@@ -17,6 +18,12 @@ class HTTPError(Exception):
 
 
 def native_function(path, name, namespace):
+    helper = ROOT / 'utils/blak_private.py'
+    if helper.exists():
+        spec = importlib.util.spec_from_file_location('blak_private', helper)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        namespace.setdefault('blak_content_admin', module.blak_content_admin)
     node = next(n for n in ast.parse((ROOT / path).read_text()).body
                 if isinstance(n, ast.AsyncFunctionDef) and n.name == name)
     node.decorator_list = []
