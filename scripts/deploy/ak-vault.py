@@ -15,9 +15,10 @@ flow, _ = Flow.objects.update_or_create(slug='blak-vault-authorization', default
     'name': 'Blak Vault verification', 'title': 'Verify your identity for Blak Vault',
     'designation': 'authorization', 'authentication': 'require_authenticated',
 })
-totp, _ = AuthenticatorTOTPStage.objects.get_or_create(name='blak-vault-totp-setup')
+totp, _ = AuthenticatorTOTPStage.objects.update_or_create(
+    name='blak-vault-totp-setup', defaults={'digits': 6, 'friendly_name': 'Authenticator app'})
 webauthn, _ = AuthenticatorWebAuthnStage.objects.update_or_create(
-    name='blak-vault-passkey-setup', defaults={'user_verification': 'required'})
+    name='blak-vault-passkey-setup', defaults={'user_verification': 'required', 'friendly_name': 'Passkey'})
 mfa, _ = AuthenticatorValidateStage.objects.update_or_create(name='blak-vault-mfa', defaults={
     'not_configured_action': 'configure', 'device_classes': ['totp', 'webauthn', 'static'],
     'last_auth_threshold': 'minutes=15', 'webauthn_user_verification': 'required',
