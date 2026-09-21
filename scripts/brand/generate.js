@@ -32,7 +32,9 @@ const t = tokens.dark;
 // Vault styling is bundled into its own immutable image; no shared shell script.
 function vaultPalette(p) {
   const roles={'background':p.surface,'background-alt':p['surface-raised'],'background-alt2':p['surface-base'],'background-alt3':p['surface-base'],'background-alt4':p['surface-hover'],'text-main':p['text-primary'],'text-muted':p['text-secondary'],'primary-100':p['surface-selected'],'primary-600':p.primary,'primary-700':p['primary-hover'],'secondary-100':p['surface-raised'],'secondary-300':p.border,'secondary-500':p['border-strong']};
-  return Object.entries(roles).map(([key,value])=>'--color-'+key+':'+value.slice(1).match(/../g).map(v=>parseInt(v,16)).join(' ')+';').join('');
+  const modern={'bg-primary':p.surface,'bg-secondary':p['surface-base'],'bg-tertiary':p['surface-raised'],'bg-quaternary':p['surface-hover'],'bg-brand':p.primary,'bg-brand-strong':p['primary-hover'],'bg-brand-soft':p['surface-selected'],'bg-brand-softer':p['surface-selected'],'fg-body':p['text-primary'],'fg-heading':p['text-primary'],'fg-body-subtle':p['text-secondary'],'fg-brand':p.primary,'fg-brand-strong':p['primary-hover'],'border-base':p.border,'border-light':p.border,'border-muted':p.border,'border-strong':p['border-strong'],'border-brand':p.primary,'border-brand-strong':p['primary-hover'],'border-focus':p.focus,'nav-bg-primary':p['surface-base'],'nav-bg-secondary':p.surface,'nav-fg-primary':p['text-primary'],'nav-fg-secondary':p['text-secondary']};
+  return Object.entries(roles).map(([key,value])=>'--color-'+key+':'+value.slice(1).match(/../g).map(v=>parseInt(v,16)).join(' ')+';').join('')+
+    Object.entries(modern).map(([key,value])=>'--color-'+key+':'+value+';').join('');
 }
 write('services/vault/brand.css',fontCSS.replaceAll('/_blak/fonts/','/fonts/')+'\n'+
   ':root,.theme_light{'+vaultPalette({...t,...tokens.light})+'}\n.theme_dark{'+vaultPalette(t)+'}\n'+

@@ -66,8 +66,17 @@ provider.access_token_validity = 'minutes=10'
 provider.refresh_token_validity = 'days=7'
 provider.save()
 provider.property_mappings.add(*ScopeMapping.objects.filter(
-    scope_name__in=['openid', 'profile', 'email', 'offline_access']
+    scope_name__in=['openid', 'profile', 'offline_access']
 ).exclude(name__startswith='Blak Workspace '))
+# Authentik's documented Vaultwarden integration treats this managed directory as
+# the email authority. Keep this assertion app-local; native email auto-linking is
+# disabled, and the immutable UUID is the account binding, never the email.
+email, _ = ScopeMapping.objects.update_or_create(name='Blak Vault directory email', defaults={
+    'scope_name': 'email', 'description': 'Directory-managed email for Blak Vault',
+    'expression': 'return {"email": request.user.email, "email_verified": True}',
+})
+provider.property_mappings.remove(*provider.property_mappings.filter(scope_name='email'))
+provider.property_mappings.add(email)
 app, _ = Application.objects.update_or_create(slug='blak-vault', defaults={
     'name': 'Blak Vault', 'provider': provider, 'open_in_new_tab': True,
     'meta_launch_url': 'https://vault.workspace.example.com/#/sso?identifier=blak',
