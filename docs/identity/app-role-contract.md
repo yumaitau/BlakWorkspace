@@ -3,7 +3,7 @@
 Status: Vault native enforcement is implemented and tested separately. Draw, Flow,
 Cloud and Search enforcement is implemented. The 14-test live portal suite
 passed, including existing-session role changes and private-owner boundaries.
-Hermes and Projects native acceptance is recorded below. The other native app
+Hermes, Projects and Knowledge native acceptance is recorded below. The other native app
 mappings remain implementation design; this document does not certify them.
 
 Blak ID is the authority for membership. Every app must enforce its native data
@@ -97,8 +97,12 @@ identity/role metadata and native role operations; it does not read documents.
 Acceptance tests are `e2e/tests/knowledge-roles.spec.js` (real OIDC, private
 ownership, existing sessions/keys, open editor, disable/remove/restore) and
 `e2e/tests/knowledge-sync.spec.js` (owner-bound private create/update/retrieve/delete
-through Hermes). Final live role acceptance is pending after the collection-ACL
-restoration fix; do not treat rollout or unit tests as certification.
+through Hermes). Native role acceptance passed in 10.1 minutes against Knowledge
+image `blak-knowledge:dd4ee23a75f6`; private source indexing, update, retrieval and
+deletion passed in 41.4 seconds. Configuration/role tests (295), portal tests (35),
+sync tests (34), and actual patched native/helper JavaScript tests (12) passed.
+The portal runs `blak-portal:5b5ab93a4e30`; the reconciler runs
+`blak-app-roles:7a2a44bc9c7f`; source sync runs `blak-hermes-sync:f78f62132d42`.
 
 ## Projects native enforcement
 
