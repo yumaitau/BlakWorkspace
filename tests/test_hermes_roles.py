@@ -67,9 +67,20 @@ class HermesRoleTests(unittest.TestCase):
         self.assertEqual(result['removed_groups'], 1)
         self.assertEqual(self.api.users[0]['role'], 'admin')
     def test_writer_then_admin_then_removal_and_disabled(self):
-        for role, active, expected in [('writer', True, 'user'), ('admin', True, 'admin'), (None, True, 'pending'), ('reader', False, 'pending')]:
+        for role, active, expected in [('writer', True, 'user'), ('admin', True, 'user'), (None, True, 'pending'), ('reader', False, 'pending')]:
             self.roles.reconcile(self.directory(role, active))
             self.assertEqual(self.api.users[1]['role'], expected)
+    def test_human_app_admin_is_demoted_before_group_administration(self):
+        self.roles.reconcile(self.directory('admin'))
+        changes = [call for call in self.api.calls if call[0] == 'POST' and
+                   (call[1].endswith('/update') or '/users/' in call[1])]
+        user_update = next(i for i, call in enumerate(changes) if call[1] == '/api/v1/users/' + self.api.user + '/update')
+        group_change = next(i for i, call in enumerate(changes) if '/groups/id/' in call[1])
+        self.assertLess(user_update, group_change)
+        self.assertEqual(self.api.users[1]['role'], 'user')
+        group = next(group for group in self.api.groups if group['id'] in self.api.users[1]['group_ids'])
+        self.assertEqual(group['data']['blak_id_role'], 'admin')
+        self.assertEqual(self.api.users[0]['role'], 'admin')
     def test_cross_app_admin_does_not_grant_hermes(self):
         self.roles.reconcile({'frozen': {'is_active': True, 'roles': {'vault': 'admin'}}})
         self.assertEqual(self.api.users[1]['role'], 'pending')

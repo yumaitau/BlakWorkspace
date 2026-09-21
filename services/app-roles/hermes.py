@@ -97,7 +97,9 @@ class HermesRoles:
             role = member.get('roles', {}).get('hermes') if member and member['is_active'] else None
             if role not in ROLES:
                 role = None
-            desired = 'admin' if role == 'admin' else 'user' if role else 'pending'
+            # Native server admins can reset passwords and replace OAuth trust.
+            # Human app administration is scoped through the managed group.
+            desired = 'user' if role else 'pending'
             current_role = user['role']
             # Remove admin authority before changing groups during a downgrade.
             if current_role == 'admin' and desired != 'admin':

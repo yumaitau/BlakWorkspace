@@ -26,7 +26,7 @@ def native_function(path, name, namespace):
         namespace.setdefault('blak_content_admin', module.blak_content_admin)
         namespace.setdefault('blak_knowledge_admin', module.blak_knowledge_admin)
     node = next(n for n in ast.parse((ROOT / path).read_text()).body
-                if isinstance(n, ast.AsyncFunctionDef) and n.name == name)
+                if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef)) and n.name == name)
     node.decorator_list = []
     node.returns = None
     for arg in node.args.posonlyargs + node.args.args + node.args.kwonlyargs:

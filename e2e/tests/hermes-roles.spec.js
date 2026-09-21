@@ -36,7 +36,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
       if (!user) return null;
       const groups = await api(operator['api-key'], 'GET', '/api/v1/groups/');
       return { role: user.role, managed: groups.filter(group => user.group_ids.includes(group.id)).map(group => group.data?.blak_id_role).sort() };
-    }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role: role === 'admin' ? 'admin' : role ? 'user' : 'pending', managed: role ? [role] : [] });
+    }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role: role ? 'user' : 'pending', managed: role ? [role] : [] });
   }
   async function denied(method, path, data) {
     const result = await response(token, method, path, data);
@@ -113,7 +113,15 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     await denied('POST', '/api/v1/files/' + privateFile.id + '/rename', { filename: 'forbidden.txt' });
     expect((await api(operator['api-key'], 'GET', '/api/v1/knowledge/' + privateKnowledge.id)).name).toBe('Private role fixture ' + key);
 
-    expect((await response(token, 'GET', '/api/v1/users/')).status).toBe(200);
+    await denied('GET', '/api/v1/users/');
+    await denied('GET', '/api/v1/users/' + operator['user-id'] + '/oauth/sessions');
+    await denied('GET', '/api/v1/auths/admin/config/oauth');
+    await denied('POST', '/api/v1/auths/admin/config/oauth', {});
+    await denied('POST', '/api/v1/users/' + native.id + '/update', { role: 'admin' });
+    await denied('POST', '/api/v1/users/' + native.id + '/update', { password: key + '-not-used-A9!' });
+    await denied('POST', '/api/v1/auths/add', { name: key, email: key + '@example.invalid', password: key + '-not-used-A9!', role: 'admin' });
+    await denied('POST', '/api/v1/groups/create', { name: key, description: key, permissions: {}, data: {} });
+    expect((await response(token, 'POST', '/api/v1/auths/signin', { email: key + '@example.invalid', password: 'Unused-fixture-password-A9!' })).status).toBe(403);
     await api(token, 'POST', knowledgePath + '/access/update', { access_grants: (await api(operator['api-key'], 'GET', knowledgePath)).access_grants });
     await denied('POST', '/api/v1/users/' + operator['user-id'] + '/update', { role: 'pending' });
     await denied('DELETE', '/api/v1/users/' + operator['user-id']);

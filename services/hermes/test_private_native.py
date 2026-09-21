@@ -102,9 +102,41 @@ class PrivateAdminTests(unittest.IsolatedAsyncioTestCase):
         self.grants.return_value = True
         call = native_function('routers/knowledge.py', 'update_knowledge_by_id', env)
         module = NS(normalize_access_grants=lambda value: value)
-        with patch.dict(sys.modules, {'open_webui.models.access_grants': module}):
+        with patch.dict(sys.modules, {'open_webui.models.access_grants': module,
+                                      'open_webui.models.groups': NS(Groups=NS(get_groups_by_member_id=AsyncMock(return_value=[])))}):
             result = await call(None, 'private-kb', NS(access_grants=None), NS(id='shared-writer', role='user'))
         self.assertEqual(result['id'], 'private-kb')
+
+    async def test_scoped_admin_requires_both_managed_group_and_explicit_write_grant(self):
+        env = self.env.copy()
+        native_function('routers/knowledge.py', 'get_knowledge_by_id', env)
+        helper = env['blak_knowledge_admin']
+        groups = AsyncMock(return_value=[NS(data={'blak_id_app': 'hermes', 'blak_id_role': 'admin'})])
+        grants = AsyncMock(return_value=True)
+        with patch.dict(sys.modules, {
+            'open_webui.models.groups': NS(Groups=NS(get_groups_by_member_id=groups)),
+            'open_webui.models.access_grants': NS(AccessGrants=NS(has_access=grants)),
+        }):
+            actor = NS(id='human-admin', role='user')
+            self.assertTrue(await helper(actor, self.knowledge))
+            grants.return_value = False
+            self.assertFalse(await helper(actor, self.knowledge))
+            grants.return_value = True
+            groups.return_value = [NS(data={'blak_id_app': 'hermes', 'blak_id_role': 'writer'})]
+            self.assertFalse(await helper(actor, self.knowledge))
+            self.assertFalse(await helper(NS(id='stale-admin', role='admin'), self.knowledge))
+
+    async def test_native_server_admin_dependency_rejects_humans_even_with_stale_admin_role(self):
+        call = native_function('utils/auth.py', 'get_admin_user', dict(
+            HTTPException=HTTPError, status=NS(HTTP_401_UNAUTHORIZED=401),
+            ERROR_MESSAGES=NS(ACCESS_PROHIBITED='denied')))
+        with patch.dict(os.environ, {'BLAK_ROLE_CONTROLLER_ID': 'controller'}):
+            for role in ('user', 'admin', 'pending'):
+                with self.assertRaises(HTTPError) as error:
+                    call(NS(id='human', role=role))
+                self.assertEqual(error.exception.status_code, 403)
+            operator = NS(id='controller', role='admin')
+            self.assertIs(call(operator), operator)
 
     async def test_knowledge_export_checks_native_access_before_reading_files(self):
         call = native_function('routers/knowledge.py', 'export_knowledge_by_id', dict(
