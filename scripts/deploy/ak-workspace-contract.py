@@ -34,6 +34,9 @@ with transaction.atomic():
         Group.objects.get_or_create(name=group)
     expression = 'groups = ' + repr(groups) + '\n'
     expression += 'grants = [key for key, group in groups.items() if user.is_superuser or ak_is_group_member(user, name=group)]\n'
+    role_groups = {a['id']: a['roleGroups'] for a in BLAK_APPS if a.get('roleGroups')}
+    expression += 'role_groups = ' + repr(role_groups) + '\n'
+    expression += 'grants += [key for key, names in role_groups.items() if any(ak_is_group_member(user, name=name) for name in names)]\n'
     expression += 'if user.is_superuser:\n    grants.append("idp")\n'
     expression += 'return {"blak_id": str(user.uuid), "blak_apps": grants if user.is_active else [], "blak_active": user.is_active}'
     access, _ = ScopeMapping.objects.update_or_create(name='Blak Workspace access', defaults={

@@ -6,6 +6,12 @@
     "backend": "Blak Workspace by Yuma IT"
   },
   {
+    "id": "vault",
+    "name": "Blak Vault",
+    "url": "https://vault.workspace.example.com/",
+    "backend": "Powered by Vaultwarden"
+  },
+  {
     "id": "forms",
     "name": "Blak Forms",
     "url": "https://forms.workspace.example.com/",

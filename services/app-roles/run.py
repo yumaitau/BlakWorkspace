@@ -27,8 +27,11 @@ def reconcile(session):
     for native_id, subject in links.items():
         if subject in snapshot:
             snapshot[subject]['native_email'] = profiles[native_id]['email']
-    api = API(vault['base'])
-    api.login_api_key(vault['client_id'], vault['client_secret'])
+    if session.get('api') is None or time.monotonic() >= session.get('api_until', 0):
+        api = API(vault['base'])
+        api.login_api_key(vault['client_id'], vault['client_secret'])
+        session.update(api=api, api_until=time.monotonic() + 300)
+    api = session['api']
     profile = api('GET', '/api/accounts/profile')
     if profile['id'] != vault['controller_user_id']:
         raise ValueError('Vault role credential belongs to the wrong controller')

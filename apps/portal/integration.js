@@ -2,6 +2,7 @@
 
 // The catalog owns app identity. This contract owns its native integration.
 const INTEGRATIONS = {
+  vault: { application: 'blak-vault', roleGroups: ['blak-vault-reader', 'blak-vault-writer', 'blak-vault-admin'], login: '/#/sso?identifier=00000000-01DC-01DC-01DC-000000000000', theme: 'vaultwarden' },
   forms: { application: 'blak-forms', group: 'Blak Forms users', login: '/_blak/launch.html', theme: 'heyform' },
   draw: { group: 'Blak Draw users', theme: 'excalidraw' },
   crm: { application: 'blak-crm', group: 'Blak CRM users', login: '/_blak/launch.html', theme: 'frappe' },

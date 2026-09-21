@@ -6,14 +6,17 @@ const ACCENT = {
   forms: '#D68B2C', draw: '#3199A2', crm: '#D65B2E', workspace: '#D65B2E', drive: '#3199A2', docs: '#66996B', notes: '#D68B2C', chat: '#C55235',
   meet: '#21818A', mail: '#737BB8', knowledge: '#66996B', projects: '#D8792E', admin: '#7583B0',
   flow: '#3199A2', hermes: '#A26CC1', idp: '#7583B0', search: '#D68B2C', storage: '#21818A',
+  vault: '#D68B2C',
 };
 const ICON_IMG = Object.fromEntries(Object.keys(require('./brand').APP_ICONS).map(id=>[id,id]));
 const RAIL_ICON = {
   forms: '▤', draw: '◇', crm: '▦', home: '⌂', drive: '▤', docs: '▤', notes: '▦', chat: '◫', meet: '◉', mail: '✉', knowledge: '▦',
   projects: '▤', admin: '⚙', flow: '⇄', hermes: '✦', idp: '◉', search: '⌕', storage: '⬢',
+  vault: '▣',
 };
 
 const APPS = [
+  { id: 'vault', name: 'Blak Vault', desc: 'Encrypted passwords, keys and sensitive files', url: 'https://vault.workspace.example.com', backend: 'Powered by Vaultwarden', group: 'Workspace', status: 'live', oidcClient: 'blak-vault', check: { proto: 'http', host: 'vault', port: 8080, path: '/alive' } },
   { id: 'forms', name: 'Blak Forms', desc: 'Forms and surveys', url: 'https://forms.workspace.example.com', backend: 'Powered by HeyForm', group: 'Workspace', status: 'live', oidcClient: 'blak-forms', check: { proto: 'http', host: 'forms', port: 9157, path: '/' } },
   { id: 'draw', name: 'Blak Draw', desc: 'Private diagrams and drawings', url: '/draw', backend: 'Powered by Excalidraw', group: 'Workspace', status: 'live', oidcClient: 'blak-portal', check: null },
   { id: 'crm', name: 'Blak CRM', desc: 'Leads, contacts, organisations and deals', url: 'https://crm.workspace.example.com/login?redirect-to=/crm', backend: 'Powered by Frappe CRM', group: 'Organise', status: 'live', oidcClient: 'blak-crm', check: { proto: 'http', host: 'crm', port: 3000, path: '/api/method/ping' } },

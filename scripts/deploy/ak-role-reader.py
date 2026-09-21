@@ -18,7 +18,7 @@ if permissions.count() != 2:
     raise ValueError('Required directory read permissions are unavailable')
 user.assign_perms_to_managed_role(list(permissions))
 allowed = {'authentik_core.view_user', 'authentik_core.view_group'}
-if set(user.get_all_permissions()) - allowed:
+if set(user.get_all_permissions()) != allowed:
     raise ValueError('Directory reader has permissions beyond user/group read access')
 token, _ = Token.objects.get_or_create(identifier='blak-role-reader', defaults={
     'user': user, 'intent': 'api', 'expiring': False,
