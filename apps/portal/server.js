@@ -99,7 +99,7 @@ function xmlTag(xml, tag) {
 }
 const BRAND_BASE = process.env.BRAND_BASE || 'http://portal.workspace.example.com';
 // Shared Blak brand assets (no cultural motifs; geometric wordmark only)
-const { LOGO_SVG } = require('./brand');
+const { LOGO_SVG, APP_ICONS } = require('./brand');
 const FLOW_BG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><rect width="1600" height="900" fill="${tokens.dark['blak-950']}"/><ellipse cx="1150" cy="620" rx="420" ry="200" fill="${tokens.dark['earth-700']}" opacity="0.7"/><ellipse cx="1150" cy="700" rx="560" ry="160" fill="${tokens.dark['water-700']}" opacity="0.6"/><circle cx="1150" cy="520" r="110" fill="${tokens.dark['ochre-400']}" opacity="0.9"/><ellipse cx="300" cy="150" rx="500" ry="240" fill="${tokens.dark['blak-800']}" opacity="0.9"/></svg>`;
 function svcGet(host, port, path, headers) {
   return textRequest(`http://${host}:${port}${path}`, { headers });
@@ -128,11 +128,11 @@ async function getJson(url, token) {
 }
 
 function page(title, inner) {
-  return `<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><title>${esc(title)} — Blak Workspace</title><meta name=viewport content="width=device-width,initial-scale=1"><style>${CSS}</style><script>${themeScript}</script></head><body>${inner}<footer>Blak Workspace by Yuma IT · built with open-source software (OpenCloud, Authentik, Collabora, Outline, Floci, Meilisearch) · currently in early development</footer></body></html>`;
+  return `<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><title>${esc(title)} — Blak Workspace</title><link rel="icon" href="/brand/logo.svg" type="image/svg+xml"><meta name=viewport content="width=device-width,initial-scale=1"><style>${CSS}</style><script>${themeScript}</script></head><body>${inner}<footer>Blak Workspace by Yuma IT · built with open-source software (OpenCloud, Authentik, Collabora, Outline, Floci, Meilisearch) · currently in early development</footer></body></html>`;
 }
 function appIcon(a, cls) {
   const f = ICON_IMG[a.id];
-  if (f) return `<img class="${cls}" src="/brand/icons/${f}.png" alt="" width="34" height="34">`;
+  if (f) return `<img class="${cls}" src="/brand/icons/${f}.svg" alt="" width="34" height="34">`;
   return `<span class="${cls} tile-ic" style="background:${ACCENT[a.id] || 'var(--text-muted)'}">${esc(a.name.replace('Blak ', '').charAt(0))}</span>`;
 }
 function scriptJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
@@ -169,7 +169,7 @@ function navGroups(active, user) {
     const items = allowedApps(APPS, user).filter((a) => a.group === g);
     if (!items.length) return '';
     const links = items.map((a) => {
-      const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.png" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || 'var(--text-muted)'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
+      const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.svg" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || 'var(--text-muted)'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
       return a.url
         ? `<a class=nav-item href="${launchURL(a)}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.name)}">${inner}</a>`
         : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}</span>`;
@@ -372,24 +372,24 @@ async function cloudPage(user, bucket, prefix, msg) {
     try {
       const qr = await sqsAction({ Action: 'ListQueues' });
       const urls = xmlTag(qr.body, 'QueueUrl');
-      const qforms = urls.slice(0, 10).map((u) => `<form method=post action=/cloud/send style="margin:6px 0"><input type=hidden name=url value="${esc(u)}"><input name=body required placeholder="Message to ${esc(u.split('/').pop())}…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-width:280px"> <button class=btn-sec type=submit>Send</button></form>`).join('');
+      const qforms = urls.slice(0, 10).map((u) => `<form method=post action=/cloud/send style="margin:6px 0"><input type=hidden name=url value="${esc(u)}"><input name=body aria-label="Message body" required placeholder="Message to ${esc(u.split('/').pop())}…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-width:280px"> <button class=btn-sec type=submit>Send</button></form>`).join('');
       queues = `<h3 class=sec>Queues</h3>` + (urls.length ? qforms : `<p class=gsub>No queues yet.</p>`)
-        + `<form method=post action=/cloud/queue style="margin:6px 0"><input name=name required minlength=1 placeholder="New queue name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit>Create queue</button></form>`;
+        + `<form method=post action=/cloud/queue style="margin:6px 0"><input aria-label="New queue name" name=name required minlength=1 placeholder="New queue name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit>Create queue</button></form>`;
     } catch (e) { queues = `<p class=gsub>Queues unavailable (${esc(e.message)}).</p>`; }
     body = `${msg ? `<p class=gsub>${esc(msg)}</p>` : ''}
 <h3 class=sec>Object storage (S3)</h3>
-<form method=get action=/cloud><div class=search style="margin:0 0 12px;max-width:640px"><select name=bucket onchange="this.form.submit()"><option value="">Choose a bucket…</option>${opts}</select>
-<input name=prefix type=search placeholder="Prefix filter…" value="${esc(prefix || '')}" autocomplete=off></div></form>
+<form method=get action=/cloud><div class=search style="margin:0 0 12px;max-width:640px"><select aria-label="Bucket" name=bucket onchange="this.form.submit()"><option value="">Choose a bucket…</option>${opts}</select>
+<input aria-label="Prefix filter" name=prefix type=search placeholder="Prefix filter…" value="${esc(prefix || '')}" autocomplete=off></div></form>
 ${listing}
-<form method=post action=/cloud/bucket style="margin:12px 0"><input name=name required minlength=3 placeholder="New bucket name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Create bucket</button></form>
-${bucket ? `<h3 class=sec>Upload to ${esc(bucket)}</h3><input type=file id=upfile><button class=btn-sec id=upbtn style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Upload</button><p class=gsub id=upmsg></p>
+<form method=post action=/cloud/bucket style="margin:12px 0"><input aria-label="New bucket name" name=name required minlength=3 placeholder="New bucket name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Create bucket</button></form>
+${bucket ? `<h3 class=sec>Upload to ${esc(bucket)}</h3><input type=file id=upfile aria-label="File to upload"><button class=btn-sec id=upbtn style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Upload</button><p class=gsub id=upmsg></p>
 <script>document.getElementById('upbtn').onclick=async()=>{const f=document.getElementById('upfile').files[0];if(!f)return;const m=document.getElementById('upmsg');m.textContent='Uploading…';
 try{const r=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(f.name),{method:'PUT',body:f});m.textContent=r.ok?'Uploaded. Reload to see it.':'Upload failed ('+r.status+')';}catch{m.textContent='Upload failed. Please retry.';}};
 document.querySelectorAll('[data-delete-object]').forEach(button=>button.onclick=async()=>{const m=document.getElementById('upmsg');try{const response=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(button.dataset.deleteObject),{method:'DELETE'});if(response.ok)location.reload();else m.textContent='Delete failed ('+response.status+')';}catch{m.textContent='Delete failed. Please retry.';}});</script>` : ''}
 ${queues}`;
   } catch (e) { body = `<p class=gsub>Blak Cloud is unavailable right now (${esc(e.message)}).</p>`; }
   return shell(user, 'storage', 'Blak Cloud', `<div class=greet>Blak Cloud</div>
-<p class=gsub>Local cloud services for development, testing and automation — object storage, queues, functions and more, on this sovereign box.</p>${body}`);
+<p class=gsub>Store files and send queue messages for your workspace automations.</p>${body}`);
 }
 
 async function handleRequest(req, res) {
@@ -588,6 +588,7 @@ async function handleRequest(req, res) {
   }
   if (url.pathname.startsWith('/brand/icons/')) {
     const f = url.pathname.split('/').pop();
+    if (f?.endsWith('.svg') && APP_ICONS[f.slice(0,-4)]) { res.writeHead(200, {'content-type':'image/svg+xml','cache-control':'public, max-age=86400'});res.end(APP_ICONS[f.slice(0,-4)]);return; }
     if (!/^[a-z]+\.png$/.test(f || '')) { res.writeHead(400); res.end(); return; }
     try {
       const fs = require('fs');
@@ -601,6 +602,10 @@ async function handleRequest(req, res) {
     res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' });
     res.end(LOGO_SVG);
     return;
+  }
+  if (url.pathname === '/_blak/fonts/InterVariable.woff2') {
+    res.writeHead(200, {'content-type':'font/woff2','cache-control':'public, max-age=86400'});
+    res.end(fs.readFileSync(path.join(__dirname,'fonts','InterVariable.woff2'))); return;
   }
   if (url.pathname === '/brand/flow-bg.svg') {
     res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' });

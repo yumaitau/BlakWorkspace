@@ -13,6 +13,18 @@ All public assets derive from portal catalog/tokens. Run
 `node scripts/brand/generate.js --check` before release. The adapter is deliberately
 separate from upstream apps; upstream attribution remains in the switcher.
 
+Inter is bundled locally as a variable WOFF2 with its OFL licence, served at
+`/_blak/fonts/InterVariable.woff2` on each public app origin. A CSS family name
+alone is not proof the font loaded: acceptance checks the registered loaded
+font face. The portal's master SVG and distinct SVG app icons scale without
+raster blur. `on-primary` is the shared contrasting foreground for orange actions.
+User document fonts and uploaded profile images remain their own content.
+
+Reapply generated `scripts/deploy/ak-brand.py` after an Authentik upgrade. Brand
+asset URLs must be absolute HTTPS URLs: current Authentik interprets relative
+file-picker paths as uploaded media. Verify the actual rendered logo, heading,
+font and login button at desktop and mobile sizes, not just an asset HTTP 200.
+
 ## Private Hermes health and enrolment
 
 `/sync` and `/api/sync-health` require a portal session and filter the generated
@@ -86,6 +98,21 @@ third-party accessibility is not represented as universally compliant. Existing
 functional tests continue to cover actual create/update/delete and SSO behaviour.
 Generate baselines on the deployment host Linux using `--update-snapshots`, review them, commit
 them, then run again without update mode. Never blindly regenerate to hide a diff.
+
+`pages.spec.js` visits CRM's eight main sections, Knowledge's four, Drive's five,
+Forms' three, Hermes Notes/Workspace, and Projects' overview/projects/member/
+invitation pages. The Projects audit creates an owned temporary workspace for
+owner-only pages and deletes it afterwards. Portal coverage includes home, guide,
+search, Flow list/builder/activity, Cloud, Draw and sync status in both themes and
+at 390/768/1440px. Search acceptance also follows a real synced result and checks
+another account cannot see it. The suite exercises native login/logout, Docs
+editing and save-back, Forms publishing/submission, CRM CRUD, drawings, Flow runs,
+Cloud transfer/queues, private sync and grounded Hermes browser responses.
+
+Run acceptance after rollouts finish. A rollout-time 502 is a failed check, not
+evidence that the destination page passed. For an operator running outside the
+cluster, `BLAK_E2E_SERVICE_ORIGINS` may map service names to private SSH-forwarded
+HTTP origins; public journeys still use their real HTTPS tailnet addresses.
 
 ## Verified integration boundaries
 

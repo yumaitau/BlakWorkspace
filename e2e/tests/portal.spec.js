@@ -2,7 +2,7 @@
 const {test,expect,session}=require('../helpers/fixtures');
 const {APPS}=require('../../apps/portal/catalog');
 const {tokens}=require('../../apps/portal/theme');
-const pages=['/','/flow','/flow/new','/flow/activity','/search','/cloud'];
+const pages=['/','/welcome','/flow','/flow/new','/flow/activity','/search','/cloud','/draw','/sync'];
 for(const route of ['/api/me','/api/modules','/api/status','/cloud/object?bucket=abc&key=a']) test(`anonymous API denied ${route}`,async({request})=>{
   expect((await request.get(route)).status()).toBe(401);
 });
@@ -25,7 +25,10 @@ for(const mode of ['dark','light'])for(const route of pages)test(`${mode} theme 
   await page.goto('/');
   if(mode==='light')await page.getByRole('button',{name:'Switch to light theme'}).click();
   await page.goto(route);await expect(page.locator('html')).toHaveAttribute('data-theme',mode);
-  const colours=await page.locator('body').evaluate(el=>({surface:getComputedStyle(el).getPropertyValue('--surface').trim(),primary:getComputedStyle(el).getPropertyValue('--primary').trim()}));
+  await page.evaluate(()=>document.fonts.load('400 16px Inter'));
+  expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
+  // Draw mounts its palette on the React app; server-rendered pages inherit it from html.
+  const colours=await page.locator(route==='/draw'?'.app':'body').evaluate(el=>({surface:getComputedStyle(el).getPropertyValue('--surface').trim(),primary:getComputedStyle(el).getPropertyValue('--primary').trim()}));
   expect(colours.surface).toBe((tokens[mode].surface||tokens.dark.surface));expect(colours.primary).toBe(tokens.dark.primary);
   await expect(page.getByRole('button',{name:`Switch to ${mode==='dark'?'light':'dark'} theme`})).toBeVisible();
 });
@@ -54,9 +57,10 @@ test('special characters in account name do not break scripts',async({page,conte
   await context.addCookies([{name:'blak_session',value:await session(account,name),url:baseURL}]);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await expect(page.locator('#greet')).toContainText("Ada O'Neil");expect(errors).toEqual([]);
 });
-test('sign out clears session and preserves theme',async({signedIn:page})=>{
+test('sign out clears session and preserves theme',async({signedIn:page,baseURL})=>{
   await page.goto('/');await page.getByRole('button',{name:'Switch to light theme'}).click();await page.locator('.userchip').getByRole('link',{name:'Sign out'}).click();
-  await expect(page.getByRole('link',{name:'Sign in with Blak ID'})).toBeVisible();expect((await page.request.get('/api/me')).status()).toBe(401);await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+  await expect.poll(async()=>(await page.request.get(baseURL+'/api/me')).status()).toBe(401);
+  await page.goto(baseURL+'/');await expect(page.getByRole('link',{name:'Sign in with Blak ID'})).toBeVisible();await expect(page.locator('html')).toHaveAttribute('data-theme','light');
 });
 test('Drive theme adapter matches portal in both modes',async({request})=>{
   const response=await request.get('/blak-theme/theme.json');const theme=await response.json();

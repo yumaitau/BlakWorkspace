@@ -8,6 +8,8 @@ test("draw, save, reopen, export and delete a private board", async ({
   signedIn: page,
 }) => {
   await page.goto("/draw");
+  await expect(page.locator(".workspace-brand img")).toHaveAttribute("src", "/brand/logo.svg");
+  expect(await page.locator(".workspace-brand img").evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.getByLabel("Drawing name").fill("E2E diagram");
   await page.getByRole("button", { name: "New drawing", exact: true }).click();
   await expect(page.locator(".excalidraw")).toBeVisible();

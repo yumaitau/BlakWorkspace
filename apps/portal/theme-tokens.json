@@ -32,6 +32,7 @@
     "text-secondary": "#B8B5AA",
     "text-muted": "#7F8988",
     "primary": "#D65B2E",
+    "on-primary": "#0B1112",
     "primary-hover": "#E77832",
     "secondary": "#21818A",
     "secondary-hover": "#3199A2",

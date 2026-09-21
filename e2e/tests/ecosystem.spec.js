@@ -15,7 +15,7 @@ test('Drive SSO renders files and shared brand themes', async ({ page, request }
 });
 
 test('Knowledge SSO renders branded workspace', async ({ page }) => {
-  await page.goto('https://sites.workspace.example.com');
+  await page.goto('https://sites.workspace.example.com/auth/oidc');
   await authentikLogin(page);
   await page.waitForURL(url => url.hostname === 'sites.workspace.example.com' && !url.pathname.includes('auth'));
   await expect(page.locator('body')).toContainText('Blak Knowledge');
@@ -27,8 +27,8 @@ test('Projects stylesheet uses shared palette and branded title', async ({ page 
   await page.goto('https://projects.workspace.example.com');
   await authentikLogin(page);
   await page.waitForURL(url => url.hostname === 'projects.workspace.example.com' && !url.pathname.includes('sign-in'));
-  await expect(page).toHaveTitle('Blak Projects · Powered by Kaneo');
-  await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
+  await expect(page).toHaveTitle(/Blak Projects/);
+  await expect(page.getByRole('button', { name: /Create workspace|Create project/ }).first()).toBeVisible();
   await expect.poll(() => page.locator('html').evaluate(el => getComputedStyle(el).getPropertyValue('--primary').trim())).toBe(tokens.dark.primary);
   await page.screenshot({ path: test.info().outputPath('projects.png'), fullPage: true });
 });

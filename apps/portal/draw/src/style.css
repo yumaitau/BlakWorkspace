@@ -26,7 +26,17 @@ nav {
   border-bottom: 1px solid var(--border-strong);
 }
 header a {
-  color: var(--info);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.workspace-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.workspace-brand img {
+  flex-shrink: 0;
 }
 header span {
   font-size: 12px;
@@ -44,7 +54,7 @@ select {
 button {
   cursor: pointer;
   background: var(--primary);
-  color: var(--sand-50);
+  color: var(--on-primary);
 }
 button:disabled {
   opacity: 0.5;

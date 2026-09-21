@@ -19,6 +19,25 @@ while other sources continue. Failed sources are detached from the private
 workspace model until repaired; their previous private collection snapshot is
 retained for recovery.
 
+Run `BLAK_SYNC_ACCOUNT=<configured-name> python scripts/deploy/configure-hermes-tasks.py`
+after provisioning. Both deployment helpers use that named account, or the only
+configured account when the variable is omitted. Multiple mappings require an
+explicit name. It disables background model tasks and configures one
+filename-aware hybrid retrieval chunk per source, with a concise source-only
+answer template. Eight candidates per collection are ranked by the small local
+`cross-encoder/ms-marco-MiniLM-L6-v2` model before selecting that one chunk.
+This avoids relying on embedding similarity alone for named records.
+Open WebUI retrieves top-k **per collection**; the default three
+chunks across nine sources can exceed the small model's 4096-token context.
+This setting favours focused document questions. Broad comparisons may need
+follow-up questions or a larger owner-selected model and context budget. No
+external inference service is enabled; the reranker runs on the homelab CPU.
+Its first configuration downloads the model to the persistent Hermes cache.
+
+The rationale follows [Open WebUI's RAG troubleshooting guidance](https://docs.openwebui.com/troubleshooting/rag/).
+Validate with both a real sourced answer in the browser and create/update/delete
+sync tests; successful indexing alone does not prove answer quality.
+
 ## Credentials and ownership
 
 Secret `blak-hermes-sync`, key `accounts.json`, contains an `accounts` array.
@@ -50,8 +69,14 @@ own mapping and credentials; their private documents are not copied by this one.
   after one year; rotate before expiry using the supported OpenCloud app-token
   API or `opencloud auth-app create` operator command.
 - Outline API key scopes: `documents.list`, `documents.info`, `collections.list`.
-- Chat uses the owning user's authenticated session token. Rotate when revoked
-  or expired; a 401 makes the job fail visibly. The worker performs only reads.
+- Chat uses the owning user's dedicated personal access token (PAT), created
+  through Rocket.Chat's supported `users.generatePersonalAccessToken` API after
+  that owner's native Blak ID login. Verify `X-User-Id` matches the enrolled owner
+  before saving it in the mapping. Never reuse a browser login token: ordinary
+  session expiry, revocation and repeated logins can invalidate it. Store only
+  the PAT in `X-Auth-Token`; revoke it explicitly when disconnecting the source.
+  Workspace browser logout leaves this enrolled background connector active.
+  A 401 still fails sync visibly. The worker performs only reads.
 - Projects uses the owner's API key (one-year expiry). This upstream API does not
   let clients set read-only key permissions; the connector performs only reads.
 - CRM uses the verified owner's Frappe API key and native record permissions.
@@ -73,7 +98,9 @@ repeat uploads. Updates persist replacement and pending-cleanup IDs before
 removing old files. Removed source items are removed from knowledge and file
 storage. State lives on `hermes-sync-state`; atomic writes and a file lock prevent
 corruption from crashes or overlapping manual and scheduled jobs. Failed jobs
-exit nonzero and retry twice; credentials and document bodies are never logged.
+exit nonzero and retry twice. Each run refreshes the supported Hermes model
+catalog API after attaching or detaching collections, so chat uses the current
+sources without requiring a browser reload; credentials and document bodies are never logged.
 
 ```bash
 kubectl -n blak-micro get cronjob hermes-workspace-sync

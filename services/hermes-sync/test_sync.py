@@ -10,6 +10,23 @@ class FakeHermes:
     def upload(self,name,content):self.counter+=1;self.calls.append(('upload',name,content));return {'id':str(self.counter)}
     def json(self,method,path,data=None):self.calls.append((method,path,data));return {}
 class SyncTests(unittest.TestCase):
+    def test_model_cache_refresh_failure_is_retried_without_source_changes(self):
+        class Hermes:
+            refreshes=0
+            def json(self,method,path,data=None):
+                if path=='/api/v1/auths/':return {'id':'owner'}
+                if path=='/api/models':
+                    self.refreshes+=1
+                    if self.refreshes==1:raise RuntimeError('catalog unavailable')
+                    return {'data':[]}
+                raise AssertionError(path)
+        api=Hermes()
+        mapping={'owner_id':'owner','hermes':{},'sources':{}}
+        with patch.object(sync,'API',return_value=api), patch.object(sync,'ensure_workspace_model'):
+            with self.assertRaisesRegex(RuntimeError,'catalog unavailable'):
+                sync.sync_mapping(mapping,{},lambda:None)
+            self.assertEqual(sync.sync_mapping(mapping,{},lambda:None),{})
+        self.assertEqual(api.refreshes,2)
     def test_public_origin_change_refreshes_unchanged_source_revision(self):
         class Hermes(FakeHermes):
             def json(self, method, path, data=None):

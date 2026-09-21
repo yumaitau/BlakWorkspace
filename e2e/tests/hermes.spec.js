@@ -18,6 +18,11 @@ test('Hermes SSO opens a usable workspace chat', async ({ page }) => {
   await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
   await expect(page.getByRole('link', { name: /New Chat/i }).or(page.getByRole('button', { name: /New Chat/i })).first()).toBeVisible();
   await expect(page.locator('#chat-input')).toBeVisible();
+  const modelLogo=page.locator('img[src*="/api/v1/models/model/profile/image"]').first();
+  await expect(modelLogo).toBeVisible();
+  await expect.poll(()=>modelLogo.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  const logo=await page.request.get(await modelLogo.evaluate(img=>img.src));
+  expect(logo.headers()['content-type']).toContain('image/svg+xml');
   await page.screenshot({ path: test.info().outputPath('hermes-chat.png'), fullPage: true });
 });
 
@@ -43,7 +48,7 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
     expect(collection.user_id).toBe(account.owner_id);
     expect(collection.access_grants).toEqual([]);
     const query = async () => {
-      const response = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'What is the verification phrase in hermes-e2e-' + id + '?', k: 20 } });
+      const response = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'What is the verification phrase in hermes-e2e-' + id + '?', k: 20, k_reranker: 20 } });
       expect(response.ok()).toBeTruthy();
       return JSON.stringify(await response.json());
     };
@@ -53,9 +58,10 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
     const completion = await answer.json();
     expect(completion.choices[0].message.content).toContain(phrase);
     expect(JSON.stringify(completion.sources)).toContain(phrase);
-    await page.goto(HERMES);
-    await page.getByRole('button', { name: 'Continue with Blak ID' }).click();
+    await page.goto('https://portal.workspace.example.com/login');
     await authentikLogin(page);
+    await expect(page).toHaveURL('https://portal.workspace.example.com/');
+    await page.goto('https://portal.workspace.example.com/launch/hermes');
     await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
     await page.goto(HERMES + '/?model=blak-workspace-' + account.owner_id);
     await page.locator('#chat-input').waitFor();
@@ -114,7 +120,7 @@ test('sync includes private team-channel and Projects task data', async ({ playw
     for (const name of ['Blak Workspace · Chat', 'Blak Workspace · Projects']) {
       const collection = collections.find(item => item.name === name);
       expect(collection.access_grants).toEqual([]);
-      const result = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'Workspace test marker ' + phrase, k: 5 } });
+      const result = await hermes.post('/api/v1/retrieval/query/collection', { data: { collection_names: [collection.id], query: 'Workspace test marker ' + phrase, k: 5, k_reranker: 5 } });
       expect(result.ok()).toBeTruthy();
       expect(JSON.stringify(await result.json())).toContain(phrase);
     }
