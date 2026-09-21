@@ -8,7 +8,7 @@ async function privateKnowledge(playwright) {
   async function collection(label) {
     const response = await client.get('/api/v1/knowledge/');
     expect(response.ok()).toBeTruthy();
-    const item = (await response.json()).items.find(c => c.name === 'Blak Workspace · ' + label);
+    const item = (await response.json()).items.find(c => c.name === 'Blak Workspace · ' + label && c.user_id === account.owner_id);
     expect(item, 'Missing private ' + label + ' collection').toBeTruthy();
     expect(item.user_id).toBe(account.owner_id);
     expect(item.access_grants).toEqual([]);

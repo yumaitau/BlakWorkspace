@@ -28,7 +28,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     return result.json();
   }
   const original = await api(operator['api-key'], 'GET', knowledgePath);
-  let native, token, uploaded;
+  let native, token, uploaded, privateKnowledge, privateFile;
   async function waitRole(role) {
     await expect.poll(async () => {
       const result = await api(operator['api-key'], 'GET', '/api/v1/users/?query=' + encodeURIComponent(native.email));
@@ -45,6 +45,18 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     } else expect([401, 403, 404]).toContain(result.status);
   }
   try {
+    privateKnowledge = await api(operator['api-key'], 'POST', '/api/v1/knowledge/create', {
+      name: 'Private role fixture ' + key, description: key, access_grants: [],
+    });
+    const privateForm = new FormData();
+    privateForm.append('file', new Blob(['Private fixture ' + key], { type: 'text/plain' }), key + '-private.txt');
+    const privateUpload = await fetch(endpoint + '/api/v1/files/?process=false', {
+      method: 'POST', headers: { authorization: 'Bearer ' + operator['api-key'] }, body: privateForm,
+    });
+    expect(privateUpload.status).toBe(200);
+    privateFile = await privateUpload.json();
+    await api(operator['api-key'], 'POST', '/api/v1/retrieval/process/file', { file_id: privateFile.id, content: 'Private fixture ' + key });
+    await api(operator['api-key'], 'POST', '/api/v1/knowledge/' + privateKnowledge.id + '/file/add', { file_id: privateFile.id });
     await context.addCookies(await identityCookies(key, 'Hermes native role fixture', ['hermes'], { hermes: 'writer' }));
     const portal = await (await page.request.get('/api/me')).json();
     await page.goto(origin + '/oauth/oidc/login');
@@ -84,6 +96,23 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     expect(JSON.stringify(retained.data)).not.toContain('forbidden');
     updateIdentity(key, { roles: { hermes: 'admin' } });
     await waitRole('admin');
+    const listed = await api(token, 'GET', '/api/v1/knowledge/');
+    expect(listed.items.some(item => item.id === privateKnowledge.id)).toBe(false);
+    for (const path of ['/api/v1/knowledge/' + privateKnowledge.id,
+                        '/api/v1/knowledge/' + privateKnowledge.id + '/files',
+                        '/api/v1/knowledge/' + privateKnowledge.id + '/export',
+                        '/api/v1/files/' + privateFile.id,
+                        '/api/v1/files/' + privateFile.id + '/content',
+                        '/api/v1/files/' + privateFile.id + '/data/content']) {
+      await denied('GET', path);
+    }
+    for (const id of [privateKnowledge.id, 'file-' + privateFile.id]) {
+      await denied('POST', '/api/v1/retrieval/query/collection', { collection_names: [id], query: key, k: 1 });
+    }
+    await denied('POST', '/api/v1/knowledge/' + privateKnowledge.id + '/update', { name: 'forbidden', description: 'forbidden' });
+    await denied('POST', '/api/v1/files/' + privateFile.id + '/rename', { filename: 'forbidden.txt' });
+    expect((await api(operator['api-key'], 'GET', '/api/v1/knowledge/' + privateKnowledge.id)).name).toBe('Private role fixture ' + key);
+
     expect((await response(token, 'GET', '/api/v1/users/')).status).toBe(200);
     await api(token, 'POST', knowledgePath + '/access/update', { access_grants: (await api(operator['api-key'], 'GET', knowledgePath)).access_grants });
     await denied('POST', '/api/v1/users/' + operator['user-id'] + '/update', { role: 'pending' });
@@ -105,6 +134,8 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     await waitRole(null);
     await denied('GET', knowledgePath);
   } finally {
+    if (privateFile?.id) await api(operator['api-key'], 'DELETE', '/api/v1/files/' + privateFile.id);
+    if (privateKnowledge?.id) await api(operator['api-key'], 'DELETE', '/api/v1/knowledge/' + privateKnowledge.id + '/delete');
     if (uploaded?.id) await api(operator['api-key'], 'DELETE', '/api/v1/files/' + uploaded.id);
     await api(operator['api-key'], 'POST', knowledgePath + '/update', { name: original.name, description: original.description });
     if (native) await api(operator['api-key'], 'DELETE', '/api/v1/users/' + native.id);

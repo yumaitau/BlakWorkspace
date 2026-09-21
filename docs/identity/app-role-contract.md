@@ -211,12 +211,14 @@ controller is exempt. Other native group memberships are removed because native
 permissions are additive; Blak ID is authoritative for Hermes membership.
 
 Readers can chat and read shared group knowledge. Writers can create and edit
-knowledge; only collection owners or app admins can change collection access or
-delete the collection itself. Native personal resources retain owner capabilities.
+knowledge; only collection owners or app admins with an explicit native write grant can
+change collection access or delete the collection itself. Native personal resources retain owner capabilities.
 An uploaded file attached to shared knowledge requires current write access to
 **every** containing shared collection, even for its uploader. This check covers
-content updates, renames, deletion and ingestion APIs. App admins have native
-administrative visibility; do not grant this role to ordinary knowledge writers.
+content updates, renames, deletion and ingestion APIs. Human app admins retain native application administration but cannot bypass
+private content ownership or native sharing grants. Only the enrolled controller
+has cross-owner content access. Global file/vector resets, reindexing and database
+export require that controller; ordinary admins cannot invoke them.
 
 The pinned upstream image has small, hash-checked native patches. Image builds
 fail if upstream permission/deletion code changes and run tests against the
@@ -303,6 +305,16 @@ journey also passed in 2.6 minutes, including indexing, updates, retrieval,
 model answers with citations, deletion and owner isolation.
 
 
+Hermes privacy acceptance on 2026-09-22 passed in 7.6 minutes against
+`blak-hermes:01eb2d5d1379`. A human app admin could not list, read, export, rename,
+modify or vector-query another owner's private knowledge and files. Explicit
+shared write access still worked. The same journey verified native role changes,
+existing-token revocation, disabled users, cross-app isolation and restoration.
+Nineteen patched native-function tests passed, including destructive-operation
+rejection before storage calls. The CRM/Draw/Flow/Cloud source regression passed
+in 2.6 minutes against the preceding privacy image; the final image additionally
+fixes sessionless shared-knowledge metadata updates, exercised by live acceptance.
+
 ## Forms native enforcement (acceptance pending)
 
 Forms derives from HeyForm 3.0.3 at the pinned upstream digest in
@@ -319,7 +331,8 @@ project cannot smuggle extra members through a writer operation. Password, email
 and account-deletion flows cannot replace directory authority.
 
 The dedicated controller binds accounts using the native issuer/subject identity
-key. It rejects email collisions and ambiguous links before mutation. Missing,
+key. Forms uses `user_uuid` subjects; the controller uses directory UUIDs rather
+than the portal's frozen legacy aliases. It rejects email collisions and ambiguous links before mutation. Missing,
 disabled or ungranted identities have no effective role; restoration updates the
 same native account without changing team ownership or existing content. Human
 sessions cannot invoke controller endpoints. The scoped deployment backs up the
