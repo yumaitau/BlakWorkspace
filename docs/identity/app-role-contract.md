@@ -2,8 +2,9 @@
 
 Status: Vault native enforcement is implemented and tested separately. Draw, Flow,
 Cloud and Search enforcement is implemented. The 14-test live portal suite
-passed, including existing-session role changes and private-owner boundaries. The remaining native app mappings below are still implementation
-design; this document does not certify their live enforcement.
+passed, including existing-session role changes and private-owner boundaries.
+Hermes and Projects native acceptance is recorded below. The other native app
+mappings remain implementation design; this document does not certify them.
 
 Blak ID is the authority for membership. Every app must enforce its native data
 permissions as well as the login grant. A hidden launcher, proxy login gate, or
@@ -95,6 +96,14 @@ controller through operator-only server APIs, and activates the reconciler.
 reader/writer/admin permissions, same-key and same-cookie downgrades, WebSocket
 closure, disabled users, cross-app grants, and application removal. Report live
 acceptance separately from a successful build or rollout.
+
+Live acceptance on 2026-09-22 passed with image `blak-projects:87536895cff8`:
+reader/writer/admin transitions; API-key and cookie downgrade; read-only limits
+on a privately owned workspace; protected directory/controller authority;
+WebSocket closure; disabled users; cross-app grants; restoration; and app removal.
+The real Blak ID journey passed in 7.3 minutes. A separate Chat/Projects-to-Hermes
+sync regression passed, including native retrieval and cleanup. Validation also
+passed 289 Python tests, 12 bridge tests, and 6 patched-native function tests.
 
 ## Acceptance
 
