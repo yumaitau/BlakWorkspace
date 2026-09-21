@@ -1,0 +1,7 @@
+# Login artwork refresh
+
+The background was created with the built-in image generation tool. Final asset: `apps/portal/login-background.png`, copied by the brand generator to `services/workspace-shell/login-background.png`.
+
+Prompt: Create a production website login BACKGROUND IMAGE for Blak Workspace and Blak ID. Wide 16:9, 2560x1440 or highest supported resolution. Premium editorial architectural photograph: close-up of a real dark charcoal basalt wall meeting a finely finished warm terracotta wall, one precise vertical seam and gentle natural late-afternoon light grazing the stone. Almost-black deep charcoal occupies the central 60 percent so a login form can overlay it clearly. Warm muted copper/ochre light concentrated at far right edge, subtle natural stone texture, photographic restraint, credible material detail and soft real shadows. Composition quiet and refined. NO text, NO logo, NO UI, NO people, NO circles, NO floating objects, NO fantasy architecture, NO artificial glows, NO grunge or distressed surfaces, NO visual clutter. Full bleed usable website asset, not a mockup.
+
+The generated logo candidate retained rough edges and was rejected. The final logo is native SVG circle geometry in `apps/portal/brand.js`; all shared SVG adapters are generated from that source. It has no raster data or font dependencies. The portal wordmark uses accessible HTML text. This replaces the previous small JPEG embedded inside SVG.

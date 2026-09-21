@@ -109,8 +109,8 @@ function appIcon(a, cls) {
 }
 function scriptJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function wordmark() { return `<div class=brand><img class=brand-mark src="/brand/logo.svg" alt="" width="36" height="36"><div><b>Blak</b> <span>Workspace</span></div></div>`; }
-function homeLogo() { return `<img class=home-logo src="/brand/home-logo.jpg" alt="Blak Workspace by Yuma IT" width="1200" height="630" fetchpriority="high">`; }
+function wordmark() { return `<div class=brand><img class=brand-mark src="/brand/logo.svg?v=2" alt="" width="36" height="36"><div><b>Blak</b> <span>Workspace</span></div></div>`; }
+function homeLogo() { return `<div class="home-logo"><img src="/brand/logo.svg?v=2" alt="" width="224" height="224"><strong>Blak Workspace</strong><span>by Yuma IT</span></div>`; }
 function dotSun(cx, cy, r, color, opacity) {
   let s = `<g opacity="${opacity}" fill="${color}">`;
   for (let ring = 1; ring <= 4; ring++) {
@@ -488,6 +488,11 @@ async function handleRequest(req, res) {
   if (url.pathname === '/logout') {
     res.writeHead(302, { location: '/', 'set-cookie': `${COOKIE}=; Path=/; HttpOnly; Max-Age=0` });
     res.end();
+    return;
+  }
+  if (url.pathname === '/brand/login-background.png') {
+    res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
+    res.end(fs.readFileSync(path.join(__dirname, 'login-background.png')));
     return;
   }
   if (url.pathname === '/brand/banner.png' || url.pathname === '/brand/home-logo.jpg') {

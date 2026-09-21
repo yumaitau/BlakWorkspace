@@ -62,8 +62,8 @@ img.tile-ic{border-radius:9px}.tile-ic{width:34px;height:34px;flex:none;border-r
 .signin h2{font-size:32px;margin:18px 0 8px;font-weight:650;letter-spacing:-.02em}
 .signin .tagline{font-size:20px;margin:6px 0}
 .signin p{color:var(--text-secondary)}
-.home-logo{display:block;width:100%;height:auto;object-fit:contain;border-radius:12px}
-.artpane{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:48px;background:var(--surface-base);border-left:1px solid var(--border-subtle)}
+.home-logo{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;text-align:center}.home-logo img{width:clamp(96px,16vw,176px);height:auto}.home-logo strong{font-size:clamp(24px,3vw,34px);font-weight:650;letter-spacing:-.04em}.home-logo>span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
+.artpane{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:48px;background:#101716 url("/brand/login-background.png") center/cover;border-left:1px solid var(--border-subtle);color:#f4eee2}.artpane .home-logo>span,.artpane .strap span{color:#d6cbbd}
 .artpane .home-logo{max-width:560px}
 .artpane .strap{width:100%;max-width:560px;text-align:center}
 .artpane .strap b{display:block;font-size:24px;font-weight:650;line-height:1.35;letter-spacing:-.02em}
