@@ -63,8 +63,14 @@ own mapping and credentials; their private documents are not copied by this one.
   after one year; rotate before expiry using the supported OpenCloud app-token
   API or `opencloud auth-app create` operator command.
 - Outline API key scopes: `documents.list`, `documents.info`, `collections.list`.
-- Chat uses the owning user's authenticated session token. Rotate when revoked
-  or expired; a 401 makes the job fail visibly. The worker performs only reads.
+- Chat uses the owning user's dedicated personal access token (PAT), created
+  through Rocket.Chat's supported `users.generatePersonalAccessToken` API after
+  that owner's native Blak ID login. Verify `X-User-Id` matches the enrolled owner
+  before saving it in the mapping. Never reuse a browser login token: ordinary
+  session expiry, revocation and repeated logins can invalidate it. Store only
+  the PAT in `X-Auth-Token`; revoke it explicitly when disconnecting the source.
+  Workspace browser logout leaves this enrolled background connector active.
+  A 401 still fails sync visibly. The worker performs only reads.
 - Projects uses the owner's API key (one-year expiry). This upstream API does not
   let clients set read-only key permissions; the connector performs only reads.
 - CRM uses the verified owner's Frappe API key and native record permissions.

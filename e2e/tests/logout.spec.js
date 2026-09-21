@@ -2,6 +2,7 @@
 const {test,expect}=require('@playwright/test');
 const {authentikLogin}=require('../helpers/auth');
 const {identityCookies}=require('../helpers/identity');
+const {syncAccount}=require('../helpers/sync');
 
 test('Blak ID logout sends a signed back-channel revocation to the portal',async({page,context})=>{
   await context.addCookies(await identityCookies('backchannel-owner','Back-channel owner',['draw']));
@@ -41,6 +42,9 @@ test('suite logout revokes native sessions and requires fresh Blak ID login',asy
     expect((await old.request.post('https://sites.workspace.example.com/api/auth.info')).status()).toBe(401);
     expect((await old.request.get('https://chat.workspace.example.com/api/v1/me',{headers:{'X-Auth-Token':chat.token,'X-User-Id':chat.user}})).status()).toBe(401);
     expect((await old.request.get('https://hermes.workspace.example.com/api/v1/auths/',{headers:{Authorization:'Bearer '+hermes}})).status()).toBe(401);
+    // An explicitly enrolled background connector has its own PAT, not a browser session.
+    const connector=syncAccount().sources.chat;
+    expect((await old.request.get('https://chat.workspace.example.com/api/v1/me',{headers:connector.headers})).status()).toBe(200);
     const fresh=await old.newPage();await fresh.goto('https://portal.workspace.example.com/login');
     await expect(fresh.getByRole('textbox',{name:/email or username/i})).toBeVisible();
   } finally {await old.close();}
