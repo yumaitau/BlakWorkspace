@@ -263,3 +263,41 @@ mappings are rejected before native data access or deletion. Once a source listi
 has established current access, transient processing failures preserve tracked
 copies for retry; explicit access denial still revokes them. A failed source
 listing remains fail-closed because continuing source access cannot be verified.
+
+## CRM native enforcement
+
+CRM uses pinned Frappe 15.121.0 and CRM 1.84.0. The controller binds accounts
+through native `User Social Login` records using the immutable Blak ID subject.
+Existing email collisions fail closed; email changes cannot relink an account.
+Human admin maps to Sales Manager, never System Manager. Directory-managed role
+markers cap native document permissions, including owner and ignore-permission
+paths. Native object permissions still apply.
+
+Reader retains read, select, print, export and report operations plus explicitly
+reviewed read RPCs. Both API versions, document-method dispatch and uploads apply
+the same role bounds. Writer and admin cannot change identity links, role
+profiles, directory roles or another user's authority. Native field metadata
+marks reader inputs read-only. Role changes close the user's native realtime
+connections; subsequent cookie and API-key requests evaluate current permissions.
+Disabled or removed members become disabled native users. Restoration retains
+the original native account and its ownership.
+
+The scoped deployment backs up MariaDB before migration and rejects a site name
+that differs from the live deployment. Prepare tailnet releases with
+`--crm-site <existing-site-directory>`: public DNS must not select a different
+Frappe database. Startup refuses to create a new site when another site already
+exists on the volume. Startup journals exact
+native Blak ID bindings and fails if migration or setup loses one; ordinary user
+saves cannot remove or replace an existing binding. Recovery must use the exact
+original native binding, never inferred email matching. The dedicated controller
+and built-in Administrator are separate from human app administrators.
+
+Validation: 301 repository tests, nine actual native Python entry-point tests
+and the native realtime-consumer test pass. Live acceptance on 2026-09-22 passed
+in 7.7 minutes against `blak-frappe:0451f731cc36`: native Blak ID login,
+writer edits, reader UI and API restrictions, both RPC versions, upload denial,
+existing cookie and API-key revocation, realtime disconnection, scoped admin,
+disablement, cross-app role isolation, immutable identity after email change,
+and restoration of the same native account. The CRM/Draw/Flow/Cloud to Hermes
+journey also passed in 2.6 minutes, including indexing, updates, retrieval,
+model answers with citations, deletion and owner isolation.

@@ -11,13 +11,15 @@ PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8
 UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080','vault':'vault:8080'}
 
 
-def configure(root,host,address):
+def configure(root,host,address,crm_site=None):
     if not re.fullmatch(r'[a-z0-9-]+\.[a-z0-9-]+\.ts\.net',host):
         raise ValueError('Expected the existing node DNS name ending in .ts.net')
     ipaddress.ip_address(address)
     metadata=json.loads((root/'.deployment.json').read_text())
     if metadata.get('tailnet'):raise ValueError('Prepare a fresh release before applying tailnet configuration')
     domain=metadata['domain']
+    if crm_site is not None and not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.-]{0,252}', crm_site):
+        raise ValueError('Expected an existing Frappe site directory name')
     origins={app:'https://'+host+(':'+str(port) if port!=443 else '') for app,port in PORTS.items()}
     for path in root.rglob('*'):
         if not path.is_file() or path.is_symlink():continue
@@ -73,6 +75,21 @@ def configure(root,host,address):
                         if env['name']=='domain':env['value']=re.escape(host)+'|drive'
                         if env['name']=='server_name':env['value']=origins['docs'].removeprefix('https://')
         if changed:path.write_text(yaml.safe_dump_all(documents,sort_keys=False))
+    if crm_site:
+        for relative in ('services/frappe/setup.py', 'services/frappe/enroll-roles.py'):
+            path=root/relative
+            path.write_text(path.read_text().replace("SITE = 'crm."+domain+"'", "SITE = "+repr(crm_site)))
+        path=root/'deploy/k3s/micro/95-crm.yaml'
+        docs=list(yaml.safe_load_all(path.read_text()))
+        for doc in docs:
+            if doc and doc.get('kind')=='Deployment' and doc['metadata']['name']=='frappe-crm':
+                for container in doc['spec']['template']['spec']['containers']:
+                    for env in container.get('env',[]):
+                        if env['name']=='FRAPPE_SITE_NAME_HEADER':env['value']=crm_site
+                    for header in container.get('readinessProbe',{}).get('httpGet',{}).get('httpHeaders',[]):
+                        if header['name']=='Host':header['value']=crm_site
+        path.write_text(yaml.safe_dump_all(docs,sort_keys=False))
+    metadata['crm_site']=crm_site or 'crm.'+domain
     metadata['tailnet']={'host':host,'address':address,'origins':origins,'ports':PORTS}
     (root/'.deployment.json').write_text(json.dumps(metadata,indent=2)+'\n')
     return origins
@@ -83,5 +100,6 @@ if __name__=='__main__':
     parser.add_argument('--release',type=Path,required=True)
     parser.add_argument('--host',required=True)
     parser.add_argument('--address',required=True)
+    parser.add_argument('--crm-site', help='Existing Frappe site directory; independent of public DNS')
     args=parser.parse_args()
-    print(json.dumps(configure(args.release,args.host,args.address),indent=2))
+    print(json.dumps(configure(args.release,args.host,args.address,args.crm_site),indent=2))
