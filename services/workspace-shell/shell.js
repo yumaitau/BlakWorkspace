@@ -118,7 +118,10 @@
       // Preserve document titles that mention another product in their content.
       for(const separator of [' - ',' — ',' · ',' | ']) {
         const suffix=separator+upstream;
-        if(title.endsWith(suffix)) title=title.slice(0,-suffix.length)+separator+app.name;
+        if(title.endsWith(suffix)) {
+          const prefix=title.slice(0,-suffix.length);
+          title=prefix.includes(app.name)?prefix:prefix+separator+app.name;
+        }
       }
     }
     if(!title.includes(app.name)) title=(title?title+' — ':'')+app.name;

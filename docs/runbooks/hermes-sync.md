@@ -20,7 +20,9 @@ workspace model until repaired; their previous private collection snapshot is
 retained for recovery.
 
 Run `BLAK_SYNC_ACCOUNT=<configured-name> python scripts/deploy/configure-hermes-tasks.py`
-after provisioning. It disables background model tasks and configures one
+after provisioning. Both deployment helpers use that named account, or the only
+configured account when the variable is omitted. Multiple mappings require an
+explicit name. It disables background model tasks and configures one
 filename-aware hybrid retrieval chunk per source, with a concise source-only
 answer template. Eight candidates per collection are ranked by the small local
 `cross-encoder/ms-marco-MiniLM-L6-v2` model before selecting that one chunk.
@@ -96,7 +98,9 @@ repeat uploads. Updates persist replacement and pending-cleanup IDs before
 removing old files. Removed source items are removed from knowledge and file
 storage. State lives on `hermes-sync-state`; atomic writes and a file lock prevent
 corruption from crashes or overlapping manual and scheduled jobs. Failed jobs
-exit nonzero and retry twice; credentials and document bodies are never logged.
+exit nonzero and retry twice. Each run refreshes the supported Hermes model
+catalog API after attaching or detaching collections, so chat uses the current
+sources without requiring a browser reload; credentials and document bodies are never logged.
 
 ```bash
 kubectl -n blak-micro get cronjob hermes-workspace-sync

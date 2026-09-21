@@ -22,8 +22,9 @@ function save(name, values) {
 async function main() {
   const values = secret('blak-hermes-sync');
   const config = JSON.parse(values['accounts.json']);
-  const mapping = config.accounts.find(a => a.name === (process.env.BLAK_SYNC_ACCOUNT || 'workspace-admin'));
-  if (!mapping) throw new Error('Requested Hermes account mapping is missing');
+  const requested = process.env.BLAK_SYNC_ACCOUNT;
+  const mapping = requested ? config.accounts.find(a => a.name === requested) : (config.accounts.length === 1 ? config.accounts[0] : undefined);
+  if (!mapping) throw new Error('Set BLAK_SYNC_ACCOUNT to an existing mapping when multiple accounts are configured');
   const hermesIP = kube(['get', 'service', 'hermes', '-o', 'jsonpath={.spec.clusterIP}']);
   const response = await fetch(`http://${hermesIP}:8080/api/v1/auths/`, { headers: { authorization: 'Bearer ' + mapping.hermes.token } });
   if (!response.ok) throw new Error('Hermes identity verification failed');

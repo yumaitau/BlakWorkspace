@@ -9,9 +9,9 @@ try:
     secret=json.loads(kube('get','secret','blak-hermes-sync','-o','json'))
     accounts=json.loads(base64.b64decode(secret['data']['accounts.json']))['accounts']
     requested=os.environ.get('BLAK_SYNC_ACCOUNT')
-    account=next((a for a in accounts if a['name']==requested),None) if requested else next(iter(accounts),None)
+    account=next((a for a in accounts if a['name']==requested),None) if requested else (accounts[0] if len(accounts)==1 else None)
     if account is None:
-        raise ValueError('Configured sync account not found')
+        raise ValueError('Set BLAK_SYNC_ACCOUNT to an existing mapping when multiple accounts are configured')
     code='''
 import json,sys,urllib.request
 token=json.load(sys.stdin)['token']

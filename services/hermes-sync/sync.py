@@ -552,6 +552,10 @@ def sync_mapping(mapping, state, checkpoint):
     ensure_workspace_model(hermes, owner, available, mapping.get('model', 'qwen2.5:1.5b'))
     if mapping.get('portal_owner'):
         ensure_assistant_model(hermes, owner, mapping.get('model', 'qwen2.5:1.5b'))
+    # Chat resolves knowledge through Open WebUI's in-memory model catalog.
+    # Saving model metadata alone does not refresh it; also retry after a prior
+    # refresh failure when this run makes no metadata changes.
+    hermes.json('GET', '/api/models')
     if failures:
         raise RuntimeError('One or more workspace sources failed')
     return results
