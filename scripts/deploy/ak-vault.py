@@ -59,7 +59,7 @@ policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: blak-va
     'expression': 'return request.user.is_active and (request.user.is_superuser or any(ak_is_group_member(request.user, name=g) for g in ' + repr(groups) + '))',
 })
 PolicyBinding.objects.update_or_create(target=app, policy=policy, defaults={'order': 0, 'enabled': True})
-owners = list(User.objects.filter(is_superuser=True, is_active=True).exclude(email='').values_list('email', flat=True))
+owners = [u.email for u in User.objects.filter(is_active=True).exclude(email='') if u.is_superuser]
 if not owners:
     raise ValueError('Vault requires an active operator with an email address for organization setup')
 print('BLAK_VAULT_CONFIG=' + json.dumps({
