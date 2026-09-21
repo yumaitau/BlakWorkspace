@@ -75,7 +75,8 @@ email, _ = ScopeMapping.objects.update_or_create(name='Blak Vault directory emai
     'scope_name': 'email', 'description': 'Directory-managed email for Blak Vault',
     'expression': 'return {"email": request.user.email, "email_verified": True}',
 })
-provider.property_mappings.remove(*provider.property_mappings.filter(scope_name='email'))
+provider.property_mappings.remove(*ScopeMapping.objects.filter(
+    pk__in=provider.property_mappings.values('pk'), scope_name='email'))
 provider.property_mappings.add(email)
 app, _ = Application.objects.update_or_create(slug='blak-vault', defaults={
     'name': 'Blak Vault', 'provider': provider, 'open_in_new_tab': True,
