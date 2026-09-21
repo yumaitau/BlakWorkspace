@@ -301,3 +301,30 @@ disablement, cross-app role isolation, immutable identity after email change,
 and restoration of the same native account. The CRM/Draw/Flow/Cloud to Hermes
 journey also passed in 2.6 minutes, including indexing, updates, retrieval,
 model answers with citations, deletion and owner isolation.
+
+
+## Forms native enforcement (acceptance pending)
+
+Forms derives from HeyForm 3.0.3 at the pinned upstream digest in
+`services/forms/Dockerfile`. Blak ID role grants cap native resolver operations
+and authenticated uploads, including existing sessions and workspace owners.
+Resolver identities determine authorization, so GraphQL aliases, batches and
+query-labelled operations do not bypass the cap. Native team/project membership
+checks still determine which content a user can access.
+
+Readers can inspect forms and submissions. Writers can create and edit content;
+admin additionally permits native workspace membership and integration operations.
+Native ownership requirements remain in force for administration. Creating a
+project cannot smuggle extra members through a writer operation. Password, email
+and account-deletion flows cannot replace directory authority.
+
+The dedicated controller binds accounts using the native issuer/subject identity
+key. It rejects email collisions and ambiguous links before mutation. Missing,
+disabled or ungranted identities have no effective role; restoration updates the
+same native account without changing team ownership or existing content. Human
+sessions cannot invoke controller endpoints. The scoped deployment backs up the
+Forms MongoDB database and retains its upload volume.
+
+Ten tests execute native entry points and reconciliation logic; two repository
+adapter tests check complete directory snapshots and invalid native responses.
+Authenticated live acceptance is pending.
