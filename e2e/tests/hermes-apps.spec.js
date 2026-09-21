@@ -5,8 +5,8 @@ const { authentikLogin } = require('../helpers/auth');
 const { session } = require('../helpers/fixtures');
 const { syncNow, serviceURL } = require('../helpers/sync');
 const { privateKnowledge, indexedName } = require('../helpers/knowledge');
-const PORTAL = 'https://portal.workspace.example.com';
-test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another owner', async ({ page, browser, playwright }) => {
+test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another owner', async ({ page, browser, playwright, baseURL }) => {
+  const PORTAL = new URL(baseURL).origin;
   test.setTimeout(600000);
   const knowledge = await privateKnowledge(playwright);
   const crm = await playwright.request.newContext({ proxy: undefined, baseURL: serviceURL('crm', 3000), extraHTTPHeaders: knowledge.account.sources.crm.headers });
@@ -21,7 +21,7 @@ test('Hermes syncs CRM, Draw, Flow and Cloud changes without leaking another own
   try {
     await page.goto(PORTAL + '/login');
     await authentikLogin(page);
-    await page.waitForURL(u => u.hostname === 'portal.workspace.example.com' && u.pathname === '/');
+    await page.waitForURL(u => u.origin === PORTAL && u.pathname === '/');
     expect((await exporter.get('/api/draw')).status()).toBe(401);
     expect((await exporter.post('/api/knowledge-export/draw', { data: {} })).status()).toBe(405);
     const created = await crm.post('/api/resource/CRM%20Lead', { data: { first_name: 'Hermes CRM ' + suffix, job_title: first } });

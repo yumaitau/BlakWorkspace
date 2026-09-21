@@ -4,7 +4,7 @@
 const INTEGRATIONS = {
   vault: { application: 'blak-vault', roleGroups: ['blak-vault-reader', 'blak-vault-writer', 'blak-vault-admin'], login: '/#/sso?identifier=00000000-01DC-01DC-01DC-000000000000', theme: 'vaultwarden' },
   forms: { application: 'blak-forms', group: 'Blak Forms users', login: '/_blak/launch.html', theme: 'heyform' },
-  draw: { group: 'Blak Draw users', theme: 'excalidraw' },
+  draw: { group: 'Blak Draw users', roleGroups: ['blak-draw-reader', 'blak-draw-writer', 'blak-draw-admin'], theme: 'excalidraw' },
   crm: { application: 'blak-crm', group: 'Blak CRM users', login: '/_blak/launch.html', theme: 'frappe' },
   drive: { application: 'opencloud', group: 'Blak Drive users', theme: 'opencloud' },
   docs: { application: 'opencloud', group: 'Blak Drive users', theme: 'collabora' },
@@ -12,10 +12,10 @@ const INTEGRATIONS = {
   sites: { application: 'outline', group: 'Blak Knowledge users', login: '/auth/oidc', theme: 'outline' },
   projects: { application: 'kaneo', group: 'Blak Projects users', theme: 'kaneo' },
   idp: { admin: true, theme: 'authentik' },
-  flow: { group: 'Blak Flow users', theme: 'portal' },
+  flow: { group: 'Blak Flow users', roleGroups: ['blak-flow-reader', 'blak-flow-writer', 'blak-flow-admin'], theme: 'portal' },
   hermes: { application: 'hermes', group: 'Blak Hermes users', login: '/oauth/oidc/login', theme: 'openwebui' },
-  search: { group: 'Blak Search users', theme: 'portal' },
-  storage: { group: 'Blak Cloud users', theme: 'portal' },
+  search: { group: 'Blak Search users', roleGroups: ['blak-search-reader', 'blak-search-writer', 'blak-search-admin'], theme: 'portal' },
+  storage: { group: 'Blak Cloud users', roleGroups: ['blak-cloud-reader', 'blak-cloud-writer', 'blak-cloud-admin'], theme: 'portal' },
 };
 
 function allowedApps(apps, user) {

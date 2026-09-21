@@ -29,16 +29,41 @@ with transaction.atomic():
         'scope_name': 'profile', 'expression': expression,
         'description': 'Immutable subject with preserved existing account links',
     })
-    groups = {a['id']: a['group'] for a in BLAK_APPS if a.get('group')}
+    # Migrate existing portal-module grants once. Existing members keep writer
+    # access; only existing directory operators receive app admin. Subsequent
+    # role removals are authoritative and must never be re-seeded on deployment.
+    for item in BLAK_APPS:
+        names = item.get('roleGroups', [])
+        for role_name in names:
+            Group.objects.get_or_create(name=role_name)
+        if not names or not item.get('group'):
+            continue
+        legacy_group, _ = Group.objects.get_or_create(name=item['group'])
+        if legacy_group.attributes.get('blak_role_migration_completed'):
+            continue
+        writer = Group.objects.get(name=next(name for name in names if name.endswith('-writer')))
+        admin = Group.objects.get(name=next(name for name in names if name.endswith('-admin')))
+        for member in User.objects.exclude(username='AnonymousUser'):
+            if member.all_groups().filter(name__in=names).exists():
+                continue  # Preserve an explicitly assigned reader or writer role.
+            if member.is_superuser:
+                member.groups.add(admin)
+            elif member.all_groups().filter(pk=legacy_group.pk).exists():
+                member.groups.add(writer)
+        legacy_group.attributes['blak_role_migration_completed'] = True
+        legacy_group.save(update_fields=['attributes'])
+    groups = {a['id']: a['group'] for a in BLAK_APPS if a.get('group') and not a.get('roleGroups')}
     for group in set(groups.values()):
         Group.objects.get_or_create(name=group)
     expression = 'groups = ' + repr(groups) + '\n'
     expression += 'grants = [key for key, group in groups.items() if user.is_superuser or ak_is_group_member(user, name=group)]\n'
     role_groups = {a['id']: a['roleGroups'] for a in BLAK_APPS if a.get('roleGroups')}
     expression += 'role_groups = ' + repr(role_groups) + '\n'
-    expression += 'grants += [key for key, names in role_groups.items() if any(ak_is_group_member(user, name=name) for name in names)]\n'
+    expression += 'roles = {key: next((name.rsplit("-", 1)[-1] for name in reversed(names) if ak_is_group_member(user, name=name)), None) for key, names in role_groups.items()}\n'
+    expression += 'roles = {key: role for key, role in roles.items() if role}\n'
+    expression += 'grants += list(roles)\n'
     expression += 'if user.is_superuser:\n    grants.append("idp")\n'
-    expression += 'return {"blak_id": str(user.uuid), "blak_apps": grants if user.is_active else [], "blak_active": user.is_active}'
+    expression += 'return {"blak_id": str(user.uuid), "blak_apps": grants if user.is_active else [], "blak_roles": roles if user.is_active else {}, "blak_active": user.is_active}'
     access, _ = ScopeMapping.objects.update_or_create(name='Blak Workspace access', defaults={
         'scope_name': 'profile', 'description': 'Your workspace applications', 'expression': expression,
     })

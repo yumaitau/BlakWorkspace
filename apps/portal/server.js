@@ -5,6 +5,7 @@ const { URL, URLSearchParams } = require('url');
 const { APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps } = require('./catalog');
 const flowEngine = require('./flow-engine');
 const { INTEGRATIONS, allowedApps, launchURL, routeApp } = require('./integration');
+const { rolesFromClaims, can, requiredRole } = require('./app-roles');
 const { supportsAccessFilter, accessFilter } = require('./search-access');
 const { readBody, MAX_UPLOAD_BYTES } = require('./request-body');
 const { request: upstreamRequest, textRequest } = require('./http-client');
@@ -50,12 +51,13 @@ async function sessionUser(req) {
       const ui = await getJson(`${OIDC_BASE}/userinfo/`, session.accessToken);
       if (ui.sub !== session.sub || ui.blak_id !== session.identity || ui.blak_active === false) throw new Error('Identity changed');
       session.apps = Array.isArray(ui.blak_apps) ? ui.blak_apps : [];
+      session.roles = rolesFromClaims(ui.blak_roles);
       session.name = ui.name; session.email = ui.email; session.checkedAt = Date.now();
     })().finally(() => refreshes.delete(cookie.sid)));
     try { await refreshes.get(cookie.sid); } catch { sessions.revoke(cookie.sid); return null; }
   }
   if (!sessions.get(cookie.sid)) return null;
-  return { sub: session.sub, identity: session.identity, name: session.name, email: session.email, apps: session.apps, sessionId: cookie.sid };
+  return { sub: session.sub, identity: session.identity, name: session.name, email: session.email, apps: session.apps, roles: session.roles, sessionId: cookie.sid };
 }
 
 const pending = new Map(); // state -> {nonce, ts}
@@ -214,13 +216,13 @@ pres.querySelectorAll('[data-x]').forEach(a=>{a.style.background=a.dataset.x==se
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();ptog();}if(e.key==='Escape'){ptog(false);tog(false);}});
 pscrim.onclick=()=>ptog(false);</script>`);
 }
-function flowTabs(active) {
+function flowTabs(active, user) {
   const tabs = [
     ['/flow', 'My flows', 'list'],
     ['/flow/new', 'Create', 'new'],
     ['/flow/activity', 'Activity', 'activity'],
   ];
-  return `<nav class=flowtabs data-testid="flow-tabs">${tabs.map(([href, label, id]) => `<a href="${href}" data-active="${id === active}">${label}</a>`).join('')}</nav>`;
+  return `<nav class=flowtabs data-testid="flow-tabs">${tabs.filter(([, , id]) => id !== 'new' || can(user, 'flow', 'writer')).map(([href, label, id]) => `<a href="${href}" data-active="${id === active}">${label}</a>`).join('')}</nav>`;
 }
 function persistFlow() {
   flowEngine.saveStore(flowStore, FLOW_STORE);
@@ -242,22 +244,22 @@ function flowListPage(user) {
 <td>${esc(f.starter.type)} · ${esc(f.starter.name)}</td>
 <td>${f.steps.length} steps</td>
 <td>${f.enabled ? 'On' : 'Off'}</td>
-<td>
+<td>${can(user, 'flow', 'writer') ? `
 <form method=post action="/flow/${esc(f.id)}/enable" style="display:inline">${f.enabled ? '' : '<button class=btn-sec type=submit>Enable</button>'}</form>
 <form method=post action="/flow/${esc(f.id)}/disable" style="display:inline">${f.enabled ? '<button class=btn-sec type=submit>Disable</button>' : ''}</form>
-<form method=post action="/flow/${esc(f.id)}/run" style="display:inline">${f.enabled ? '<button class=btn type=submit data-testid="run-flow">Run</button>' : ''}</form>
+<form method=post action="/flow/${esc(f.id)}/run" style="display:inline">${f.enabled ? '<button class=btn type=submit data-testid="run-flow">Run</button>' : ''}</form>` : 'Read only'}
 </td></tr>`).join('');
   const body = flows.length
     ? `<table class=flowtable data-testid="flow-list"><thead><tr><th>Name</th><th>Starter</th><th>Steps</th><th>State</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
-    : `<div class=empty data-testid="flow-empty"><p><b>No flows yet.</b></p><p>Create a flow with a starter and Drive + Sites steps.</p><p><a class=btn href="/flow/new">Create a flow</a></p></div>`;
+    : `<div class=empty data-testid="flow-empty"><p><b>No flows yet.</b></p>${can(user, 'flow', 'writer') ? `<p>Create a flow with a starter and Drive + Sites steps.</p><p><a class=btn href="/flow/new">Create a flow</a></p>` : '<p>Read-only access. No saved flows to view.</p>'}</div>`;
   return shell(user, 'flow', 'Blak Flow', `<div class=greet>Blak Flow</div>
 <p class=gsub>Build and test automations with ordered steps and run history. Drive and Sites connectors currently use isolated demo data; they do not change your live apps.</p>
-${flowTabs('list')}${body}`);
+${flowTabs('list', user)}${body}`);
 }
 function flowNewPage(user, err) {
   return shell(user, 'flow', 'Create a flow', `<div class=greet>Create a flow</div>
 <p class=gsub>Pick a starter, then Drive and Sites steps in order. Same pattern as Power Automate My flows → Create.</p>
-${flowTabs('new')}
+${flowTabs('new', user)}
 ${err ? `<p class=gsub style="color:var(--danger)">${esc(err)}</p>` : ''}
 <form class=builder method=post action=/flow data-testid="flow-builder">
 <label>Name <input name=name required minlength=2 placeholder="File to Sites"></label>
@@ -286,7 +288,7 @@ function flowActivityPage(user, flowId) {
     : `<div class=empty data-testid="flow-activity-empty"><p>No runs yet. Enable a flow and press Run.</p></div>`;
   return shell(user, 'flow', 'Flow activity', `<div class=greet>Activity</div>
 <p class=gsub>Run history for your flows.</p>
-${flowTabs('activity')}${body}`);
+${flowTabs('activity', user)}${body}`);
 }
 function homePage(user) {
   const live = allowedApps(APPS, user);
@@ -313,7 +315,10 @@ const p=document.createElement('span');p.className='pill';p.textContent=id+': '+
 }
 async function searchPage(user, q) {
   let body = '<p class=gsub>Search your connected files, knowledge, conversations and tasks. Content refreshes every five minutes.</p>';
-  if (q) {
+  const filter = accessFilter(user);
+  if (q && !filter) {
+    body = '<p role=status>No permitted content sources. Ask your administrator for access to the app you want to search.</p>';
+  } else if (q) {
     try {
       const headers = MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {};
       const settings = await svcGet(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/settings/filterable-attributes', headers);
@@ -323,7 +328,7 @@ async function searchPage(user, q) {
         const fields = JSON.parse(settings.body);
         if (settings.status !== 200 || !supportsAccessFilter(fields) || !fields.includes('expiresAt')) throw new Error('Search access filters unavailable');
         const result = await svcPost(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/search', {
-          q: q.slice(0, 500), limit: 30, filter: `(${accessFilter(user)}) AND expiresAt > ${Math.floor(Date.now() / 1000)}`,
+          q: q.slice(0, 500), limit: 30, filter: `(${filter}) AND expiresAt > ${Math.floor(Date.now() / 1000)}`,
           attributesToRetrieve: ['title', 'content', 'url', 'source'],
         }, MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
         if (result.status !== 200) throw new Error('Search request failed');
@@ -354,6 +359,7 @@ async function sqsAction(params) {
   return textRequest(`http://${FLOCI_HOST}:${FLOCI_PORT}/`, { method: 'POST', headers: sig.headers, body: form });
 }
 async function cloudPage(user, bucket, prefix, msg) {
+  const writable = can(user, 'storage', 'writer');
   let body = '';
   try {
     const buckets = await s3Buckets();
@@ -365,24 +371,24 @@ async function cloudPage(user, bucket, prefix, msg) {
       if (r.status !== 200) throw new Error('list status ' + r.status);
       const keys = xmlTag(r.body.toString(), 'Key');
       listing = keys.length
-        ? `<div class=statusrow>${keys.slice(0, 50).map((k) => `<span class=pill><a href="/cloud/object?bucket=${encodeURIComponent(bucket)}&key=${encodeURIComponent(k)}">⬇ ${esc(k)}</a> <button type=button class=iconbtn data-delete-object="${esc(k)}" aria-label="Delete ${esc(k)}" style="color:var(--danger)">✕</button></span>`).join('')}</div>`
+        ? `<div class=statusrow>${keys.slice(0, 50).map((k) => `<span class=pill><a href="/cloud/object?bucket=${encodeURIComponent(bucket)}&key=${encodeURIComponent(k)}">⬇ ${esc(k)}</a> ${writable ? `<button type=button class=iconbtn data-delete-object="${esc(k)}" aria-label="Delete ${esc(k)}" style="color:var(--danger)">✕</button>` : ''}</span>`).join('')}</div>`
         : `<p class=gsub>No objects in this bucket yet.</p>`;
     }
     let queues = '';
     try {
       const qr = await sqsAction({ Action: 'ListQueues' });
       const urls = xmlTag(qr.body, 'QueueUrl');
-      const qforms = urls.slice(0, 10).map((u) => `<form method=post action=/cloud/send style="margin:6px 0"><input type=hidden name=url value="${esc(u)}"><input name=body aria-label="Message body" required placeholder="Message to ${esc(u.split('/').pop())}…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-width:280px"> <button class=btn-sec type=submit>Send</button></form>`).join('');
+      const qforms = urls.slice(0, 10).map((u) => writable ? `<form method=post action=/cloud/send style="margin:6px 0"><input type=hidden name=url value="${esc(u)}"><input name=body aria-label="Message body" required placeholder="Message to ${esc(u.split('/').pop())}…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-width:280px"> <button class=btn-sec type=submit>Send</button></form>` : `<p>${esc(u.split('/').pop())}</p>`).join('');
       queues = `<h3 class=sec>Queues</h3>` + (urls.length ? qforms : `<p class=gsub>No queues yet.</p>`)
-        + `<form method=post action=/cloud/queue style="margin:6px 0"><input aria-label="New queue name" name=name required minlength=1 placeholder="New queue name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit>Create queue</button></form>`;
+        + (writable ? `<form method=post action=/cloud/queue style="margin:6px 0"><input aria-label="New queue name" name=name required minlength=1 placeholder="New queue name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit>Create queue</button></form>` : '');
     } catch (e) { queues = `<p class=gsub>Queues unavailable (${esc(e.message)}).</p>`; }
     body = `${msg ? `<p class=gsub>${esc(msg)}</p>` : ''}
 <h3 class=sec>Object storage (S3)</h3>
 <form method=get action=/cloud><div class=search style="margin:0 0 12px;max-width:640px"><select aria-label="Bucket" name=bucket onchange="this.form.submit()"><option value="">Choose a bucket…</option>${opts}</select>
 <input aria-label="Prefix filter" name=prefix type=search placeholder="Prefix filter…" value="${esc(prefix || '')}" autocomplete=off></div></form>
 ${listing}
-<form method=post action=/cloud/bucket style="margin:12px 0"><input aria-label="New bucket name" name=name required minlength=3 placeholder="New bucket name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Create bucket</button></form>
-${bucket ? `<h3 class=sec>Upload to ${esc(bucket)}</h3><input type=file id=upfile aria-label="File to upload"><button class=btn-sec id=upbtn style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Upload</button><p class=gsub id=upmsg></p>
+${writable ? `<form method=post action=/cloud/bucket style="margin:12px 0"><input aria-label="New bucket name" name=name required minlength=3 placeholder="New bucket name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Create bucket</button></form>` : '<p>Read-only access</p>'}
+${bucket && writable ? `<h3 class=sec>Upload to ${esc(bucket)}</h3><input type=file id=upfile aria-label="File to upload"><button class=btn-sec id=upbtn style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Upload</button><p class=gsub id=upmsg></p>
 <script>document.getElementById('upbtn').onclick=async()=>{const f=document.getElementById('upfile').files[0];if(!f)return;const m=document.getElementById('upmsg');m.textContent='Uploading…';
 try{const r=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(f.name),{method:'PUT',body:f});m.textContent=r.ok?'Uploaded. Reload to see it.':'Upload failed ('+r.status+')';}catch{m.textContent='Upload failed. Please retry.';}};
 document.querySelectorAll('[data-delete-object]').forEach(button=>button.onclick=async()=>{const m=document.getElementById('upmsg');try{const response=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(button.dataset.deleteObject),{method:'DELETE'});if(response.ok)location.reload();else m.textContent='Delete failed ('+response.status+')';}catch{m.textContent='Delete failed. Please retry.';}});</script>` : ''}
@@ -398,6 +404,12 @@ async function handleRequest(req, res) {
   res.setHeader('cache-control', 'no-store');
   const requiredApp = routeApp(url.pathname);
   if (user && requiredApp && !allowedApps(APPS, user).some(a => a.id === requiredApp)) { res.writeHead(403); res.end('Application access not granted'); return; }
+  const permission = requiredRole(requiredApp, req.method, url.pathname);
+  if (user && permission && !can(user, requiredApp, permission)) {
+    res.writeHead(403, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: permission === 'reader' ? 'Application role required' : 'Writer role required' }));
+    return;
+  }
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) && req.headers.origin && req.headers.origin !== new URL(REDIRECT_URI).origin) {
     res.writeHead(403); res.end('Cross-origin request rejected'); return;
   }
@@ -472,7 +484,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/me') {
     if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ sub: user.sub, name: user.name, email: user.email, identity: user.identity, apps: user.apps }));
+    res.end(JSON.stringify({ sub: user.sub, name: user.name, email: user.email, identity: user.identity, apps: user.apps, roles: rolesFromClaims(user.roles) }));
     return;
   }
   if (url.pathname === '/api/modules' || url.pathname === '/api/status') {
@@ -546,7 +558,7 @@ async function handleRequest(req, res) {
       const ui = await getJson(`${OIDC_BASE}/userinfo/`, tj.access_token);
       if (!ui.sub || ui.sub !== identity.sub || typeof ui.blak_id !== 'string' || ui.blak_active === false) throw new Error('invalid identity');
       const exp = Date.now() + SESSION_TTL_MS;
-      const sid = sessions.create({ sub: ui.sub, identity: ui.blak_id, name: ui.name, email: ui.email, apps: Array.isArray(ui.blak_apps) ? ui.blak_apps : [], exp, oidcSid: identity.sid, accessToken: tj.access_token, refreshToken: tj.refresh_token, accessExpiresAt: Date.now() + Number(tj.expires_in || 300) * 1000, idToken: tj.id_token, checkedAt: Date.now() });
+      const sid = sessions.create({ sub: ui.sub, identity: ui.blak_id, name: ui.name, email: ui.email, apps: Array.isArray(ui.blak_apps) ? ui.blak_apps : [], roles: rolesFromClaims(ui.blak_roles), exp, oidcSid: identity.sid, accessToken: tj.access_token, refreshToken: tj.refresh_token, accessExpiresAt: Date.now() + Number(tj.expires_in || 300) * 1000, idToken: tj.id_token, checkedAt: Date.now() });
       const sess = sign({ sub: ui.sub, sid, exp });
       res.writeHead(302, { location: p.returnTo, 'set-cookie': [`${COOKIE}=${sess}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${REDIRECT_URI.startsWith('https:') ? '; Secure' : ''}`, loginCookie('', REDIRECT_URI)] });
       res.end();
@@ -738,11 +750,11 @@ async function handleRequest(req, res) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         res.end(shell(user, 'flow', flow.name, `<div class=greet>${esc(flow.name)}</div>
 <p class=gsub>${esc(flow.starter.type)} · ${esc(flow.starter.name)} · ${flow.enabled ? 'On' : 'Off'}</p>
-${flowTabs('list')}
+${flowTabs('list', user)}
 <ol>${flow.steps.map((s) => `<li>${esc(s.connector)}.${esc(s.action)}</li>`).join('')}</ol>
-<form method=post action="/flow/${esc(flow.id)}/${flow.enabled ? 'disable' : 'enable'}"><button class=btn-sec type=submit>${flow.enabled ? 'Disable' : 'Enable'}</button></form>
+${can(user, 'flow', 'writer') ? `<form method=post action="/flow/${esc(flow.id)}/${flow.enabled ? 'disable' : 'enable'}"><button class=btn-sec type=submit>${flow.enabled ? 'Disable' : 'Enable'}</button></form>
 ${flow.enabled ? `<form method=post action="/flow/${esc(flow.id)}/run"><button class=btn type=submit data-testid="run-flow">Run now</button></form>` : ''}
-<form method=post action="/flow/${esc(flow.id)}/delete" onsubmit="return confirm('Delete this flow and its run history?')"><button class=btn-sec type=submit>Delete flow</button></form>
+<form method=post action="/flow/${esc(flow.id)}/delete" onsubmit="return confirm('Delete this flow and its run history?')"><button class=btn-sec type=submit>Delete flow</button></form>` : '<p>Read-only access</p>'}
 <h3 class=sec>Recent runs</h3>
 ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${runs.map((r) => `<tr data-testid="run-row"><td>${esc(r.startedAt)}</td><td>${esc(r.status)}</td><td>${r.steps.map((s) => esc(s.connector + '.' + s.action + ':' + (s.outcome && s.outcome.ok ? 'ok' : 'error'))).join('; ')}</td></tr>`).join('')}</tbody></table>` : '<p class=gsub>No runs yet.</p>'}`));
         return;

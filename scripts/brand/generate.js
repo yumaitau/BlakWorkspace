@@ -11,6 +11,7 @@ function write(file, contents) {
     if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== contents) throw new Error(`Stale generated theme: ${file}`);
   } else fs.writeFileSync(target, contents);
 }
+write('services/hermes-sync/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
 const theme = JSON.stringify(blakTheme(), null, 2) + '\n';
 write('deploy/k3s/micro/blak-theme/theme.json', theme);
 const { LOGO_SVG: logo } = require('../../apps/portal/brand');
