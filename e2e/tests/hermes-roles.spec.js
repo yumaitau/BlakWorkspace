@@ -109,7 +109,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     for (const id of [privateKnowledge.id, 'file-' + privateFile.id]) {
       await denied('POST', '/api/v1/retrieval/query/collection', { collection_names: [id], query: key, k: 1 });
     }
-    await denied('POST', '/api/v1/knowledge/' + privateKnowledge.id + '/update', { name: 'forbidden' });
+    await denied('POST', '/api/v1/knowledge/' + privateKnowledge.id + '/update', { name: 'forbidden', description: 'forbidden' });
     await denied('POST', '/api/v1/files/' + privateFile.id + '/rename', { filename: 'forbidden.txt' });
     expect((await api(operator['api-key'], 'GET', '/api/v1/knowledge/' + privateKnowledge.id)).name).toBe('Private role fixture ' + key);
 
