@@ -9,7 +9,7 @@ const INTEGRATIONS = {
   drive: { application: 'opencloud', group: 'Blak Drive users', theme: 'opencloud' },
   docs: { application: 'opencloud', group: 'Blak Drive users', theme: 'collabora' },
   chat: { application: 'rocketchat', group: 'Blak Chat users', login: '/home?blak_launch=1', theme: 'rocketchat' },
-  sites: { application: 'outline', group: 'Blak Knowledge users', login: '/auth/oidc', theme: 'outline' },
+  sites: { application: 'outline', group: 'Blak Knowledge users', roleGroups: ['blak-knowledge-reader', 'blak-knowledge-writer', 'blak-knowledge-admin'], login: '/auth/oidc', theme: 'outline' },
   projects: { application: 'kaneo', group: 'Blak Projects users', roleGroups: ['blak-projects-reader', 'blak-projects-writer', 'blak-projects-admin'], theme: 'kaneo' },
   idp: { admin: true, theme: 'authentik' },
   flow: { group: 'Blak Flow users', roleGroups: ['blak-flow-reader', 'blak-flow-writer', 'blak-flow-admin'], theme: 'portal' },

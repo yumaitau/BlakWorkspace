@@ -27,7 +27,8 @@ spec:
           hostnames: [id.workspace.example.com]
       containers:
         - name: outline
-          image: outlinewiki/outline@sha256:832051f039b446c87aa23929cf92c00980c66aaa2d744d118c48c016ec816ad8
+          image: blak-knowledge:micro
+          imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 3000 }]
           resources:
             requests: { cpu: 500m, memory: 1Gi }
@@ -54,6 +55,7 @@ spec:
             - { name: OIDC_DISPLAY_NAME, value: 'Blak ID' }
             - { name: OIDC_SCOPES, value: 'openid profile email' }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
+            - { name: BLAK_ROLE_CONTROLLER_ID, valueFrom: { secretKeyRef: { name: blak-knowledge-role-controller, key: user-id, optional: true } } }
           readinessProbe: { httpGet: { path: /_health, port: 3000 }, initialDelaySeconds: 90, periodSeconds: 15 }
           livenessProbe: { httpGet: { path: /_health, port: 3000 }, initialDelaySeconds: 180, periodSeconds: 30 }
           volumeMounts:
