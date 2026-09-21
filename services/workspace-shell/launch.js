@@ -18,8 +18,8 @@
   const response=await fetch('/login?redirect-to=/crm',{credentials:'same-origin',cache:'no-store'});
   if(!response.ok) throw Error('Login unavailable');
   if(new URL(response.url).pathname==='/crm') { location.replace('/crm'); return; }
-  const document=new DOMParser().parseFromString(await response.text(),'text/html');
-  const link=document.querySelector('a[href*="client_id=blak-crm"]');
+  const loginDocument=new DOMParser().parseFromString(await response.text(),'text/html');
+  const link=loginDocument.querySelector('a[href*="client_id=blak-crm"]');
   if(!link) { location.replace('/crm'); return; }
   const target=new URL(link.getAttribute('href'));
   const id=apps.find(a=>a.id==='idp');
