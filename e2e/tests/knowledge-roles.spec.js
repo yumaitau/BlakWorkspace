@@ -60,7 +60,7 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     return page.request.post(origin + '/api/' + path, { data, headers: { origin, 'x-csrf-token': csrf } });
   }
   try {
-    await context.addCookies(await identityCookies(key, 'Knowledge native role fixture', ['sites'], { sites: 'writer' }));
+    await context.addCookies(await identityCookies(key, 'Knowledge native role fixture', ['sites'], { sites: 'admin' }));
     const portal = await (await page.request.get('/api/me')).json();
     await page.goto(origin + '/auth/oidc');
     await page.waitForURL(url => url.origin === origin && !url.pathname.startsWith('/auth'), { timeout: 60000 });
@@ -72,11 +72,15 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     const identities = await api(operator.token, 'users.blak_identities');
     expect(identities.data.find(user => user.id === native.id)?.subject).toBe(portal.sub);
     verifiedFixture = true;
-    await waitRole('writer');
+    await waitRole('admin');
     const createdKey = await cookieAPI('apiKeys.create', { name: key });
-    expect(createdKey.ok()).toBeTruthy();
+    expect(createdKey.status(), 'Native API-key creation must succeed for its configured role').toBe(200);
     token = (await createdKey.json()).data.value;
     expect(typeof token).toBe('string');
+    // Keep the team's native API-key creation policy; an existing admin-issued
+    // key must lose authority when the same identity becomes writer or reader.
+    updateIdentity(key, { roles: { sites: 'writer' } });
+    await waitRole('writer');
     collection = (await api(token, 'collections.create', { name: key, permission: null })).data;
     document = (await api(token, 'documents.create', { title: key, collectionId: collection.id, text: '# Native role fixture\n\n' + key, publish: true })).data;
     expect((await cookieAPI('documents.update', { id: document.id, title: key + '-writer' })).ok()).toBeTruthy();
