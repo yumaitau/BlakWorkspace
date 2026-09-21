@@ -53,12 +53,25 @@ test('Projects overview, projects, members and invitations keep workspace chrome
   await expect(page).toHaveURL('https://portal.workspace.example.com/');
   await page.goto('https://portal.workspace.example.com/launch/projects');
   await expect(page.getByRole('button',{name:'Create project',exact:true}).first()).toBeVisible();
-  for(const section of ['Overview','Projects','Members','Invitations']) {
+  const response=await page.request.post('https://projects.workspace.example.com/api/auth/organization/create',{
+    headers:{origin:'https://projects.workspace.example.com'},
+    data:{name:'Page audit '+Date.now(),slug:'page-audit-'+require('node:crypto').randomUUID()},
+  });
+  expect(response.ok()).toBe(true);
+  const workspace=await response.json();
+  try {
+   await page.goto('https://projects.workspace.example.com/dashboard/workspace/'+workspace.id);
+   for(const section of ['Overview','Projects','Members','Invitations']) {
     await page.getByRole('button',{name:section,exact:true}).first().click();
     await expect(page.locator('#blak-workspace-shell')).toBeVisible();
     await expect(page).toHaveTitle(/Blak Projects/);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),section).toBe(true);
     await page.screenshot({path:test.info().outputPath('projects-'+section.toLowerCase()+'.png'),fullPage:true});
+   }
+  } finally {
+   const deleted=await page.request.post('https://projects.workspace.example.com/api/auth/organization/delete',{
+    headers:{origin:'https://projects.workspace.example.com'},data:{organizationId:workspace.id},
+   });expect(deleted.ok()).toBe(true);
   }
 });
 

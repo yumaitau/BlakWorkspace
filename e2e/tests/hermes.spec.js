@@ -53,9 +53,10 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
     const completion = await answer.json();
     expect(completion.choices[0].message.content).toContain(phrase);
     expect(JSON.stringify(completion.sources)).toContain(phrase);
-    await page.goto(HERMES);
-    await page.getByRole('button', { name: 'Continue with Blak ID' }).click();
+    await page.goto('https://portal.workspace.example.com/login');
     await authentikLogin(page);
+    await expect(page).toHaveURL('https://portal.workspace.example.com/');
+    await page.goto('https://portal.workspace.example.com/launch/hermes');
     await page.waitForURL(url => url.hostname === 'hermes.workspace.example.com' && !/^\/(auth|oauth)/.test(url.pathname));
     await page.goto(HERMES + '/?model=blak-workspace-' + account.owner_id);
     await page.locator('#chat-input').waitFor();
