@@ -6,6 +6,23 @@ const { join } = require('node:path');
 const vm = require('node:vm');
 const { allows } = require('./roles.cjs');
 const root = process.env.OUTLINE_SERVER || '/opt/outline/build/server';
+test('managed reader cap preserves collection ACLs while upstream unmanaged downgrades still apply', async () => {
+  const source = readFileSync(join(root, 'models/User.js'), 'utf8');
+  const start = source.indexOf('static async updateMembershipPermissions(');
+  const end = source.indexOf('    // When a user', start);
+  let updates = 0;
+  const environment = { env: { BLAK_ROLE_CONTROLLER_ID: 'controller' } };
+  const User = new Function('process', '_types', '_UserRoleHelper', '_UserMembership', 'return class User { ' + source.slice(start, end) + ' };')(
+    environment, { UserRole: { Viewer: 'viewer', Member: 'member' }, CollectionPermission: { Read: 'read' } },
+    { UserRoleHelper: { isRoleLower: (a, b) => ({ guest: 0, viewer: 1, member: 2 }[a] < { guest: 0, viewer: 1, member: 2 }[b]) } },
+    { default: { update: async () => { updates++; } } });
+  const model = { id: 'user', role: 'viewer', previous: () => 'member', changed: () => true };
+  await User.updateMembershipPermissions(model, {});
+  assert.equal(updates, 0);
+  delete environment.env.BLAK_ROLE_CONTROLLER_ID;
+  await User.updateMembershipPermissions(model, {});
+  assert.equal(updates, 1);
+});
 function engine() {
   const exports = {};
   vm.runInNewContext(readFileSync(join(root, 'policies/cancan.js'), 'utf8'), { exports, require(name) {

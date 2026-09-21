@@ -19,6 +19,12 @@ patch('policies/cancan.js', '5729b42d21e4ceaf77011dcd5cccaa8b2f122427ab27b54f994
 patch('policies/user.js', '6899550f646e54947abf1e602d4e7a0669631344351bd0da4be8f3ebe82bcb9f', [
   ['!user?.isSuspended, user?.id !== actor.id', '(!user?.isSuspended || actor.id === process.env.BLAK_ROLE_CONTROLLER_ID), user?.id !== actor.id', 2],
 ]);
+patch('models/User.js', '6ededc3a734611ec615bb4828f851cdbe4f6c65d6d41186fe281ee33349beff2', [
+  ['static async updateMembershipPermissions(model, options) {', `static async updateMembershipPermissions(model, options) {
+        // The native policy cap enforces viewer access without destroying the
+        // pre-existing collection ACLs needed when Blak ID restores a writer.
+        if (process.env.BLAK_ROLE_CONTROLLER_ID && model.role === _types.UserRole.Viewer) return;`],
+]);
 patch('routes/api/users/users.js', '7b805b07c8c1116b0a091727d0f2c4ea91cb2dd8fbb0f95359dc21076ab7c26a', [
   ['const router = new _koarouter.default();', `const router = new _koarouter.default();
 router.post("users.blak_identities", (0, _authentication.default)({ role: _types.UserRole.Admin }),
