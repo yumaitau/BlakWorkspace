@@ -93,6 +93,30 @@ its attachment. Do not overwrite production data to test recovery.
 
 Vault contents and attachments are excluded from Hermes and Blak Search.
 
+## Repeat native permission acceptance
+
+Use two disposable `e2e-vault-*` accounts with `@example.invalid` addresses. Enrol
+both through native SSO/MFA, create an acceptance organisation and collection,
+and confirm the member through the owner's native client. Create an encrypted
+shared item and attachment. Keep account metadata/API keys in mode-0600 JSON
+files; never commit them. The owner fixture needs `username`, `email`, `itemId`
+and `organizationId`; the member needs `username`, `email`, `userId` and `apiKey`.
+
+Run `scripts/test/vault-native-roles.py --origin <vault-origin>
+--owner-fixture <private-owner-json> --member-fixture <private-member-json>
+--role-setter <executable>`. The executable receives `reader`, `writer`, `admin`,
+`none`, `cross-app` or `disabled` and must change only the disposable member's
+directory membership/active state. `cross-app` grants another app but no Vault
+role. Run against the continuous controller, not a manually triggered reconcile.
+
+The test keeps one native access token through every transition, checks that the
+same token still reads the account profile after ACL denials, measures convergence
+and restores reader membership on exit. Separately run `e2e/tests/vault.spec.js`
+with `BLAK_VAULT_FIXTURE_FILE` pointing to the disposable owner credentials to prove
+native MFA, unlock, onboarding and item editor behavior. Encryption/decryption and
+isolated restore acceptance require the native Bitwarden client and master
+password; the controller itself never receives them.
+
 ## Upstream references
 
 - https://github.com/dani-garcia/vaultwarden/releases/tag/1.37.3

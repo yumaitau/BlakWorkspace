@@ -38,11 +38,15 @@ test('Native Blak ID MFA login unlocks the vault and opens its native item edito
   test.setTimeout(180000);
   const account = JSON.parse(fs.readFileSync(fixtureFile, 'utf8'));
   await vaultLogin(page, account, base);
-  await expect(page.getByRole('link', { name: 'Vaults', exact: true })).toBeVisible();
   const skip = page.getByRole('button', { name: 'Skip', exact: true });
-  if (await skip.isVisible()) await skip.click();
-  await page.getByRole('button', { name: 'New item', exact: true }).click();
+  await expect(skip).toBeVisible();
+  await skip.click();
+  await expect(page.getByRole('link', { name: 'Vaults', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'New', exact: true }).click({ timeout: 15000 });
+  await page.getByRole('menuitem', { name: /login/i }).click({ timeout: 15000 });
   await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('vault-editor.png'), animations: 'disabled' });
   // Item creation details are exercised by the native CLI acceptance suite; this
   // browser check verifies the actual unlocked client, not merely an HTTP 200.
 });
