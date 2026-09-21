@@ -7,7 +7,12 @@
     ]
   },
   "forms": {
-    "group": "Blak Forms users"
+    "group": "Blak Forms users",
+    "roleGroups": [
+      "blak-forms-reader",
+      "blak-forms-writer",
+      "blak-forms-admin"
+    ]
   },
   "draw": {
     "group": "Blak Draw users",

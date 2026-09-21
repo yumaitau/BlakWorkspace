@@ -95,7 +95,7 @@ spec:
     spec:
       containers:
       - name: forms
-        image: heyform/community-edition@sha256:0758992b3539a83b5ce3df5ad3e1efabc92dec4d46e05c40bbad37381fad69b4
+        image: blak-forms:3.0.3-blak1
         imagePullPolicy: IfNotPresent
         env:
         - name: APP_HOMEPAGE_URL
@@ -103,7 +103,16 @@ spec:
         - name: APP_DISABLE_REGISTRATION
           value: 'true'
         - name: OIDC_ALLOW_PROVISIONING
+          value: 'false'
+        - name: DISABLE_LOGIN_WITH_PASSWORD
           value: 'true'
+        - name: BLAK_FORMS_ROLES
+          value: 'true'
+        - name: BLAK_FORMS_ROLE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: blak-forms-role-controller
+              key: token
         - name: OIDC_DISPLAY_NAME
           value: Blak ID
         - name: OIDC_ISSUER

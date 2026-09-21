@@ -1,0 +1,9 @@
+{
+  "common/guard/auth.guard.js": "17e1899f75a1d109b2ac960922c2cfe9f385704d300f0f2fb0cace75835de9bb",
+  "controller/upload.controller.js": "79b7bb387fae163cf559224ea907c0121dabd6359d03a5ff8b00c9c927edb4e2",
+  "model/user.model.js": "afcf20e512885367f75aeb305956c8eda1233490e46dd6adcd2a6e0fc237156f",
+  "service/social-login.service.js": "8d4b651d09ad6b2a7b3c5d935b5734feab3027c7d0fec2f9cb4ba63e10ef54f3",
+  "controller/index.js": "2d7096d6051eee258400c34c646be878ca2c5c7d55959378124477ec2e46cf64",
+  "common/graphql/user.graphql.js": "55f4310ed5f0973b129120c54d8089221b017113e35a4c8eba38bfdfa82d91f1",
+  "resolver/user/user-detail.resolver.js": "2568268a99a51772e9bc96b7db6d3c99cba031dc40086710686bd95d4e7145dd"
+}
