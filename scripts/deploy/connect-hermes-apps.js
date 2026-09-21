@@ -42,9 +42,21 @@ async function main() {
     await page.goto('https://portal.workspace.example.com/login');
     await authentikLogin(page);
     await page.waitForURL(u => u.hostname === 'portal.workspace.example.com' && u.pathname === '/');
-    const session = (await context.cookies('https://portal.workspace.example.com')).find(c => c.name === 'blak_session');
-    const identity = JSON.parse(Buffer.from(session.value.split('.')[0], 'base64url').toString());
-    if (identity.email !== hermes.email || !identity.sub) throw new Error('Portal and Hermes identities differ');
+    const profile = await page.request.get('https://portal.workspace.example.com/api/me');
+    if (!profile.ok()) throw new Error('Portal identity verification failed');
+    const identity = await profile.json();
+    if (!identity.sub || !identity.identity) throw new Error('Portal immutable identity is missing');
+    // Verify the native account reached through this same Blak ID session.
+    // Email is mutable and must never serve as an account-linking key.
+    await page.goto('https://hermes.workspace.example.com/oauth/oidc/login');
+    await page.waitForURL(url => url.origin === 'https://hermes.workspace.example.com' && url.pathname === '/');
+    await page.waitForFunction(() => Boolean(localStorage.getItem('token')));
+    const nativeOwner = await page.evaluate(async () => {
+      const response = await fetch('/api/v1/auths/', { headers: { authorization: 'Bearer ' + localStorage.getItem('token') } });
+      if (!response.ok) throw Error('Native Hermes identity verification failed');
+      return (await response.json()).id;
+    });
+    if (nativeOwner !== mapping.owner_id) throw new Error('Portal SSO reached a different native Hermes owner');
     mapping.portal_owner = identity.sub;
     mapping.credential_metadata ||= {};
     const checkedAt = Math.floor(Date.now()/1000);

@@ -12,7 +12,7 @@ function healthFor(owner, file, now = Math.floor(Date.now()/1000)) {
     const age=source.last_success ? Math.max(0,now-source.last_success) : null;
     const expired=source.expires_at && source.expires_at<=now;
     const expiresSoon=source.expires_at && source.expires_at-now<=EXPIRY_WARNING_SECONDS;
-    const status=expired?'expired':source.last_error?'error':age===null?'pending':age>STALE_SECONDS?'stale':expiresSoon?'expiring':'healthy';
+    const status=source.access_revoked?'revoked':expired?'expired':source.last_error?'error':age===null?'pending':age>STALE_SECONDS?'stale':expiresSoon?'expiring':'healthy';
     return {name:source.name,label:source.label,last_success:source.last_success||null,documents:source.documents||0,status,
       expires_at:source.expires_at||null,credential_checked_at:source.credential_checked_at||null};
   });

@@ -60,6 +60,9 @@ def configure(root,host,address):
                 prefix=32 if ipaddress.ip_address(address).version==4 else 128
                 doc['spec']['egress'].append({'to':[{'ipBlock':{'cidr':address+'/'+str(prefix)}}], 'ports':[{'protocol':'TCP','port':PORTS['id']}]})
                 changed=True
+            if doc and doc.get('kind') == 'CronJob' and doc['metadata']['name'] == 'hermes-workspace-sync':
+                doc['spec']['jobTemplate']['spec']['template']['spec'].setdefault('hostAliases', []).append({'ip': address, 'hostnames': [host]})
+                changed = True
             if not doc or doc.get('kind')!='Deployment':continue
             spec=doc['spec']['template']['spec']
             if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault','blak-app-role-sync']:

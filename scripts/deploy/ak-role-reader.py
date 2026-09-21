@@ -2,6 +2,7 @@
 import json
 from django.contrib.auth.models import Permission
 from authentik.core.models import Token, User
+from authentik.providers.oauth2.models import ScopeMapping
 
 user, created = User.objects.get_or_create(username='blak-role-reader', defaults={
     'name': 'Blak app role directory reader', 'type': 'service_account', 'is_active': True,
@@ -26,6 +27,9 @@ token, _ = Token.objects.get_or_create(identifier='blak-role-reader', defaults={
 })
 if token.user_id != user.pk or token.intent != 'api':
     raise ValueError('Directory reader token belongs to a different identity or purpose')
+stable = ScopeMapping.objects.get(name='Blak Workspace stable subject')
+bindings = json.loads(stable.expression.splitlines()[0].removeprefix('# bindings: '))
 print('BLAK_ROLE_READER_CONFIG=' + json.dumps({
+    'subjects.json': json.dumps(bindings, sort_keys=True),
     'api-token': token.key, 'base-url': 'https://id.workspace.example.com',
 }))

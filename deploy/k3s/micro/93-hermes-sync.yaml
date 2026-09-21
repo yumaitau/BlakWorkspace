@@ -49,8 +49,11 @@ spec:
               volumeMounts:
                 - { name: accounts, mountPath: /config, readOnly: true }
                 - { name: state, mountPath: /data }
+                - { name: directory, mountPath: /directory, readOnly: true }
           volumes:
             - name: accounts
               secret: { secretName: blak-hermes-sync }
+            - name: directory
+              secret: { secretName: blak-role-reader, defaultMode: 288 }
             - name: state
               persistentVolumeClaim: { claimName: hermes-sync-state }

@@ -28,7 +28,7 @@ async function session(key,name=key,grants=['draw','flow','storage','search','he
     account={username:'e2e-'+run+'-'+crypto.randomBytes(5).toString('hex'),password:crypto.randomBytes(32).toString('hex')};
     account.grants=grants;account.roles=roles;
     const data={...account,name,groups:groupNames(grants,roles)};
-    const source='import json\nfrom authentik.core.models import User, Group\ndata=json.loads('+JSON.stringify(JSON.stringify(data))+')\nuser=User.objects.create(username=data["username"],name=data["name"],type="internal",is_active=True)\nuser.set_password(data["password"]);user.save()\nuser.groups.add(*Group.objects.filter(name__in=data["groups"]))\nprint("FIXTURE_ID="+str(user.uuid))';
+    const source='import json\nfrom authentik.core.models import User, Group\ndata=json.loads('+JSON.stringify(JSON.stringify(data))+')\nuser=User.objects.create(username=data["username"],name=data["name"],email=data["username"]+"@example.invalid",type="internal",is_active=True)\nuser.set_password(data["password"]);user.save()\nuser.groups.add(*Group.objects.filter(name__in=data["groups"]))\nprint("FIXTURE_ID="+str(user.uuid))';
     const output=shell(source), match=output.match(/FIXTURE_ID=([a-f0-9-]{36})/);
     if(!match) throw Error('OIDC fixture was not created');
     account.uuid=match[1];accounts.set(key,account);

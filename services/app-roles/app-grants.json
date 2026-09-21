@@ -1,0 +1,65 @@
+{
+  "vault": {
+    "roleGroups": [
+      "blak-vault-reader",
+      "blak-vault-writer",
+      "blak-vault-admin"
+    ]
+  },
+  "forms": {
+    "group": "Blak Forms users"
+  },
+  "draw": {
+    "group": "Blak Draw users",
+    "roleGroups": [
+      "blak-draw-reader",
+      "blak-draw-writer",
+      "blak-draw-admin"
+    ]
+  },
+  "crm": {
+    "group": "Blak CRM users"
+  },
+  "drive": {
+    "group": "Blak Drive users"
+  },
+  "docs": {
+    "group": "Blak Drive users"
+  },
+  "chat": {
+    "group": "Blak Chat users"
+  },
+  "sites": {
+    "group": "Blak Knowledge users"
+  },
+  "projects": {
+    "group": "Blak Projects users"
+  },
+  "flow": {
+    "group": "Blak Flow users",
+    "roleGroups": [
+      "blak-flow-reader",
+      "blak-flow-writer",
+      "blak-flow-admin"
+    ]
+  },
+  "hermes": {
+    "group": "Blak Hermes users"
+  },
+  "search": {
+    "group": "Blak Search users",
+    "roleGroups": [
+      "blak-search-reader",
+      "blak-search-writer",
+      "blak-search-admin"
+    ]
+  },
+  "storage": {
+    "group": "Blak Cloud users",
+    "roleGroups": [
+      "blak-cloud-reader",
+      "blak-cloud-writer",
+      "blak-cloud-admin"
+    ]
+  }
+}

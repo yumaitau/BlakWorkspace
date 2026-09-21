@@ -1,6 +1,6 @@
 FROM python@sha256:c4634f578a412db396771b61b064c6e546c9d6414c7fb5b1b05d5871f1885f7b
 WORKDIR /app
-COPY *.py ./
+COPY *.py app-grants.json ./
 USER 1000:1000
 ENV PYTHONDONTWRITEBYTECODE=1
 ENTRYPOINT ["python", "run.py"]
