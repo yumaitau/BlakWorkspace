@@ -16,6 +16,13 @@ function editSecret(name, change) {
   const next = change(value);
   kube(['patch', 'secret', name, '--type=merge', '--patch-file=/dev/stdin'], JSON.stringify({ metadata: { resourceVersion: secret.metadata.resourceVersion }, stringData: { 'accounts.json': JSON.stringify(next) } }));
 }
+function vectorCollections(ids) {
+  const source = 'import json,sys,asyncio\nfrom open_webui.retrieval.vector.async_client import ASYNC_VECTOR_DB_CLIENT\nids=json.load(sys.stdin)\nasync def main():\n result=[await ASYNC_VECTOR_DB_CLIENT.has_collection(collection_name="file-"+identifier) for identifier in ids]\n print("BLAK_VECTOR_CHECK="+json.dumps(result))\nasyncio.run(main())';
+  const output = kube(['exec', '-i', 'deploy/hermes', '-c', 'webui', '--', 'python', '-c', source], JSON.stringify(ids));
+  const match = output.match(/BLAK_VECTOR_CHECK=(\[[^\n]+\])/);
+  if (!match) throw Error('Native vector verification did not complete');
+  return JSON.parse(match[1]);
+}
 
 test('Hermes removes revoked source copies from native files, retrieval and model while the token remains valid', async ({ page, context, baseURL }) => {
   test.setTimeout(600000);
@@ -41,8 +48,7 @@ test('Hermes removes revoked source copies from native files, retrieval and mode
     const linked = users.users.find(user => user.id === profile.id);
     expect(linked?.oauth?.oidc?.sub).toBe(portal.sub);
     native = profile;
-    // Disposable setup elevation lets the upstream owner create private model/KB fixtures.
-    await api(admin.hermes.token, 'POST', '/api/v1/users/' + native.id + '/update', { role: 'admin' });
+    await expect.poll(async () => (await api(token, 'GET', '/api/v1/auths/')).permissions?.workspace?.knowledge, { timeout: 150000, intervals: [2000, 4000] }).toBe(true);
     const exportToken = crypto.randomBytes(40).toString('base64url');
     editSecret('blak-portal-exports', values => [...values, { owner: portal.sub, sha256: crypto.createHash('sha256').update(exportToken).digest('hex') }]);
     exporter = true;
@@ -65,13 +71,20 @@ test('Hermes removes revoked source copies from native files, retrieval and mode
     const copies = fileListing.items || fileListing.files || fileListing;
     expect(Array.isArray(copies)).toBe(true);
     expect(copies.length).toBeGreaterThan(0);
+    expect(vectorCollections(copies.map(file => file.id))).toEqual(copies.map(() => true));
     updateIdentity(key, { grants: ['hermes'] });
-    syncNow();
+    // Let the continuously running role controller revoke source copies.
+    await expect.poll(async () => {
+      const profile = await api(token, 'GET', '/api/v1/auths/');
+      const statuses = await Promise.all(copies.map(file => fetch(endpoint + '/api/v1/files/' + file.id, { headers: { authorization: 'Bearer ' + token } }).then(response => response.status)));
+      return profile.role === 'user' && statuses.every(status => status === 404);
+    }, { timeout: 180000, intervals: [2000, 4000] }).toBe(true);
     expect((await api(token, 'GET', '/api/v1/auths/')).id).toBe(native.id);
     for (const file of copies) {
       const response = await fetch(endpoint + '/api/v1/files/' + file.id, { headers: { authorization: 'Bearer ' + token } });
       expect(response.status).toBe(404);
     }
+    expect(vectorCollections(copies.map(file => file.id))).toEqual(copies.map(() => false));
     const remaining = await api(token, 'GET', '/api/v1/knowledge/' + collection.id + '/files');
     expect(JSON.stringify(remaining)).not.toContain(phrase);
     const model = await api(token, 'GET', '/api/v1/models/model?id=' + encodeURIComponent('blak-workspace-' + native.id));
