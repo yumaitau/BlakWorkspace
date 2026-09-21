@@ -22,7 +22,7 @@ async function session(key,name=key,grants=['draw','flow','storage','search','he
     if(!match) throw Error('OIDC fixture was not created');
     account.uuid=match[1];accounts.set(key,account);
   }
-  const browser=process.env.PLAYWRIGHT_WS_ENDPOINT?await chromium.connect(process.env.PLAYWRIGHT_WS_ENDPOINT):await chromium.launch();
+  const browser=process.env.PLAYWRIGHT_WS_ENDPOINT?await chromium.connect({wsEndpoint:process.env.PLAYWRIGHT_WS_ENDPOINT,exposeNetwork:process.env.PLAYWRIGHT_EXPOSE_NETWORK}):await chromium.launch();
   const context=await browser.newContext({ignoreHTTPSErrors:true,...require('./network').publicNetworkOptions});
   try {
     const page=await context.newPage(),base=process.env.BLAK_E2E_BASE_URL||'https://portal.workspace.example.com';

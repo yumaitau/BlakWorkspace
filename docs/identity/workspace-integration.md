@@ -3,6 +3,9 @@
 The portal catalog owns application names and URLs. `apps/portal/integration.js`
 owns native entry points and access groups. Blak ID remains the identity provider;
 each application establishes its own native OIDC session.
+Forms initializes HeyForm's native browser device binding before starting its
+server-generated OAuth state/PKCE transaction. CRM uses Frappe's generated login
+URL; Chat invokes its registered Meteor OAuth service.
 
 ## Access and account identity
 
@@ -36,6 +39,9 @@ single-writer journal.
 origin/source/state-checked acknowledgements, then ends Blak ID. It reports apps
 that fail to confirm instead of claiming they signed out. Authentik also sends
 signed back-channel logout to the portal, invalidating its server session.
+The portal provider uses the managed `blak-workspace-invalidation` flow with a
+User Logout stage. Authentik's default provider invalidation flow alone leaves
+the central identity session active.
 
 Native adapters: HeyForm `/logout`; Frappe `/api/method/logout`; Kaneo's Better Auth
 `sign-out`; Outline `auth.delete`; Rocket.Chat `/api/v1/logout`; Open WebUI
@@ -43,6 +49,9 @@ Native adapters: HeyForm `/logout`; Frappe `/api/method/logout`; Kaneo's Better 
 browser sessions too. OpenCloud's browser OIDC records are removed before ending
 the provider session. Self-contained OpenCloud access JWTs retain their normal
 expiry; this does not claim instantaneous revocation of copied bearer tokens.
+Hermes uses a dedicated persistent Valkey journal with `noeviction` and synchronous
+append-only writes. Open WebUI requires this store to revoke signed-out JWTs;
+without `REDIS_URL`, its logout only clears browser credentials.
 
 ## Controlled client-secret rotation
 
@@ -86,6 +95,14 @@ Rocket.Chat color roles, Open WebUI custom CSS, Outline's theme override). The
 shared switcher supplies navigation and theme selection without accessing app
 credentials. Only the separate same-origin logout adapter uses native logout
 credentials; it never sends them to another application.
+
+Run `polish.spec.js` and `logout.spec.js` against a prepared release using real
+Blak ID credentials. When a remote browser cannot reach its own tailnet Serve
+origin, forward its Playwright WebSocket to the operator machine and set
+`PLAYWRIGHT_EXPOSE_NETWORK` to the exact tailnet hostname. For a Linux browser
+controlled from macOS, set `BLAK_E2E_SNAPSHOT_PLATFORM=linux` to compare the existing
+Linux baselines. This forwards browser network traffic; credentials remain in
+the operator test process and native application requests.
 
 ## Authentik upgrade
 

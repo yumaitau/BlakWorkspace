@@ -35,7 +35,7 @@ def recover(root):
     if not journal.exists():return
     state=json.loads(journal.read_text())
     # Start storage before clients. All original replica counts are restored.
-    priority=['postgres','mongo','frappe-db','frappe-cache','forms-cache','valkey','crm-db','crm-cache']
+    priority=['postgres','mongo','frappe-db','frappe-cache','forms-cache','valkey','hermes-sessions','crm-db','crm-cache']
     for storage in (True,False):
         group={name:count for name,count in state['replicas'].items() if (name in priority)==storage}
         for name,count in group.items():kube('scale','deploy/'+name,'--replicas='+str(count))

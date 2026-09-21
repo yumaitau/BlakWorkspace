@@ -46,7 +46,7 @@ selected = {
     '51-app-themes.yaml': {'blak-app-themes'},
     '90-rocketchat.yaml': {'chat', 'mongo'},
     '91-kaneo.yaml': {'projects'},
-    '92-hermes.yaml': {'hermes'},
+    '92-hermes.yaml': {'hermes', 'hermes-sessions'},
     '93-hermes-sync.yaml': {'hermes-sync-state', 'hermes-workspace-sync'},
     '94-forms.yaml': {'forms-cache-data', 'forms-data', 'forms-cache', 'forms'},
     '95-crm.yaml': {'frappe-cache-data', 'frappe-db-data', 'frappe-sites', 'frappe-db', 'frappe-cache', 'frappe-crm'},
@@ -73,7 +73,7 @@ for file, names in selected.items():
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal collabora opencloud outline chat projects hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud outline chat projects hermes-sessions hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.
