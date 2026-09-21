@@ -26,6 +26,7 @@ class NativeRoleTests(unittest.TestCase):
     def setUp(self):
         self.module = types.ModuleType('crm.blak_roles')
         self.module.allows = lambda *args, **kwargs: False
+        self.module.protect_user = lambda user: None
         self.before = sys.modules.get('crm.blak_roles')
         sys.modules['crm.blak_roles'] = self.module
 
@@ -43,6 +44,16 @@ class NativeRoleTests(unittest.TestCase):
         check = function('model/document.py', 'has_permission', parent='Document')
         document = types.SimpleNamespace(doctype='CRM Lead', flags=types.SimpleNamespace(ignore_permissions=True))
         self.assertFalse(check(document, 'write'))
+
+    def test_user_authority_rejected_before_field_level_filtering(self):
+        def protect(user):
+            raise PermissionError('authority changed')
+        self.module.protect_user = protect
+        self.module.allows = lambda *args, **kwargs: True
+        check = function('model/document.py', 'has_permission', parent='Document')
+        user = types.SimpleNamespace(doctype='User', flags=types.SimpleNamespace(ignore_permissions=True))
+        with self.assertRaisesRegex(PermissionError, 'authority changed'):
+            check(user, 'write')
 
     def test_native_serialized_permissions_cannot_advertise_owner_write_access(self):
         self.module.allows = lambda doctype, permission, *args: permission == 'read'

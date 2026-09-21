@@ -29,7 +29,9 @@ patch('permissions.py', '2656a118fe0c344bafed21231fee2e4932cddab0d2690ba861f630d
 ])
 patch('model/document.py', 'df0926c92a95130c427ab425ee2f4eb726601d29cc0976f735f1f2ed1ac426ef', [
     ('\t\tif self.flags.ignore_permissions:\n\t\t\treturn True',
-     '\t\tfrom crm.blak_roles import allows\n\t\tif not allows(self.doctype, permtype, self, user):\n\t\t\treturn False\n\n\t\tif self.flags.ignore_permissions:\n\t\t\treturn True'),
+     '\t\tfrom crm.blak_roles import allows, protect_user\n'
+     '\t\tif self.doctype == \"User\" and permtype == \"write\":\n\t\t\tprotect_user(self)\n'
+     '\t\tif not allows(self.doctype, permtype, self, user):\n\t\t\treturn False\n\n\t\tif self.flags.ignore_permissions:\n\t\t\treturn True'),
 ])
 patch('handler.py', '2be0178117dedc70eca3d0249beed62b325db6bd956a9ad70f69cff06f74541b', [
     ('\tcmd = frappe.override_whitelisted_method(cmd)',

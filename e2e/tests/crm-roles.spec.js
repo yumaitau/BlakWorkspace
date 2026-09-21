@@ -41,7 +41,7 @@ test('native CRM roles cap owners, RPCs and existing keys and restore the same i
   }
   async function cookieAPI(method, path, data) {
     const csrf = await page.evaluate(() => window.csrf_token);
-    return page.request.fetch(origin + path, { method, data, headers: { 'X-Frappe-CSRF-Token': csrf || '' } });
+    return page.request.fetch(origin + path, { method, data, headers: { 'X-Frappe-CSRF-Token': csrf || '', Origin: origin, Referer: page.url() } });
   }
   page.on('websocket', connection => { if (connection.url().includes('/socket.io/')) socket = connection; });
   try {
@@ -57,9 +57,14 @@ test('native CRM roles cap owners, RPCs and existing keys and restore the same i
     const keys = (await api('POST', '/api/method/frappe.core.doctype.user.user.generate_keys', { user: nativeId }, operator.authorization)).message;
     const profile = (await api('GET', resource('User', nativeId), undefined, operator.authorization)).data;
     authorization = 'token ' + profile.api_key + ':' + keys.api_secret;
-    lead = (await api('POST', resource('CRM Lead'), { first_name: key, job_title: 'writer' })).data;
+    lead = (await api('POST', resource('CRM Lead'), { first_name: key, job_title: 'writer', lead_owner: nativeId })).data;
     expect(lead.owner).toBe(nativeId);
-    expect((await cookieAPI('PUT', resource('CRM Lead', lead.name), { job_title: 'cookie-writer' })).ok()).toBeTruthy();
+    expect(lead.lead_owner).toBe(nativeId);
+    const cookieWrite = await cookieAPI('PUT', resource('CRM Lead', lead.name), { job_title: 'cookie-writer' });
+    if (!cookieWrite.ok()) {
+      const failure = await cookieWrite.json().catch(() => ({}));
+      throw Error('Native cookie write HTTP ' + cookieWrite.status() + ' ' + (failure.exc_type || 'unknown'));
+    }
     await denied('PUT', resource('User', nativeId), { roles: [{ role: 'System Manager' }] });
     await expect.poll(() => !!socket && !socket.isClosed(), { timeout: 60000 }).toBe(true);
     const beforeDowngrade = socket;
