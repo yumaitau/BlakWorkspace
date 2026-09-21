@@ -439,6 +439,20 @@ class SearchIndex:
             self.task(self.api.json('POST', self.path + '/documents', documents[offset:offset + 100]))
 
 
+def searchable_text(value):
+    """Keep human content from source exports, excluding transport metadata."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        return '\n'.join(filter(None, (searchable_text(item) for item in value)))
+    if isinstance(value, dict):
+        ignored = {'id', 'source', 'url', 'creation', 'modified', 'owner', 'modified_by',
+                   'doctype', 'parent', 'parenttype', 'parentfield', 'kind', 'version', 'type'}
+        return '\n'.join(filter(None, (searchable_text(item) for key, item in value.items()
+                                      if key not in ignored and not key.endswith('_id'))))
+    return ''
+
+
 def search_document(hermes, hermes_owner, portal_owner, source_name, source, doc, record):
     if doc.get('content') is not None:
         content = doc['content'].decode('utf-8', errors='replace')
@@ -453,8 +467,9 @@ def search_document(hermes, hermes_owner, portal_owner, source_name, source, doc
     try:
         data = json.loads(content)
         if isinstance(data, dict):
-            title = data.get('title') or data.get('project', {}).get('name') or title
+            title = data.get('title') or data.get('project', {}).get('name') or data.get('form', {}).get('name') or title
             link = data.get('source') or link
+            content = searchable_text(data)
     except (ValueError, AttributeError):
         heading = re.search(r'^# +(.+)', content, re.MULTILINE)
         if heading:

@@ -193,6 +193,12 @@ if __name__ == "__main__":
     unittest.main()
 
 class SearchTests(unittest.TestCase):
+    def test_structured_exports_have_readable_previews(self):
+        doc = {'id': 'form', 'name': 'export.json', 'content': b'{"form":{"name":"Team feedback","id":"opaque-id","fields":[{"title":["What should we improve?"],"kind":"short_text"}]},"source":"https://forms.example/form"}'}
+        result = sync.search_document(None, 'owner', 'ada', 'forms', {'public_base': 'https://forms.example'}, doc, {})
+        self.assertEqual(result['title'], 'Team feedback')
+        self.assertEqual(result['content'], 'Team feedback\nWhat should we improve?')
+        self.assertEqual(result['url'], 'https://forms.example/form')
     def test_private_owner_title_url_and_expiry(self):
         doc={'id':'one','name':'one.md','content':b'# A project\nSource: https://docs.example/doc/one\nPrivate plan'}
         result=sync.search_document(None,'hermes-owner','ada','outline',{'public_base':'https://docs.example'},doc,{})
