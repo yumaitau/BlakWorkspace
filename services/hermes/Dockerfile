@@ -9,7 +9,7 @@ RUN python /tmp/patch-knowledge.py /app/backend/open_webui/routers/knowledge.py 
     && python /tmp/patch-controller.py /app/backend/open_webui/routers/users.py \
     && python /tmp/patch-file-access.py /app/backend/open_webui/utils/access_control/files.py \
     && python /tmp/patch-retrieval.py /app/backend/open_webui/routers/retrieval.py \
-    && python /tmp/patch-private.py
-    && python /tmp/test_native.py
+    && python /tmp/patch-private.py \
+    && python /tmp/test_native.py \
     && python /tmp/test_private_native.py \
-    && rm /tmp/patch-*.py /tmp/test_native.py
+    && rm /tmp/patch-*.py /tmp/test_native.py /tmp/test_private_native.py
