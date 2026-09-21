@@ -71,7 +71,7 @@ function xmlTag(xml, tag) {
 }
 const BRAND_BASE = process.env.BRAND_BASE || 'http://portal.workspace.example.com';
 // Shared Blak brand assets (no cultural motifs; geometric wordmark only)
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="${tokens.dark['blak-950']}"/><rect x="14" y="14" width="68" height="68" rx="14" fill="${tokens.dark['primary']}"/><text x="48" y="64" font-family="system-ui,sans-serif" font-size="44" font-weight="700" fill="${tokens.dark['sand-50']}" text-anchor="middle">B</text><rect x="26" y="72" width="44" height="4" rx="2" fill="${tokens.dark['ochre-400']}"/></svg>`;
+const { LOGO_SVG } = require('./brand');
 const FLOW_BG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><rect width="1600" height="900" fill="${tokens.dark['blak-950']}"/><ellipse cx="1150" cy="620" rx="420" ry="200" fill="${tokens.dark['earth-700']}" opacity="0.7"/><ellipse cx="1150" cy="700" rx="560" ry="160" fill="${tokens.dark['water-700']}" opacity="0.6"/><circle cx="1150" cy="520" r="110" fill="${tokens.dark['ochre-400']}" opacity="0.9"/><ellipse cx="300" cy="150" rx="500" ry="240" fill="${tokens.dark['blak-800']}" opacity="0.9"/></svg>`;
 function svcGet(host, port, path, headers) {
   return textRequest(`http://${host}:${port}${path}`, { headers });
@@ -109,7 +109,7 @@ function appIcon(a, cls) {
 }
 function scriptJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function wordmark() { return `<div class=brand><div class=mark>B</div><div><b>Blak</b> <span>Workspace</span></div></div>`; }
+function wordmark() { return `<div class=brand><img class=brand-mark src="/brand/logo.svg" alt="" width="36" height="36"><div><b>Blak</b> <span>Workspace</span></div></div>`; }
 function homeLogo() { return `<img class=home-logo src="/brand/home-logo.jpg" alt="Blak Workspace by Yuma IT" width="1200" height="630" fetchpriority="high">`; }
 function dotSun(cx, cy, r, color, opacity) {
   let s = `<g opacity="${opacity}" fill="${color}">`;
@@ -163,6 +163,7 @@ ${wordmark()}
 </div><div class=shell><nav class=sidebar>
 <a class=nav-item href="/" ${active === 'home' ? 'data-active="true"' : ''} title="Blak Home"><span class=ric>⌂</span><span class=lbl>Blak Home</span><span class=swatch style="background:${ACCENT.workspace}"></span></a>
 ${navGroups(active)}
+<a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
 <main>${main}</main></div>
 <div class=scrim id=scrim hidden></div>
@@ -174,7 +175,7 @@ ${navGroups(active)}
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(APPS.filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: a.url })).concat([{ t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(APPS.filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: a.url })).concat([{ t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -267,6 +268,7 @@ function homePage(user) {
 <a href="${a.url}">Open →</a></div>`).join('');
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
+<p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
 <h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="https://drive.workspace.example.com">Open Blak Drive</a></p></div>
 <h3 class=sec>Announcements</h3><div class=statusrow><span class=pill>Welcome to Blak Workspace — currently in early development.</span></div>
@@ -282,31 +284,36 @@ const p=document.createElement('span');p.className='pill';p.textContent=id+': '+
 </script>`);
 }
 async function searchPage(user, q) {
-  let body = '';
-  if (!q) {
-    body = `<p class=gsub>Search across Blak Drive, Blak Sites and Blak Projects. Indexing connectors are under construction; results appear here as sources are connected.</p>`;
-  } else {
+  let body = '<p class=gsub>Search your connected files, knowledge, conversations and tasks. Content refreshes every five minutes.</p>';
+  if (q) {
     try {
-      const idx = await svcGet(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes', MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
-      const list = JSON.parse(idx.body).results || [];
-      if (!list.length) {
-        body = `<p class=gsub>No content indexed yet for “${esc(q)}”. Connect a source to Blak Search to populate results.</p>`;
+      const headers = MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {};
+      const settings = await svcGet(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/settings/filterable-attributes', headers);
+      if (settings.status === 404) {
+        body = '<p role=status>Your search index is being prepared. Check <a href="/sync">connection status</a> and try again after the next sync.</p>';
       } else {
-        const parts = [];
-        for (const ix of list.slice(0, 5)) {
-          const settings = await svcGet(process.env.MEILI_HOST || 'meilisearch', 7700, `/indexes/${encodeURIComponent(ix.uid)}/settings/filterable-attributes`, MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
-          if (settings.status !== 200 || !supportsAccessFilter(JSON.parse(settings.body))) continue;
-          const r = await svcPost(process.env.MEILI_HOST || 'meilisearch', 7700, `/indexes/${encodeURIComponent(ix.uid)}/search`, { q, limit: 5, filter: accessFilter(user) }, MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
-          const hits = (JSON.parse(r.body).hits || []).map((h) => `<div class=card><h3>${esc(h.title || h.name || h.id || 'result')}</h3><p>${esc(String(h.content || h.description || '')).slice(0, 180)}</p><p class=be>${esc(ix.uid)}</p></div>`).join('');
-          if (hits) parts.push(`<h3 class=sec>${esc(ix.uid)}</h3><div class=grid>${hits}</div>`);
-        }
-        body = parts.join('') || `<p class=gsub>No matches for “${esc(q)}”.</p>`;
+        const fields = JSON.parse(settings.body);
+        if (settings.status !== 200 || !supportsAccessFilter(fields) || !fields.includes('expiresAt')) throw new Error('Search access filters unavailable');
+        const result = await svcPost(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/search', {
+          q: q.slice(0, 500), limit: 30, filter: `(${accessFilter(user)}) AND expiresAt > ${Math.floor(Date.now() / 1000)}`,
+          attributesToRetrieve: ['title', 'content', 'url', 'source'],
+        }, MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
+        if (result.status !== 200) throw new Error('Search request failed');
+        const hits = JSON.parse(result.body).hits || [];
+        const rows = hits.map(hit => {
+          let url = '';
+          try { const parsed = new URL(hit.url); if (['http:', 'https:'].includes(parsed.protocol)) url = parsed.href; } catch {}
+          const title = esc(hit.title || 'Untitled');
+          return `<li><span class=source>${esc(hit.source)}</span><h2>${url ? `<a href="${esc(url)}">${title}</a>` : title}</h2><p>${esc(String(hit.content || '').slice(0, 350))}</p></li>`;
+        }).join('');
+        body = hits.length ? `<p role=status>${hits.length} result${hits.length === 1 ? '' : 's'} for “${esc(q)}”</p><ul class=search-results>${rows}</ul>` : `<p role=status>No matches for “${esc(q)}”. Try another word or check <a href="/sync">connection status</a>.</p>`;
       }
-    } catch (e) { body = `<p class=gsub>Search is unavailable right now (${esc(e.message)}).</p>`; }
+    } catch {
+      body = '<p role=alert>Search is temporarily unavailable. Check <a href="/sync">connection status</a> and try again.</p>';
+    }
   }
-  return shell(user, 'search', 'Blak Search', `<div class=greet>Blak Search</div>
-<p class=gsub>Permission-aware search across your workspace</p>
-<form method=get action=/search><div class=search style="margin:0 0 18px;max-width:640px"><input name=q type=search placeholder="Search apps and workspace…" value="${esc(q || '')}" autocomplete=off></div></form>${body}`);
+  return shell(user, 'search', 'Blak Search', `<h1>Blak Search</h1><p class=gsub>Find content connected to your account.</p>
+<form method=get action=/search><div class=search style="margin:0 0 18px;max-width:640px"><input name=q type=search aria-label="Search connected content" placeholder="Search files, knowledge and tasks…" value="${esc(q || '')}" autocomplete=off><button class=btn type=submit>Search</button></div></form>${body}`);
 }
 async function s3Buckets() {
   const r = await awsReq('s3', 'GET', '/', {}, null, null);
@@ -382,7 +389,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/welcome') {
     if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
     res.setHeader('content-type','text/html; charset=utf-8');
-    res.end(shell(user,'home','Getting started',`<h1>Your Blak workspace</h1><p>One Blak ID opens your workspace apps. Manage your sign-in through Blak ID; you do not need separate app passwords.</p><ol><li><a href="https://drive.workspace.example.com">Add your files to Drive</a> and open documents with Blak Docs.</li><li><a href="https://crm.workspace.example.com/login?redirect-to=/crm">Create your first CRM lead</a>, then track contacts, organisations and deals.</li><li><a href="https://projects.workspace.example.com">Create a project workspace</a> and plan tasks with your team.</li><li><a href="https://forms.workspace.example.com">Build a form</a> or <a href="/draw">draw a diagram</a>.</li><li><a href="/sync">Check your Hermes connections</a>, then select the Blak Workspace model in Hermes.</li></ol><p>Use the Blak Workspace button in any app to switch products, return home or change your shared theme. Private files and drawings stay scoped to their owner.</p>`));return;
+    res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(APPS)));return;
   }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');

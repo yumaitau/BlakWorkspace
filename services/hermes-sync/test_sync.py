@@ -191,3 +191,45 @@ class HealthPublicationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class SearchTests(unittest.TestCase):
+    def test_structured_exports_have_readable_previews(self):
+        doc = {'id': 'form', 'name': 'export.json', 'content': b'{"form":{"name":"Team feedback","id":"opaque-id","fields":[{"title":["What should we improve?"],"kind":"short_text"}]},"source":"https://forms.example/form"}'}
+        result = sync.search_document(None, 'owner', 'ada', 'forms', {'public_base': 'https://forms.example'}, doc, {})
+        self.assertEqual(result['title'], 'Team feedback')
+        self.assertEqual(result['content'], 'Team feedback\nWhat should we improve?')
+        self.assertEqual(result['url'], 'https://forms.example/form')
+    def test_private_owner_title_url_and_expiry(self):
+        doc={'id':'one','name':'one.md','content':b'# A project\nSource: https://docs.example/doc/one\nPrivate plan'}
+        result=sync.search_document(None,'hermes-owner','ada','outline',{'public_base':'https://docs.example'},doc,{})
+        self.assertEqual(result['allowedUsers'],['ada'])
+        self.assertEqual(result['visibility'],'private')
+        self.assertEqual(result['title'],'A project')
+        self.assertEqual(result['url'],'https://docs.example/doc/one')
+        self.assertGreater(result['expiresAt'],sync.time.time())
+        other=sync.search_document(None,'other','bob','outline',{'public_base':'https://docs.example'},doc,{})
+        self.assertNotEqual(result['id'],other['id'])
+    def test_extracted_file_owner_is_verified(self):
+        class Files:
+            def json(self,*args):return {'user_id':'someone-else','data':{'content':'private'}}
+        with self.assertRaises(ValueError):
+            sync.search_document(Files(),'owner','ada','drive',{'public_base':'https://drive.example'},{'id':'x','name':'x.pdf'},{'file_id':'file'})
+    def test_external_source_link_is_not_published(self):
+        result=sync.search_document(None,'owner','ada','outline',{'public_base':'https://docs.example'},{'id':'x','name':'x','content':b'# X\nSource: https://attacker.example/x'},{})
+        self.assertEqual(result['url'],'https://docs.example')
+    def test_replacement_is_scoped_and_tasks_must_complete(self):
+        class API:
+            def __init__(self):self.calls=[]
+            def json(self,method,path,data=None):
+                self.calls.append((method,path,data))
+                return {'status':'succeeded'} if path.startswith('/tasks/') else {'taskUid':1}
+        api=API();index=sync.SearchIndex(api)
+        index.replace_owner('ada',[])
+        delete=next(call for call in api.calls if call[1].endswith('/documents/delete'))
+        self.assertEqual(delete[2],{'filter':'owner = "ada"'})
+        with self.assertRaises(ValueError):index.replace_owner('',[])
+        with self.assertRaises(ValueError):index.replace_owner('ada',[{'owner':'bob','allowedUsers':['bob']}])
+    def test_failed_index_task_is_not_success(self):
+        class API:
+            def json(self,*args):return {'status':'failed','taskUid':1}
+        with self.assertRaises(RuntimeError):sync.SearchIndex(API())

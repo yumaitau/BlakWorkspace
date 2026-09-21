@@ -3,6 +3,8 @@ from authentik.brands.models import Brand
 
 CSS = """
 :root{color-scheme:dark;--blak-950:#0B1112;--blak-900:#101819;--blak-850:#152022;--blak-800:#1B292B;--blak-700:#29393A;--earth-700:#8E3525;--earth-600:#B64629;--earth-500:#D65B2E;--earth-400:#E77832;--ochre-600:#B97524;--ochre-500:#D68B2C;--ochre-400:#E5A447;--water-700:#14565E;--water-600:#176A72;--water-500:#21818A;--water-400:#3199A2;--sand-50:#FFF9EF;--sand-100:#F3E7D3;--sand-200:#E6D4B8;--sand-300:#CFB993;--surface-base:#0B1112;--surface:#101819;--surface-raised:#172123;--surface-hover:#202D2F;--surface-selected:#252F2E;--border-subtle:#263436;--border:#304043;--border-strong:#455456;--text-primary:#F4EBDD;--text-secondary:#B8B5AA;--text-muted:#7F8988;--primary:#D65B2E;--primary-hover:#E77832;--secondary:#21818A;--secondary-hover:#3199A2;--success:#5E9C67;--warning:#D68B2C;--danger:#D35B48;--info:#3199A2;--focus:#3199A2;}[data-theme="light"]{color-scheme:light;--surface-base:#EDE5D8;--surface:#F5F0E7;--surface-raised:#FFF9EF;--surface-hover:#EDE5D8;--surface-selected:#E0D6C8;--border-subtle:#E0D6C8;--border:#D7CBBB;--border-strong:#BCAF9D;--text-primary:#182122;--text-secondary:#596261;--text-muted:#7A817E;}
+:host,:root{--pf-global--BackgroundColor--100:#101819;--pf-global--BackgroundColor--200:#0B1112;--pf-global--Color--100:#F4EBDD;--pf-global--Color--200:#B8B5AA;--pf-c-page--BackgroundColor:#0B1112;--pf-c-page__main-section--BackgroundColor:#101819;--pf-c-card--BackgroundColor:#172123;--pf-c-card--Color:#F4EBDD;--pf-global--primary-color--100:#D65B2E;--pf-global--link--Color:#3199A2;--pf-c-page__header--BackgroundColor:#0B1112}
+:host{color:#F4EBDD;font-family:Inter,system-ui,sans-serif}.pf-c-page,.pf-c-page__main,.pf-c-page__main-section,.pf-c-page__header{background:#0B1112!important;color:#F4EBDD!important}
 body,[class*="background-image"]{background:#0B1112!important;color:#F4EBDD!important;font-family:Inter,system-ui,sans-serif}
 [class*="login__main"],[class*="card"],[class*="modal"]{background:#101819!important;border-color:#263436!important}
 button[type=submit],[class*="button"][class*="primary"]{background:#D65B2E!important;color:#FFF9EF!important;font-weight:600!important}
@@ -12,8 +14,13 @@ input{background:#172123!important;border-color:#304043!important;color:#F4EBDD!
 """
 brand = Brand.objects.get(default=True)
 brand.branding_title = "Blak ID"
+brand.branding_logo = "/_blak/logo.svg"
+brand.branding_favicon = "/_blak/logo.svg"
 brand.branding_custom_css = CSS
 brand.save()
 from authentik.flows.models import Flow
 Flow.objects.filter(slug="default-authentication-flow").update(title="Welcome to Blak ID")
+from authentik.core.models import Application
+for slug,name in {"opencloud":"Blak Drive","blak-portal":"Blak Workspace","outline":"Blak Knowledge","hermes":"Blak Hermes","kaneo":"Blak Projects","openproject":"Blak Projects","rocketchat":"Blak Chat","blak-forms":"Blak Forms","blak-crm":"Blak CRM"}.items():
+    Application.objects.filter(slug=slug).update(name=name,meta_icon="/_blak/logo.svg")
 print("BRAND_CSS_OK")

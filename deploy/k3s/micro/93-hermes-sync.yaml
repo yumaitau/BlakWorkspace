@@ -36,6 +36,9 @@ spec:
             - name: sync
               image: blak-hermes-sync:micro
               imagePullPolicy: IfNotPresent
+              env:
+                - name: MEILI_MASTER_KEY
+                  valueFrom: { secretKeyRef: { name: blak-core, key: meili-master-key } }
               resources:
                 requests: { cpu: 100m, memory: 128Mi }
                 limits: { cpu: "1", memory: 512Mi }

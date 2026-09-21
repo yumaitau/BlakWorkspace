@@ -32,7 +32,6 @@ Blak Workspace helps Australian organisations run a coherent digital workplace e
 | Blak Workspace | openDesk suite |
 | Blak Drive | OpenCloud |
 | Blak Docs | Collabora |
-| Blak Notes | Notes |
 | Blak Chat | Rocket.Chat |
 | Blak Meet | Jitsi |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed) |
