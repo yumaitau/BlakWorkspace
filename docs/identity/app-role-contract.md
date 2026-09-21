@@ -264,7 +264,7 @@ has established current access, transient processing failures preserve tracked
 copies for retry; explicit access denial still revokes them. A failed source
 listing remains fail-closed because continuing source access cannot be verified.
 
-## CRM native enforcement (acceptance pending)
+## CRM native enforcement
 
 CRM uses pinned Frappe 15.121.0 and CRM 1.84.0. The controller binds accounts
 through native `User Social Login` records using the immutable Blak ID subject.
@@ -292,6 +292,12 @@ saves cannot remove or replace an existing binding. Recovery must use the exact
 original native binding, never inferred email matching. The dedicated controller
 and built-in Administrator are separate from human app administrators.
 
-Validation so far: 299 repository tests, nine actual native Python entry-point
-tests and the native realtime-consumer test pass. Authenticated live acceptance
-is still pending; deployment alone does not certify CRM roles.
+Validation: 301 repository tests, nine actual native Python entry-point tests
+and the native realtime-consumer test pass. Live acceptance on 2026-09-22 passed
+in 7.7 minutes against `blak-frappe:0451f731cc36`: native Blak ID login,
+writer edits, reader UI and API restrictions, both RPC versions, upload denial,
+existing cookie and API-key revocation, realtime disconnection, scoped admin,
+disablement, cross-app role isolation, immutable identity after email change,
+and restoration of the same native account. The CRM/Draw/Flow/Cloud to Hermes
+journey also passed in 2.6 minutes, including indexing, updates, retrieval,
+model answers with citations, deletion and owner isolation.
