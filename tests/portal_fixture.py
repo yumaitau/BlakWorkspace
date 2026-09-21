@@ -15,7 +15,7 @@ def portal_session(env):
     source = """
 const {createSessionStore}=require('./apps/portal/session-store');
 const {sign}=require('./apps/portal/session');
-const user={sub:'ada',identity:'test-identity',name:'Ada Example',email:'ada@example.test',apps:['flow','storage'],exp:Date.now()+3600000,checkedAt:Date.now()};
+const user={sub:'ada',identity:'test-identity',name:'Ada Example',email:'ada@example.test',apps:['flow','storage'],roles:{flow:'writer',storage:'writer'},exp:Date.now()+3600000,checkedAt:Date.now()};
 const sid=createSessionStore(process.env.SESSION_STORE,process.env.SESSION_SECRET).create(user);
 process.stdout.write(sign({sub:user.sub,exp:user.exp,sid}));
 """

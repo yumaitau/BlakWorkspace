@@ -1,6 +1,9 @@
 # App-specific Blak ID roles
 
-Status: implementation design. This document does not certify live enforcement.
+Status: Vault native enforcement is implemented and tested separately. Draw, Flow,
+Cloud and Search enforcement is implemented in this change and awaits live
+acceptance. The remaining native app mappings below are still implementation
+design; this document does not certify their live enforcement.
 
 Blak ID is the authority for membership. Every app must enforce its native data
 permissions as well as the login grant. A hidden launcher, proxy login gate, or
@@ -74,3 +77,24 @@ all apps are integrated while any mapping above remains unimplemented.
 - [Kaneo permission vocabulary](https://github.com/usekaneo/kaneo/tree/main/packages/permissions)
 - [HeyForm native role guard](https://github.com/heyform/heyform/blob/next/packages/server/src/common/guard/role.guard.ts)
 - [Vaultwarden OIDC](https://github.com/dani-garcia/vaultwarden/wiki/Enabling-SSO-support-using-OpenId-Connect)
+
+## Portal module implementation
+
+Draw, Flow, Cloud and Search use `blak-draw-*`, `blak-flow-*`, `blak-cloud-*`
+and `blak-search-*` groups. Their signed `blak_roles` claims are re-read from
+Blak ID userinfo every 30 seconds, alongside active status and app grants. The
+portal requires both the app grant and the role on every local data operation.
+Reader cannot mutate data, invoke a flow, create buckets/queues or send messages.
+Draw uses native Excalidraw view mode; private drawing and flow ownership checks
+remain in force even for app admins. Cloud buckets are shared app storage.
+Search writer/admin roles do not grant additional source visibility. These portal
+modules currently have no separate member-management UI; app admin therefore
+adds no cross-owner powers beyond writer capabilities.
+
+The one-time migration grants existing legacy module members writer access and
+existing directory operators app admin. It records a marker on each legacy group;
+future deployments do not restore removed memberships. New users need an explicit
+role group. No role, malformed claims or missing claims fail closed. Existing
+sessions can retain their last checked permissions for at most 30 seconds before
+an online request refreshes them; previously loaded/exported content cannot be
+retracted.

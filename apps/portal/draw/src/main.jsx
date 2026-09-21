@@ -22,6 +22,24 @@ function App() {
     [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const response = await fetch('/api/me', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Sign in to view drawing permissions');
+        const user = await response.json();
+        if (active) setCanWrite(['writer', 'admin'].includes(user.roles?.draw));
+      } catch (error) {
+        if (active) { setCanWrite(false); setError(error.message); }
+      }
+    };
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, []);
   const [theme, setTheme] = useState(
     localStorage.getItem("blak-theme") || "dark",
   );
@@ -118,13 +136,14 @@ function App() {
         </select>
         <input
           aria-label="Drawing name"
+          disabled={!canWrite}
           placeholder="New drawing name"
           value={name}
           maxLength={100}
           onChange={(e) => setName(e.target.value)}
         />
         <button
-          disabled={busy || !name.trim()}
+          disabled={!canWrite || busy || !name.trim()}
           onClick={() => {
             if (dirty && !confirm("Discard unsaved changes?")) return;
             run(async () => {
@@ -144,7 +163,7 @@ function App() {
         {board && (
           <>
             <button
-              disabled={busy || !dirty}
+              disabled={!canWrite || busy || !dirty}
               onClick={() =>
                 run(async () => {
                   const snapshot = scene.current;
@@ -190,7 +209,7 @@ function App() {
               Export drawing
             </button>
             <button
-              disabled={busy}
+              disabled={!canWrite || busy}
               onClick={() => {
                 if (confirm("Delete this drawing?"))
                   run(async () => {
@@ -210,7 +229,7 @@ function App() {
           </>
         )}
         <output role="status">
-          {error || (dirty ? "Unsaved changes" : status)}
+          {error || (!canWrite ? 'Read-only access' : dirty ? "Unsaved changes" : status)}
         </output>
       </nav>
       <main>
@@ -219,6 +238,7 @@ function App() {
             key={board.id}
             name={board.name}
             theme={theme}
+            viewModeEnabled={!canWrite}
             initialData={{
               ...board.scene,
               appState: { ...board.scene.appState, theme },
@@ -234,21 +254,21 @@ function App() {
                 lastSaved.current = JSON.stringify(next);
                 initialising.current = false;
               }
-              setDirty(JSON.stringify(next) !== lastSaved.current);
+              setDirty(canWrite && JSON.stringify(next) !== lastSaved.current);
             }}
             UIOptions={{
               canvasActions: {
-                loadScene: true,
+                loadScene: canWrite,
                 saveToActiveFile: true,
                 export: { saveFileToDisk: true },
               },
             }}
           >
             <MainMenu>
-              <MainMenu.DefaultItems.LoadScene />
+              {canWrite && <MainMenu.DefaultItems.LoadScene />}
               <MainMenu.DefaultItems.SaveToActiveFile />
               <MainMenu.DefaultItems.Export />
-              <MainMenu.DefaultItems.ClearCanvas />
+              {canWrite && <MainMenu.DefaultItems.ClearCanvas />}
             </MainMenu>
           </Excalidraw>
         ) : (

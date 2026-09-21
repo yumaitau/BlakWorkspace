@@ -29,7 +29,7 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   const {publicKey,privateKey}=await jose.generateKeyPair('RS256');
   const jwk={...await jose.exportJWK(publicKey),kid:'test-key',alg:'RS256',use:'sig'};
   let origin,nonce,challenge,badNonce=false,refreshCount=0;
-  const claims={sub:'fixed-owner',preferred_username:'mutable-name',blak_id:crypto.randomUUID(),name:'Test User',blak_apps:['draw']};
+  const claims={sub:'fixed-owner',preferred_username:'mutable-name',blak_id:crypto.randomUUID(),name:'Test User',blak_apps:['draw'],blak_roles:{draw:'writer'}};
   const issuer=()=>origin+'/application/o/blak-portal/';
   async function jwt(payload,audience='blak-portal') {
     return new jose.SignJWT(payload).setProtectedHeader({alg:'RS256',kid:'test-key'}).setIssuer(issuer()).setAudience(audience).setIssuedAt().setExpirationTime('5m').sign(privateKey);
@@ -56,9 +56,11 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   await new Promise(resolve=>idp.listen(0,'127.0.0.1',resolve));origin='http://127.0.0.1:'+idp.address().port;
   process.env.OIDC_BASE=origin+'/application/o';process.env.OIDC_ISSUER=issuer();process.env.OIDC_AUTH_URL=origin+'/authorize';
   process.env.OIDC_REDIRECT_URI='http://127.0.0.1/callback';
+  const drawDirectory=fs.mkdtempSync(path.join(os.tmpdir(),'blak-role-draw-'));
+  process.env.DRAW_STORE=drawDirectory;
   const {server,sign}=require('../server');
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  t.after(()=>{server.closeAllConnections();idp.closeAllConnections();server.close();idp.close();});
+  t.after(()=>{server.closeAllConnections();idp.closeAllConnections();server.close();idp.close();fs.rmSync(drawDirectory,{recursive:true,force:true});});
   const base='http://127.0.0.1:'+server.address().port;
   async function login() {
     const start=await fetch(base+'/login?app=draw',{redirect:'manual'});
@@ -78,6 +80,22 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   assert.equal((await request('/api/modules',{headers:{origin:'https://untrusted.example'}})).status,403);
   const legacy=sign({sub:'owner',exp:Date.now()+60000});
   assert.equal((await fetch(base+'/api/me',{headers:{cookie:'blak_session='+legacy}})).status,401);
+  const created=await request('/api/draw',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Role boundary'})});
+  assert.equal(created.status,200);
+  const board=await created.json();
+  claims.blak_roles={draw:'reader',storage:'admin'};
+  const clock=Date.now;
+  try {
+    Date.now=()=>clock()+31000;
+    assert.equal((await request('/api/draw/'+board.id)).status,200);
+    for(const method of ['POST','PUT','DELETE']) {
+      assert.equal((await request('/api/draw'+(method==='POST'?'':'/'+board.id),{method,body:'{}'})).status,403);
+    }
+    // Administration of another app cannot supply a missing Draw write grant.
+    assert.equal((await request('/cloud/object?bucket=private&key=secret',{method:'PUT',body:'not-uploaded'})).status,403);
+    assert.deepEqual((await (await request('/api/me')).json()).roles,{draw:'reader',storage:'admin'});
+  } finally {Date.now=clock;}
+  claims.blak_roles={draw:'writer'};
   claims.blak_apps=['forms'];
   const formSession=await login();
   const formCookie=formSession.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
