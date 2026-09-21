@@ -127,10 +127,13 @@ class PrivateAdminTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(await helper(NS(id='stale-admin', role='admin'), self.knowledge))
 
     async def test_native_server_admin_dependency_rejects_humans_even_with_stale_admin_role(self):
-        call = native_function('utils/auth.py', 'get_admin_user', dict(
+        env = dict(
             HTTPException=HTTPError, status=NS(HTTP_401_UNAUTHORIZED=401),
-            ERROR_MESSAGES=NS(ACCESS_PROHIBITED='denied')))
-        with patch.dict(os.environ, {'BLAK_ROLE_CONTROLLER_ID': 'controller'}):
+            ERROR_MESSAGES=NS(ACCESS_PROHIBITED='denied'))
+        call = native_function('utils/auth.py', 'get_admin_user', env)
+        with patch.dict(os.environ, {'BLAK_ROLE_CONTROLLER_ID': 'controller'}), patch.dict(sys.modules, {
+            'open_webui.utils.blak_private': NS(blak_content_admin=env['blak_content_admin']),
+        }):
             for role in ('user', 'admin', 'pending'):
                 with self.assertRaises(HTTPError) as error:
                     call(NS(id='human', role=role))
