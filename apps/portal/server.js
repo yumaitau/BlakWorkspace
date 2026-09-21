@@ -315,7 +315,10 @@ const p=document.createElement('span');p.className='pill';p.textContent=id+': '+
 }
 async function searchPage(user, q) {
   let body = '<p class=gsub>Search your connected files, knowledge, conversations and tasks. Content refreshes every five minutes.</p>';
-  if (q) {
+  const filter = accessFilter(user);
+  if (q && !filter) {
+    body = '<p role=status>No permitted content sources. Ask your administrator for access to the app you want to search.</p>';
+  } else if (q) {
     try {
       const headers = MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {};
       const settings = await svcGet(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/settings/filterable-attributes', headers);
@@ -325,7 +328,7 @@ async function searchPage(user, q) {
         const fields = JSON.parse(settings.body);
         if (settings.status !== 200 || !supportsAccessFilter(fields) || !fields.includes('expiresAt')) throw new Error('Search access filters unavailable');
         const result = await svcPost(process.env.MEILI_HOST || 'meilisearch', 7700, '/indexes/workspace/search', {
-          q: q.slice(0, 500), limit: 30, filter: `(${accessFilter(user)}) AND expiresAt > ${Math.floor(Date.now() / 1000)}`,
+          q: q.slice(0, 500), limit: 30, filter: `(${filter}) AND expiresAt > ${Math.floor(Date.now() / 1000)}`,
           attributesToRetrieve: ['title', 'content', 'url', 'source'],
         }, MEILI_KEY ? { authorization: `Bearer ${MEILI_KEY}` } : {});
         if (result.status !== 200) throw new Error('Search request failed');

@@ -66,9 +66,12 @@ test('search denies indexes without explicit ACL support', () => {
   const { supportsAccessFilter, accessFilter } = require('../search-access');
   assert.equal(supportsAccessFilter(['title']), false);
   assert.equal(supportsAccessFilter(['allowedUsers']), false);
-  assert.equal(supportsAccessFilter(['allowedUsers', 'visibility']), true);
+  assert.equal(supportsAccessFilter(['allowedUsers', 'visibility']), false);
+  assert.equal(supportsAccessFilter(['allowedUsers', 'visibility', 'source']), true);
   const sub = 'ada" OR visibility = "private';
-  assert.equal(accessFilter({ sub }), `allowedUsers = ${JSON.stringify(sub)} OR visibility = "workspace"`);
+  assert.equal(accessFilter({ sub, apps: ['draw'], roles: { draw: 'reader' } }), `(allowedUsers = ${JSON.stringify(sub)} OR visibility = "workspace") AND source IN ["Draw"]`);
+  assert.equal(accessFilter({ sub, apps: ['search'], roles: { search: 'admin' } }), null);
+  assert.equal(accessFilter({ sub, apps: ['draw'], roles: { storage: 'admin' } }), null);
 });
 
 test('bucket validation rejects invalid DNS names and IP addresses', () => {

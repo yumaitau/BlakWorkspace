@@ -1,8 +1,8 @@
 # App-specific Blak ID roles
 
 Status: Vault native enforcement is implemented and tested separately. Draw, Flow,
-Cloud and Search enforcement is implemented in this change and awaits live
-acceptance. The remaining native app mappings below are still implementation
+Cloud and Search enforcement is implemented. The 14-test live portal suite
+passed, including existing-session role changes and private-owner boundaries. The remaining native app mappings below are still implementation
 design; this document does not certify their live enforcement.
 
 Blak ID is the authority for membership. Every app must enforce its native data
@@ -98,3 +98,9 @@ role group. No role, malformed claims or missing claims fail closed. Existing
 sessions can retain their last checked permissions for at most 30 seconds before
 an online request refreshes them; previously loaded/exported content cannot be
 retracted.
+
+Search filters cached documents by current source-app grants as well as document
+ownership, workspace visibility and expiry. A Search admin role grants no source
+access. Removing a source grant hides its cached results after the same session
+refresh interval; unknown sources and Vault are excluded. Source labels are shared
+with the indexer through a generated catalog to prevent mapping drift.

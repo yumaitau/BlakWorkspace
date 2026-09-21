@@ -1,0 +1,11 @@
+{
+  "drive": { "app": "drive", "label": "Drive" },
+  "outline": { "app": "sites", "label": "Knowledge" },
+  "chat": { "app": "chat", "label": "Chat" },
+  "projects": { "app": "projects", "label": "Projects" },
+  "crm": { "app": "crm", "label": "CRM" },
+  "forms": { "app": "forms", "label": "Forms" },
+  "draw": { "app": "draw", "label": "Draw" },
+  "flow": { "app": "flow", "label": "Flow" },
+  "storage": { "app": "storage", "label": "Cloud files" }
+}

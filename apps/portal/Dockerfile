@@ -10,6 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 COPY integration.js app-roles.js session-store.js oidc.js ./
+COPY content-sources.json ./
 COPY logout-page.js logout.js ./
 COPY server.js catalog.js flow-engine.js cloud-object.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
 COPY brand-icons/ ./brand-icons/

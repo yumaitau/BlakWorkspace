@@ -26,7 +26,7 @@ MAX_BYTES = 20 * 1024 * 1024
 EXTENSIONS = {'.txt', '.md', '.csv', '.json', '.pdf', '.docx', '.xlsx', '.pptx', '.odt', '.ods', '.odp', '.html', '.xml', '.log'}
 EXTRACTOR_VERSION = '3'
 WORKSPACE_LOGO_URL = os.environ.get('WORKSPACE_LOGO_URL', 'https://portal.workspace.example.com/brand/logo.svg')
-SOURCE_NAMES = {'drive': 'Drive', 'outline': 'Knowledge', 'chat': 'Chat', 'projects': 'Projects', 'crm': 'CRM', 'forms': 'Forms', 'draw': 'Draw', 'flow': 'Flow', 'storage': 'Cloud files'}
+SOURCE_NAMES = {key: value['label'] for key, value in json.loads(Path(__file__).with_name('content-sources.json').read_text()).items()}
 LOG = logging.getLogger('hermes-sync')
 
 class API:
