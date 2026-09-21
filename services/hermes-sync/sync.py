@@ -553,6 +553,10 @@ def sync_mapping(mapping, state, checkpoint, allowed_sources):
             collection = hermes.json('GET', '/api/v1/knowledge/' + record['collection'])
             if collection['user_id'] != owner or collection.get('access_grants'):
                 raise ValueError('Sync knowledge must remain private to its source owner')
+            expected_name = 'Blak Workspace · ' + SOURCE_NAMES[name]
+            if collection.get('name', expected_name) != expected_name:
+                hermes.json('POST', '/api/v1/knowledge/' + record['collection'] + '/update', {
+                    'name': expected_name, 'description': collection.get('description', ''), 'access_grants': []})
             api = API(**source)
             if name == 'drive':
                 docs = drive_documents(api)

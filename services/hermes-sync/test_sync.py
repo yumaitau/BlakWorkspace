@@ -10,6 +10,24 @@ class FakeHermes:
     def upload(self,name,content):self.counter+=1;self.calls.append(('upload',name,content));return {'id':str(self.counter)}
     def json(self,method,path,data=None):self.calls.append((method,path,data));return {}
 class SyncTests(unittest.TestCase):
+    def test_collection_branding_migration_requires_private_owner(self):
+        class Hermes(FakeHermes):
+            owner = 'owner'
+            def json(self, method, path, data=None):
+                if path == '/api/v1/auths/': return {'id': 'owner'}
+                if path == '/api/v1/knowledge/private':
+                    return {'user_id': self.owner, 'access_grants': [], 'name': 'Blak Workspace · Outline', 'description': 'Private source'}
+                return super().json(method, path, data)
+        api = Hermes()
+        mapping = {'owner_id': 'owner', 'hermes': {}, 'sources': {'outline': {'base': 'https://example.test'}}}
+        with patch.object(sync, 'API', return_value=api), patch.object(sync, 'outline_documents', return_value=[]), patch.object(sync, 'ensure_workspace_model'):
+            sync.sync_mapping(mapping, {'outline': {'collection': 'private', 'files': {}}}, lambda: None, {'outline'})
+            self.assertIn(('POST', '/api/v1/knowledge/private/update', {'name': 'Blak Workspace · Knowledge', 'description': 'Private source', 'access_grants': []}), api.calls)
+            api.owner = 'someone-else'
+            api.calls.clear()
+            with self.assertRaises(RuntimeError):
+                sync.sync_mapping(mapping, {'outline': {'collection': 'private', 'files': {}}}, lambda: None, {'outline'})
+            self.assertFalse(any(call[0] == 'POST' for call in api.calls))
     def test_model_cache_refresh_failure_is_retried_without_source_changes(self):
         class Hermes:
             refreshes=0
