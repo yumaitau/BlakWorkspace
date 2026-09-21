@@ -8,6 +8,17 @@ REVISION="${REVISION_FULL:0:12}"
 NS=blak-micro
 export CRM_IMAGE="blak-frappe:$REVISION" ROLE_IMAGE="blak-app-roles:$REVISION" SYNC_IMAGE="blak-hermes-sync:$REVISION"
 export PORTAL_IMAGE="blak-portal:$REVISION"
+# Public DNS changes must never silently select a fresh database.
+python3 - <<'PY_SITE'
+import json,subprocess,yaml
+from pathlib import Path
+live=json.loads(subprocess.check_output(['kubectl','-n','blak-micro','get','deploy','frappe-crm','-o','json']))
+desired=next(d for d in yaml.safe_load_all(Path('deploy/k3s/micro/95-crm.yaml').read_text()) if d and d.get('kind')=='Deployment' and d['metadata']['name']=='frappe-crm')
+def site(deployment):
+    return next(e['value'] for c in deployment['spec']['template']['spec']['containers'] for e in c.get('env',[]) if e['name']=='FRAPPE_SITE_NAME_HEADER')
+if site(live)!=site(desired):
+    raise SystemExit('CRM site identity differs from live deployment; prepare with the existing --crm-site')
+PY_SITE
 docker info >/dev/null
 node scripts/brand/generate.js --check
 scripts/deploy/build-frappe.sh

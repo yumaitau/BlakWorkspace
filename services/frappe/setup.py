@@ -17,6 +17,8 @@ config.update(db_host='frappe-db', db_port=3306,
 common.write_text(json.dumps(config))
 (SITES / 'apps.txt').write_text('frappe\ncrm\n')
 if not (SITES / SITE / 'site_config.json').exists():
+    if any(SITES.glob('*/site_config.json')):
+        raise RuntimeError('Existing Frappe site found; set the release CRM site identity before deployment')
     created = subprocess.run(['bench', 'new-site', SITE, '--mariadb-user-host-login-scope=%',
                     '--mariadb-root-password', os.environ['DB_ROOT_PASSWORD'],
                     '--admin-password', os.environ['ADMIN_PASSWORD'],
