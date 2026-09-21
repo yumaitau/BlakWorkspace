@@ -1,0 +1,89 @@
+# Enable one replica after native controller enrollment and acceptance.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blak-app-role-sync
+  namespace: blak-micro
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: blak-role-sync
+  template:
+    metadata:
+      labels:
+        app: blak-role-sync
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: roles
+        image: blak-app-roles:release
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        env:
+        - name: ROLE_CONFIG
+          value: /config/config.json
+        - name: BLAK_ID_BASE_FILE
+          value: /directory/base-url
+        - name: BLAK_ID_TOKEN_FILE
+          value: /directory/api-token
+        - name: VAULT_OPERATOR_TOKEN_FILE
+          value: /operator/admin-token
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: directory
+          mountPath: /directory
+          readOnly: true
+        - name: operator
+          mountPath: /operator
+          readOnly: true
+        - name: temporary
+          mountPath: /tmp
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - import pathlib,time; p=pathlib.Path("/tmp/roles-ready"); raise SystemExit(not
+              p.exists() or time.time()-p.stat().st_mtime>180)
+          periodSeconds: 15
+      volumes:
+      - name: config
+        secret:
+          secretName: blak-app-roles
+          defaultMode: 288
+      - name: directory
+        secret:
+          secretName: blak-role-reader
+          defaultMode: 288
+      - name: operator
+        secret:
+          secretName: blak-vault-operator
+          defaultMode: 288
+      - name: temporary
+        emptyDir:
+          medium: Memory
+          sizeLimit: 8Mi

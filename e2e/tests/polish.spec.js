@@ -20,7 +20,10 @@ for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, key
  expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
  await expect(page).toHaveTitle(new RegExp(name==='portal'?'Blak Workspace':name==='knowledge'?'Blak Knowledge':name==='crm'?'Blak CRM':'Blak '+name[0].toUpperCase()+name.slice(1)));
  const open=shell.getByRole('button',{name:'Blak Workspace',exact:true});
- await open.click();await expect(shell.getByRole('link',{name:'Workspace home',exact:true})).toBeFocused();await page.keyboard.press('Escape');await expect(open).toBeFocused();
+ await open.click();await expect(shell.getByRole('link',{name:'Workspace home',exact:true})).toBeFocused();
+ await expect(shell.getByRole('link',{name:'Blak Vault',exact:true})).toBeVisible();
+ await expect(shell.getByRole('link',{name:'Sign in to workspace',exact:true})).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(open).toBeFocused();
  for(const mode of ['light','dark']){
   await open.click();const toggle=shell.getByRole('button',{name:'Use '+mode+' theme'});if(await toggle.isVisible())await toggle.click();
   await expect(page.locator('html')).toHaveAttribute('data-blak-theme',mode);

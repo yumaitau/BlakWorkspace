@@ -137,6 +137,16 @@ def restore_drill(root,key,archive):
             with sqlite3.connect(db) as con:
                 if con.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise RuntimeError('Hermes SQLite corruption')
                 evidence['database_checks']['hermes']='integrity_check ok'
+            if 'vault-data' in manifest['volumes']:
+                vault=data/'volumes/vault-data'
+                if not (vault/'db.sqlite3').is_file():raise RuntimeError('Vault database missing from restore')
+                with sqlite3.connect('file:'+str(vault/'db.sqlite3')+'?mode=ro',uri=True) as con:
+                    if con.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise RuntimeError('Vault SQLite corruption')
+                    if con.execute('PRAGMA foreign_key_check').fetchone():raise RuntimeError('Vault foreign key corruption')
+                    attachments=con.execute('SELECT id,cipher_uuid FROM attachments').fetchall()
+                    for attachment,cipher in attachments:
+                        if not (vault/'attachments'/cipher/attachment).is_file():raise RuntimeError('Vault attachment missing from restore')
+                evidence['database_checks']['vault']={'integrity':'ok','attachments':len(attachments)}
             for path in (data/'volumes/portal-flow-data').rglob('*.json'):json.loads(path.read_text())
             evidence.update(archive=archive.name,completed_at=int(time.time()),duration_seconds=round(time.time()-started),network='none')
             atomic(root/'last-restore-drill.json',evidence)

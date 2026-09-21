@@ -42,13 +42,18 @@ def reconcile_oidc(script, marker, secret):
     )
 
 
-ensure_secret('blak-forms', {
-    'session-key': secrets.token_urlsafe(48),
-    'encryption-key': secrets.token_urlsafe(48),
-})
-ensure_secret('blak-frappe', {
-    'database-password': secrets.token_hex(32),
-    'admin-password': secrets.token_urlsafe(28),
-})
-reconcile_oidc('ak-forms.py', 'BLAK_FORMS_CONFIG', 'blak-forms')
-reconcile_oidc('ak-crm.py', 'BLAK_CRM_CONFIG', 'blak-frappe')
+def main():
+    ensure_secret('blak-forms', {
+        'session-key': secrets.token_urlsafe(48),
+        'encryption-key': secrets.token_urlsafe(48),
+    })
+    ensure_secret('blak-frappe', {
+        'database-password': secrets.token_hex(32),
+        'admin-password': secrets.token_urlsafe(28),
+    })
+    reconcile_oidc('ak-forms.py', 'BLAK_FORMS_CONFIG', 'blak-forms')
+    reconcile_oidc('ak-crm.py', 'BLAK_CRM_CONFIG', 'blak-frappe')
+
+
+if __name__ == '__main__':
+    main()

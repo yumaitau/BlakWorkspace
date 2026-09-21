@@ -5,13 +5,14 @@ metadata:
   namespace: blak-micro
 data:
   csp.yaml: |
-    # Blak Drive CSP: upstream defaults plus Blak ID (OIDC) and Blak Docs (Collabora).
+    # Upstream defaults plus Blak ID, Docs and the authenticated workspace switcher.
     # Mounted at /etc/opencloud/csp.yaml, referenced via PROXY_CSP_CONFIG_FILE_LOCATION.
     directives:
       child-src:
         - '''self'''
       connect-src:
         - '''self'''
+        - 'https://portal.workspace.example.com/'
         - 'blob:'
         - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
         - 'https://update.opencloud.eu/'
@@ -57,3 +58,4 @@ data:
       style-src:
         - '''self'''
         - '''unsafe-inline'''
+        - 'blob:'
