@@ -29,6 +29,17 @@ for(const name of ['InterVariable.woff2','OFL.txt']) {
   else {fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,source);}
 }
 const t = tokens.dark;
+// Vault styling is bundled into its own immutable image; no shared shell script.
+function vaultPalette(p) {
+  const roles={'background':p.surface,'background-alt':p['surface-raised'],'background-alt2':p['surface-base'],'background-alt3':p['surface-base'],'background-alt4':p['surface-hover'],'text-main':p['text-primary'],'text-muted':p['text-secondary'],'primary-100':p['surface-selected'],'primary-600':p.primary,'primary-700':p['primary-hover'],'secondary-100':p['surface-raised'],'secondary-300':p.border,'secondary-500':p['border-strong']};
+  return Object.entries(roles).map(([key,value])=>'--color-'+key+':'+value.slice(1).match(/../g).map(v=>parseInt(v,16)).join(' ')+';').join('');
+}
+write('services/vault/brand.css',fontCSS.replaceAll('/_blak/fonts/','/fonts/')+'\n'+
+  ':root,.theme_light{'+vaultPalette({...t,...tokens.light})+'}\n.theme_dark{'+vaultPalette(t)+'}\n'+
+  'body,input,button,select,textarea{font-family:var(--blak-font-sans)!important}\n'+
+  '.blak-vault-brand{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 20px;background:'+t['surface-base']+';color:'+t['text-primary']+';border-bottom:1px solid '+t.border+'}\n'+
+  '.blak-vault-brand a{display:inline-flex;border-radius:4px}.blak-vault-brand a:focus-visible{outline:2px solid '+t.focus+';outline-offset:3px}.blak-vault-brand strong{font-size:15px}.blak-vault-brand span{margin-left:auto;font-size:12px;color:'+t['text-secondary']+'}\n'+
+  '.tw-bg-primary-600{color:'+t['on-primary']+'!important}@media(max-width:480px){.blak-vault-brand{padding-inline:12px}.blak-vault-brand span{display:none}}\n');
 const identityCSS = `${fontCSS}\n${tokenCSS}
 :host,:root{--pf-global--BackgroundColor--100:${t.surface};--pf-global--BackgroundColor--200:${t['surface-base']};--pf-global--Color--100:${t['text-primary']};--pf-global--Color--200:${t['text-secondary']};--pf-c-page--BackgroundColor:${t['surface-base']};--pf-c-page__main-section--BackgroundColor:${t.surface};--pf-c-card--BackgroundColor:${t['surface-raised']};--pf-c-card--Color:${t['text-primary']};--pf-global--primary-color--100:${t.primary};--pf-global--link--Color:${t.info};--pf-c-page__header--BackgroundColor:${t['surface-base']}}
 :host{color:${t['text-primary']};font-family:Inter,system-ui,sans-serif;--pf-global--FontFamily--sans-serif:Inter,system-ui,sans-serif;--pf-global--FontFamily--heading--sans-serif:Inter,system-ui,sans-serif}.pf-c-page,.pf-c-page__main,.pf-c-page__main-section,.pf-c-page__header{background:${t['surface-base']}!important;color:${t['text-primary']}!important}

@@ -21,6 +21,8 @@ class TailnetReleaseTests(unittest.TestCase):
             (root/'deploy/k3s/micro').mkdir(parents=True)
             collabora=root/'deploy/k3s/micro/60-collabora.yaml'
             collabora.write_text(json.dumps({'kind':'Deployment','metadata':{'name':'collabora'},'spec':{'template':{'spec':{'containers':[{'name':'code','env':[{'name':'server_name','value':'docs.workspace.example.com'},{'name':'domain','value':'drive.workspace.example.com'}]}]}}}}))
+            vault=root/'deploy/k3s/micro/96-vault.yaml'
+            vault.write_text((ROOT/'deploy/k3s/micro/96-vault.yaml').read_text())
             (root/'services/workspace-shell').mkdir(parents=True)
             (root/'services/workspace-shell/nginx.conf').write_text((ROOT/'services/workspace-shell/nginx.conf').read_text())
             (root/'e2e').mkdir()
@@ -39,6 +41,12 @@ class TailnetReleaseTests(unittest.TestCase):
             self.assertIn('map $http_host $blak_upstream',gateway)
             self.assertIn('demo.tail123.ts.net:8444 authentik-server.blak-micro.svc.cluster.local:9000;',gateway)
             self.assertIn('portal.workspace.example.com portal.blak-micro.svc.cluster.local:3000;',gateway)
+            self.assertIn('demo.tail123.ts.net:8453 vault.blak-micro.svc.cluster.local:8080;',gateway)
+            vault_docs=list(tailnet.yaml.safe_load_all(vault.read_text()))
+            policy=next(d for d in vault_docs if d['kind']=='NetworkPolicy')
+            self.assertEqual(policy['spec']['egress'][-1], {'to':[{'ipBlock':{'cidr':'100.64.0.1/32'}}], 'ports':[{'protocol':'TCP','port':8444}]})
+            deployment=next(d for d in vault_docs if d['kind']=='Deployment')
+            self.assertEqual(deployment['spec']['template']['spec']['hostAliases'],[{'ip':'100.64.0.1','hostnames':['demo.tail123.ts.net']}])
             document=tailnet.yaml.safe_load(collabora.read_text())
             env={item['name']:item['value'] for item in document['spec']['template']['spec']['containers'][0]['env']}
             self.assertEqual(env['server_name'],'demo.tail123.ts.net:8446')

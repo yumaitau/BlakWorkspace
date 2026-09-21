@@ -7,8 +7,8 @@ from pathlib import Path
 import re
 import yaml
 
-PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8448,'forms':8449,'crm':8450,'chat':8451,'hermes':8452}
-UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080'}
+PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8448,'forms':8449,'crm':8450,'chat':8451,'hermes':8452,'vault':8453}
+UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080','vault':'vault:8080'}
 
 
 def configure(root,host,address):
@@ -50,18 +50,19 @@ def configure(root,host,address):
     routes=''.join('  '+origins[app].removeprefix('https://')+' '+upstream.replace(':','.blak-micro.svc.cluster.local:')+';\n' for app,upstream in UPSTREAMS.items())
     text=text.replace("  default '';", "  default '';\n"+routes,1)
     text=text.replace('if ($host != drive.'+domain+')', 'if ($http_host != '+origins['drive'].removeprefix('https://')+')')
-    assets='<link rel="stylesheet" href="/_blak/shell.css"><script src="/_blak/shell.js" defer></script>'
-    text='map $http_host $blak_assets { default \''+assets+'\'; '+origins['id'].removeprefix('https://')+' \"<link rel=stylesheet href=/_blak/fonts.css>\"; }\n'+text
-    text=text.replace("sub_filter '</head>' '"+assets+"</head>';", "sub_filter '</head>' '$blak_assets</head>';")
     text=text.replace('    proxy_pass http://$blak_upstream;', '    rewrite ^/application/o/[^/]+/(authorize|token|userinfo)/$ /application/o/$1/ break;\n    proxy_pass http://$blak_upstream;')
     nginx.write_text(text)
     # CoreDNS cannot always resolve MagicDNS names; use the node's verified tailnet IP.
     for path in (root/'deploy/k3s/micro').glob('*.yaml'):
         documents=list(yaml.safe_load_all(path.read_text()));changed=False
         for doc in documents:
+            if doc and doc.get('kind')=='NetworkPolicy' and doc['metadata']['name']=='vault-internal':
+                prefix=32 if ipaddress.ip_address(address).version==4 else 128
+                doc['spec']['egress'].append({'to':[{'ipBlock':{'cidr':address+'/'+str(prefix)}}], 'ports':[{'protocol':'TCP','port':PORTS['id']}]})
+                changed=True
             if not doc or doc.get('kind')!='Deployment':continue
             spec=doc['spec']['template']['spec']
-            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes']:
+            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault']:
                 spec.setdefault('hostAliases',[]).append({'ip':address,'hostnames':[host]});changed=True
             if doc['metadata']['name']=='collabora':
                 for container in spec['containers']:

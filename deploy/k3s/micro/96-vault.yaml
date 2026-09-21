@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: vault}
+  template:
+    metadata:
+      labels: {app: vault}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+      - name: vault
+        image: blak-vault:1.37.3
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+        ports:
+        - {name: http, containerPort: 8080}
+        env:
+        - {name: DOMAIN, value: 'https://vault.workspace.example.com'}
+        - {name: ROCKET_PORT, value: '8080'}
+        - {name: ROCKET_ADDRESS, value: '0.0.0.0'}
+        - {name: DATA_FOLDER, value: '/data'}
+        - {name: UMASK, value: '077'}
+        - {name: LOG_LEVEL, value: 'warn'}
+        - {name: IP_HEADER, value: 'X-Real-IP'}
+        - {name: SIGNUPS_ALLOWED, value: 'false'}
+        - {name: SSO_ENABLED, value: 'true'}
+        - {name: SSO_ONLY, value: 'true'}
+        - {name: SSO_SIGNUPS_ALLOWED, value: 'true'}
+        - {name: SSO_SIGNUPS_MATCH_EMAIL, value: 'false'}
+        - {name: SSO_ALLOW_UNKNOWN_EMAIL_VERIFICATION, value: 'false'}
+        - {name: SSO_PKCE, value: 'true'}
+        - {name: SSO_AUTH_ONLY_NOT_SESSION, value: 'false'}
+        - {name: SSO_AUTHORITY, value: 'https://id.workspace.example.com/application/o/blak-vault/'}
+        - {name: SSO_SCOPES, value: 'profile email offline_access'}
+        - {name: SSO_MASTER_PASSWORD_POLICY, value: '{"enforceOnLogin":false,"minComplexity":3,"minLength":14,"requireLower":false,"requireNumbers":false,"requireSpecial":false,"requireUpper":false}'}
+        - {name: ORG_GROUPS_ENABLED, value: 'true'}
+        - {name: ORG_EVENTS_ENABLED, value: 'true'}
+        - {name: SENDS_ALLOWED, value: 'false'}
+        - {name: DISABLE_ICON_DOWNLOAD, value: 'true'}
+        - {name: SHOW_PASSWORD_HINT, value: 'false'}
+        - {name: PUSH_ENABLED, value: 'false'}
+        - {name: ADMIN_SESSION_LIFETIME, value: '5'}
+        - name: SSO_CLIENT_ID
+          valueFrom:
+            secretKeyRef: {name: blak-vault, key: client-id}
+        - name: SSO_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: {name: blak-vault, key: oidc-secret}
+        - name: ADMIN_TOKEN
+          valueFrom:
+            secretKeyRef: {name: blak-vault, key: admin-token-hash}
+        - name: ORG_CREATION_USERS
+          valueFrom:
+            secretKeyRef: {name: blak-vault, key: org-creation-users}
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: '2', memory: 512Mi}
+        readinessProbe:
+          httpGet: {path: /alive, port: http}
+          periodSeconds: 5
+        livenessProbe:
+          httpGet: {path: /alive, port: http}
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        volumeMounts:
+        - {name: data, mountPath: /data}
+        - {name: temporary, mountPath: /tmp}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: vault-data}
+      - name: temporary
+        emptyDir: {medium: Memory, sizeLimit: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+  namespace: blak-micro
+spec:
+  selector: {app: vault}
+  ports:
+  - {name: http, port: 8080, targetPort: http}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vault-internal
+  namespace: blak-micro
+spec:
+  podSelector:
+    matchLabels: {app: vault}
+  policyTypes: [Ingress, Egress]
+  ingress:
+  - from:
+    - podSelector: {matchLabels: {app: workspace-shell}}
+    - podSelector: {matchLabels: {app: blak-role-sync}}
+    ports:
+    - {protocol: TCP, port: 8080}
+  egress:
+  - to:
+    - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports:
+    - {protocol: UDP, port: 53}
+    - {protocol: TCP, port: 53}
+  # prepare-tailnet adds only the verified Blak ID node address and HTTPS port.
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vault
+  namespace: blak-micro
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: Host(`vault.workspace.example.com`)
+    kind: Rule
+    services:
+    - {name: workspace-shell, port: 8080}
+  tls: {}

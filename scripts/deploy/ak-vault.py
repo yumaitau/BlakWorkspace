@@ -1,0 +1,67 @@
+"""Run through the provisioning runner; stdout contains OIDC credentials."""
+import json
+import secrets
+from authentik.core.models import Application, Group, User
+from authentik.crypto.models import CertificateKeyPair
+from authentik.flows.models import Flow, FlowStageBinding
+from authentik.policies.expression.models import ExpressionPolicy
+from authentik.policies.models import PolicyBinding
+from authentik.providers.oauth2.models import ScopeMapping, RedirectURI, RedirectURIMatchingMode
+from authentik.stages.authenticator_totp.models import AuthenticatorTOTPStage
+from authentik.stages.authenticator_validate.models import AuthenticatorValidateStage
+from authentik.stages.authenticator_webauthn.models import AuthenticatorWebAuthnStage
+
+flow, _ = Flow.objects.update_or_create(slug='blak-vault-authorization', defaults={
+    'name': 'Blak Vault verification', 'title': 'Verify your identity for Blak Vault',
+    'designation': 'authorization', 'authentication': 'require_authenticated',
+})
+totp, _ = AuthenticatorTOTPStage.objects.get_or_create(name='blak-vault-totp-setup')
+webauthn, _ = AuthenticatorWebAuthnStage.objects.update_or_create(
+    name='blak-vault-passkey-setup', defaults={'user_verification': 'required'})
+mfa, _ = AuthenticatorValidateStage.objects.update_or_create(name='blak-vault-mfa', defaults={
+    'not_configured_action': 'configure', 'device_classes': ['totp', 'webauthn', 'static'],
+    'last_auth_threshold': 'minutes=15', 'webauthn_user_verification': 'required',
+})
+mfa.configuration_stages.set([totp, webauthn])
+FlowStageBinding.objects.update_or_create(target=flow, stage=mfa, defaults={'order': 0})
+standard = Flow.objects.get(slug='default-provider-authorization-implicit-consent')
+for binding in FlowStageBinding.objects.filter(target=standard):
+    FlowStageBinding.objects.update_or_create(target=flow, stage=binding.stage,
+                                            defaults={'order': binding.order + 100})
+provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults={
+    'authorization_flow': flow,
+    'invalidation_flow': Flow.objects.get(slug='default-provider-invalidation-flow'),
+    'client_type': 'confidential', 'client_id': 'blak-vault',
+    'client_secret': secrets.token_urlsafe(48),
+    'redirect_uris': [RedirectURI(matching_mode=RedirectURIMatchingMode.STRICT,
+        url='https://vault.workspace.example.com/identity/connect/oidc-signin')],
+    'signing_key': CertificateKeyPair.objects.first(), 'sub_mode': 'user_uuid',
+    'include_claims_in_id_token': True, 'issuer_mode': 'per_provider',
+})
+provider.authorization_flow = flow
+provider.access_token_validity = 'minutes=10'
+provider.refresh_token_validity = 'days=7'
+provider.save()
+provider.property_mappings.add(*ScopeMapping.objects.filter(
+    scope_name__in=['openid', 'profile', 'email', 'offline_access']
+).exclude(name__startswith='Blak Workspace '))
+app, _ = Application.objects.update_or_create(slug='blak-vault', defaults={
+    'name': 'Blak Vault', 'provider': provider, 'open_in_new_tab': True,
+    'meta_launch_url': 'https://vault.workspace.example.com/#/sso?identifier=blak',
+    'meta_icon': 'https://vault.workspace.example.com/images/blak-logo.svg',
+    'policy_engine_mode': 'all',
+})
+groups = ['blak-vault-' + role for role in ['reader', 'writer', 'admin']]
+for name in groups:
+    Group.objects.get_or_create(name=name)
+policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: blak-vault', defaults={
+    'expression': 'return request.user.is_active and (request.user.is_superuser or any(ak_is_group_member(request.user, name=g) for g in ' + repr(groups) + '))',
+})
+PolicyBinding.objects.update_or_create(target=app, policy=policy, defaults={'order': 0, 'enabled': True})
+owners = list(User.objects.filter(is_superuser=True, is_active=True).exclude(email='').values_list('email', flat=True))
+if not owners:
+    raise ValueError('Vault requires an active operator with an email address for organization setup')
+print('BLAK_VAULT_CONFIG=' + json.dumps({
+    'client-id': provider.client_id, 'oidc-secret': provider.client_secret,
+    'org-creation-users': ','.join(owners),
+}))
