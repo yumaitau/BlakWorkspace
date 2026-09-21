@@ -18,6 +18,7 @@ html[data-blak-app=crm] input,html[data-blak-app=crm] select,html[data-blak-app=
 /* Outline owns its surfaces through the native ?theme override. Partial generic
    surface paints leave styled-component children in the opposite palette. */
 html[data-blak-app=chat] .rcx-sidebar--main{background:var(--blak-surface-base)!important}
+html[data-blak-app=chat] .rcx-button--primary{color:var(--blak-on-primary)!important}
 /* Collabora chrome only: never recolour the user's page/cells/slides. */
 html[data-blak-app=docs] :is(#toolbar-up,#toolbar-down,#main-menu,#notebookbar,.notebookbar,.tabs-container){background:var(--blak-surface)!important;color:var(--blak-text-primary)!important}
 html[data-blak-app=docs] :is(#toolbar-up,#toolbar-down,#main-menu,#notebookbar) button{color:var(--blak-text-primary)!important}

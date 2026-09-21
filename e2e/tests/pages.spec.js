@@ -15,11 +15,11 @@ test('Blak ID renders a working vector logo, branded heading and local font',asy
   await page.evaluate(()=>document.fonts.load('600 20px Inter'));
   expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
   await expect(page.getByRole('heading',{name:'Welcome to Blak ID'})).toHaveCSS('font-family',/Inter/);
-  await page.screenshot({path:test.info().outputPath('blak-id-desktop.png'),fullPage:true});
+  await page.screenshot({path:test.info().outputPath('blak-id-desktop.png'),fullPage:true,animations:'disabled'});
   await page.setViewportSize({width:390,height:844});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('button',{name:/log in/i})).toBeInViewport();
-  await page.screenshot({path:test.info().outputPath('blak-id-mobile.png'),fullPage:true});
+  await page.screenshot({path:test.info().outputPath('blak-id-mobile.png'),fullPage:true,animations:'disabled'});
 });
 
 const areas={
@@ -43,12 +43,12 @@ for(const [app,sections] of Object.entries(areas)) test(`${app}: every main page
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),section).toBe(true);
     expect(await page.locator('img').evaluateAll(images=>images.filter(i=>i.getBoundingClientRect().width>0&&i.complete&&!i.naturalWidth).map(i=>i.alt)),section).toEqual([]);
     await expect(page).toHaveTitle(/Blak/);
-    await page.screenshot({path:test.info().outputPath(app+'-'+section.toLowerCase().replaceAll(' ','-')+'.png'),fullPage:true});
+    await page.screenshot({path:test.info().outputPath(app+'-'+section.toLowerCase().replaceAll(' ','-')+'.png'),fullPage:true,animations:'disabled'});
   }
   expect(errors).toEqual([]);
 });
 
-test('Projects overview, projects, members and invitations keep workspace chrome',async({page})=>{
+const projectTest=test.extend({projectWorkspace:[async({page},use)=>{
   await page.goto('https://portal.workspace.example.com/login');await authentikLogin(page);
   await expect(page).toHaveURL('https://portal.workspace.example.com/');
   await page.goto('https://portal.workspace.example.com/launch/projects');
@@ -59,22 +59,22 @@ test('Projects overview, projects, members and invitations keep workspace chrome
   });
   expect(response.ok()).toBe(true);
   const workspace=await response.json();
-  try {
-   await page.goto('https://projects.workspace.example.com/dashboard/workspace/'+workspace.id);
+  try {await use(workspace);} finally {
+    const deleted=await page.request.post('https://projects.workspace.example.com/api/auth/organization/delete',{
+      headers:{origin:'https://projects.workspace.example.com'},data:{organizationId:workspace.id},
+    });expect(deleted.ok()).toBe(true);
+  }
+},{timeout:90000}]});
+projectTest('Projects overview, projects, members and invitations keep workspace chrome',async({page,projectWorkspace})=>{
    for(const section of ['Overview','Projects','Members','Invitations']) {
-    await page.getByRole('button',{name:section,exact:true}).last().click();
+    // Overview leaves the workspace context; return before testing its subpages.
+    await page.goto('https://projects.workspace.example.com/dashboard/workspace/'+projectWorkspace.id);
+    await page.getByRole('button',{name:section,exact:true}).and(page.locator('button[data-sidebar="menu-button"]')).click();
     await expect(page.locator('#blak-workspace-shell')).toBeVisible();
     await expect(page).toHaveTitle(/Blak Projects/);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),section).toBe(true);
-    await page.screenshot({path:test.info().outputPath('projects-'+section.toLowerCase()+'.png'),fullPage:true});
+    await page.screenshot({path:test.info().outputPath('projects-'+section.toLowerCase()+'.png'),fullPage:true,animations:'disabled'});
    }
-  } finally {
-   // Reserve cleanup time even when a navigation assertion exhausts its budget.
-   test.setTimeout(test.info().timeout+30000);
-   const deleted=await page.request.post('https://projects.workspace.example.com/api/auth/organization/delete',{
-    headers:{origin:'https://projects.workspace.example.com'},data:{organizationId:workspace.id},
-   });expect(deleted.ok()).toBe(true);
-  }
 });
 
 test('portal guide, search, cloud and status pages have labelled controls',async({page})=>{
