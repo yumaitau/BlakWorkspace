@@ -81,10 +81,11 @@ function App() {
       )}
     >
       <header>
-        <a href="/">Blak Workspace</a>
+        <a href="/" className="workspace-brand"><img src="/brand/logo.svg" alt="" width="28" height="28" />Blak Workspace</a>
         <strong>Blak Draw</strong>
         <span>Powered by Excalidraw</span>
         <button
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
           onClick={() => {
             const next = theme === "dark" ? "light" : "dark";
             setTheme(next);

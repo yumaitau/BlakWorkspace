@@ -27,7 +27,8 @@ for(const mode of ['dark','light'])for(const route of pages)test(`${mode} theme 
   await page.goto(route);await expect(page.locator('html')).toHaveAttribute('data-theme',mode);
   await page.evaluate(()=>document.fonts.load('400 16px Inter'));
   expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
-  const colours=await page.locator('body').evaluate(el=>({surface:getComputedStyle(el).getPropertyValue('--surface').trim(),primary:getComputedStyle(el).getPropertyValue('--primary').trim()}));
+  // Draw mounts its palette on the React app; server-rendered pages inherit it from html.
+  const colours=await page.locator(route==='/draw'?'.app':'body').evaluate(el=>({surface:getComputedStyle(el).getPropertyValue('--surface').trim(),primary:getComputedStyle(el).getPropertyValue('--primary').trim()}));
   expect(colours.surface).toBe((tokens[mode].surface||tokens.dark.surface));expect(colours.primary).toBe(tokens.dark.primary);
   await expect(page.getByRole('button',{name:`Switch to ${mode==='dark'?'light':'dark'} theme`})).toBeVisible();
 });
