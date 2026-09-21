@@ -1,12 +1,14 @@
 'use strict';
 
 const LEVELS = Object.freeze({ reader: 1, writer: 2, admin: 3 });
+const { INTEGRATIONS } = require('./integration');
+const ROLE_APPS = new Set(Object.entries(INTEGRATIONS).filter(([, app]) => app.roleGroups?.length).map(([id]) => id));
 const MANAGED_APPS = Object.freeze(['draw', 'flow', 'storage', 'search']);
 
 function rolesFromClaims(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return Object.fromEntries(Object.entries(value).filter(([app, role]) =>
-    MANAGED_APPS.includes(app) && Object.hasOwn(LEVELS, role)));
+    ROLE_APPS.has(app) && Object.hasOwn(LEVELS, role)));
 }
 
 function can(user, app, permission = 'reader') {

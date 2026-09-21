@@ -62,6 +62,15 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     if (!csrf) throw Error('Native Knowledge CSRF cookie unavailable');
     return page.request.post(origin + '/api/' + path, { data, headers: { origin, 'x-csrf-token': csrf } });
   }
+  async function reconnect(role) {
+    await context.clearCookies();
+    await context.addCookies(await identityCookies(key, 'Knowledge native role fixture', ['sites'], { sites: role }));
+    await page.goto(origin + '/auth/oidc');
+    await page.waitForURL(url => url.origin === origin && !url.pathname.startsWith('/auth'), { timeout: 60000 });
+    const created = await cookieAPI('apiKeys.create', { name: key + '-restored-' + role });
+    expect(created.status()).toBe(200);
+    token = (await created.json()).data.value;
+  }
   try {
     await context.addCookies(await identityCookies(key, 'Knowledge native role fixture', ['sites'], { sites: 'admin' }));
     const portal = await (await page.request.get('/api/me')).json();
@@ -123,12 +132,18 @@ test('native Knowledge roles cap owned documents and revoke existing sessions an
     expect([401, 403]).toContain((await cookieAPI('documents.info', { id: document.id })).status());
     updateIdentity(key, { active: true, grants: ['sites'], roles: { sites: 'reader' } });
     await waitRole('reader');
+    // Outline's suspension cleanup permanently destroys API keys. Restoring
+    // directory access must not resurrect those credentials.
+    await denied('documents.info', { id: document.id });
+    await reconnect('reader');
     expect((await response(token, 'documents.info', { id: document.id })).status).toBe(200);
     updateIdentity(key, { grants: ['search'], roles: { search: 'admin' } });
     await waitRole(null);
     await denied('documents.info', { id: document.id });
     updateIdentity(key, { grants: ['sites'], roles: { sites: 'writer' } });
     await waitRole('writer');
+    await denied('documents.info', { id: document.id });
+    await reconnect('writer');
     await api(token, 'documents.update', { id: document.id, title: key + '-restored' });
     updateIdentity(key, { grants: [] });
     await waitRole(null);
