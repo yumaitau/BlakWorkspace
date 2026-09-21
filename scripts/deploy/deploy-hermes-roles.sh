@@ -27,12 +27,12 @@ PY
 kubectl -n "$NS" rollout status deploy/hermes --timeout=300s
 kubectl -n "$NS" set image cronjob/hermes-workspace-sync "sync=$SYNC_IMAGE"
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do
-  kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=300s
+  kubectl -n "$NS" wait --for=condition=complete "job/$active" --timeout=1200s
 done
 # The successful indexer run writes verified native/Blak ID owner bindings.
 JOB="hermes-roles-$REVISION-$(date +%s)"
 kubectl -n "$NS" create job "$JOB" --from=cronjob/hermes-workspace-sync
-kubectl -n "$NS" wait --for=condition=complete "job/$JOB" --timeout=300s
+kubectl -n "$NS" wait --for=condition=complete "job/$JOB" --timeout=1200s
 kubectl -n "$NS" logs "job/$JOB" | grep -q 'Sync complete'
 python3 - <<'PY' | kubectl -n "$NS" apply -f -
 import os,yaml

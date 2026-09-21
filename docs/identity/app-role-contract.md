@@ -169,3 +169,11 @@ with the same native token. Separate source-revocation acceptance verified nativ
 file, retrieval, model-reference and per-file vector cleanup while retaining the
 user's authorized Hermes session. These checks cover Hermes; the remaining native
 application mappings above require their own acceptance.
+
+Controller enrollment and recurring administrator calls use the prepared HTTPS
+Hermes origin with certificate and hostname verification. The controller trusts
+the configured workspace CA in addition to system roots. Ownerless legacy sync
+mappings are rejected before native data access or deletion. Once a source listing
+has established current access, transient processing failures preserve tracked
+copies for retry; explicit access denial still revokes them. A failed source
+listing remains fail-closed because continuing source access cannot be verified.

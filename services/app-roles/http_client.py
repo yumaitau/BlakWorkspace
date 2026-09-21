@@ -1,6 +1,8 @@
 """Small, origin-bound HTTP client for native directory/role APIs."""
 import http.cookies
 import json
+import os
+import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -18,13 +20,18 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class API:
-    def __init__(self, base, token=None):
+    def __init__(self, base, token=None, ca_data=None):
         parsed = urllib.parse.urlsplit(base)
         if parsed.scheme not in ('http', 'https') or not parsed.netloc or parsed.username or parsed.password:
             raise ValueError('Invalid native API origin')
         self.base = base.rstrip('/')
         self.headers = {'Authorization': 'Bearer ' + token} if token else {}
-        self.opener = urllib.request.build_opener(NoRedirect())
+        context = ssl.create_default_context()
+        if os.environ.get('BLAK_NATIVE_CA_FILE'):
+            context.load_verify_locations(cafile=os.environ['BLAK_NATIVE_CA_FILE'])
+        if ca_data:
+            context.load_verify_locations(cadata=ca_data)
+        self.opener = urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=context))
 
     def request(self, method, path, data=None, form=False):
         target = urllib.parse.urljoin(self.base + '/', path)

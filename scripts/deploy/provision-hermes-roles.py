@@ -28,8 +28,13 @@ def save(values):
 
 def main():
     # Only Kubernetes and authenticated native metadata enter this enrollment.
-    ip = subprocess.check_output(KUBE + ['get', 'service', 'hermes', '-o', 'jsonpath={.spec.clusterIP}'], text=True)
-    origin = 'http://' + ip + ':8080'
+    deployment = json.loads((ROOT / '.deployment.json').read_text())
+    origin = deployment.get('tailnet', {}).get('origins', {}).get('hermes') or 'https://hermes.' + deployment['domain']
+    from urllib.parse import urlsplit
+    parsed = urlsplit(origin)
+    if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password or parsed.path not in ('', '/'):
+        raise ValueError('Hermes controller requires a verified HTTPS origin')
+    ca = json.loads(subprocess.check_output(KUBE + ['get', 'configmap', 'blak-ca', '-o', 'json']))['data']['rootCA.pem']
     values = secret(SECRET)
     if not values:
         accounts = json.loads(secret('blak-hermes-sync')['accounts.json'])['accounts']
@@ -37,7 +42,7 @@ def main():
         account = next((account for account in accounts if account['name'] == requested), None) if requested else accounts[0] if len(accounts) == 1 else None
         if not account:
             raise ValueError('Select the existing native administrator mapping for controller enrollment')
-        operator = API(origin, account['hermes']['token'])
+        operator = API(origin, account['hermes']['token'], ca_data=ca)
         profile = operator('GET', '/api/v1/auths/')
         if profile['id'] != account['owner_id'] or profile['role'] != 'admin':
             raise ValueError('Bootstrap credential does not belong to the expected native admin')
@@ -45,11 +50,11 @@ def main():
             'name': 'Blak ID role controller', 'email': 'blak-role-' + secrets.token_hex(8) + '@example.invalid',
             'password': secrets.token_urlsafe(48), 'role': 'admin',
         })
-        controller = API(origin, created['token'])
+        controller = API(origin, created['token'], ca_data=ca)
         key = controller('POST', '/api/v1/auths/api_key')['api_key']
         values = {'user-id': created['id'], 'api-key': key}
         save(values)
-    api = API(origin, values['api-key'])
+    api = API(origin, values['api-key'], ca_data=ca)
     profile = api('GET', '/api/v1/auths/')
     if profile['id'] != values['user-id'] or profile['role'] != 'admin':
         raise ValueError('Enrolled native controller identity mismatch')
@@ -62,7 +67,7 @@ def main():
     collection = api('GET', '/api/v1/knowledge/' + values['collection-id'])
     if collection['user_id'] != profile['id']:
         raise ValueError('Shared collection is not owned by the native controller')
-    save_app(KUBE, 'hermes', {'base': 'http://hermes:8080', 'controller_user_id': profile['id'],
+    save_app(KUBE, 'hermes', {'base': origin, 'controller_user_id': profile['id'],
                             'token': values['api-key'], 'collection_ids': [collection['id']]})
     print('Native Hermes controller and shared collection enrolled; credentials omitted')
 

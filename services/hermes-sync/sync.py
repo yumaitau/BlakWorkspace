@@ -490,7 +490,10 @@ def search_document(hermes, hermes_owner, portal_owner, source_name, source, doc
 
 
 def permitted_sources(mapping, directory):
-    member = directory.get(mapping.get('portal_owner'))
+    subject = mapping.get('portal_owner')
+    if not isinstance(subject, str) or not subject or subject.strip() != subject:
+        raise ValueError('Sync mapping requires an immutable portal owner before access reconciliation')
+    member = directory.get(subject)
     if not member or 'hermes' not in member['apps']:
         return set()
     return {name for name, source in CONTENT_SOURCES.items() if source['app'] in member['apps']}
@@ -534,6 +537,7 @@ def sync_mapping(mapping, state, checkpoint, allowed_sources):
     for name in sorted(set(mapping['sources']) | set(state)):
         if name not in CONTENT_SOURCES:
             raise ValueError('Unknown source in sync state')
+        source_validated = False
         try:
             record = state.setdefault(name, {'files': {}})
             if name not in allowed_sources or name not in mapping['sources']:
@@ -568,6 +572,7 @@ def sync_mapping(mapping, state, checkpoint, allowed_sources):
                 docs = storage_documents(api)
             else:
                 raise ValueError('unsupported workspace source')
+            source_validated = True
             for doc in docs:
                 if doc['revision']:
                     # Public links are part of extracted content even when the
@@ -584,14 +589,16 @@ def sync_mapping(mapping, state, checkpoint, allowed_sources):
         except Exception as error:
             failures.append(name)
             record = state.setdefault(name, {'files': {}})
-            # A failed source permission/listing check must not leave an older
-            # readable copy in native Knowledge, even when the app grant remains.
-            try:
-                revoke_source(hermes, owner, record, checkpoint)
-                if name in allowed_sources:
-                    record.pop('access_revoked', None)
-            except Exception as cleanup_error:
-                LOG.error('Source cleanup failed source=%s error=%s', name, type(cleanup_error).__name__)
+            # An unavailable source listing cannot establish continuing access.
+            # Once listing succeeds, preserve authorized copies on transient
+            # extraction/vector/index failures; explicit denial still revokes.
+            if not source_validated or isinstance(error, urllib.error.HTTPError) and error.code in (401, 403, 404):
+                try:
+                    revoke_source(hermes, owner, record, checkpoint)
+                    if name in allowed_sources:
+                        record.pop('access_revoked', None)
+                except Exception as cleanup_error:
+                    LOG.error('Source cleanup failed source=%s error=%s', name, type(cleanup_error).__name__)
             record['last_error'] = {'time': int(time.time()), 'type': type(error).__name__}
             checkpoint()
             LOG.error('Source sync failed source=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
@@ -678,41 +685,41 @@ def main():
     config = json.loads(Path(os.environ.get('SYNC_CONFIG', '/config/accounts.json')).read_text())
     state_file = Path(os.environ.get('SYNC_STATE', '/data/state.json'))
     state_file.parent.mkdir(parents=True, exist_ok=True)
-    lock = state_file.with_suffix('.lock').open('a')
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        LOG.info('Another sync is active; skipping overlapping run')
-        return 0
-    from access import snapshot
-    from http_client import API as DirectoryAPI
-    directory_path = Path(os.environ.get('BLAK_DIRECTORY_PATH', '/directory'))
-    directory = snapshot(DirectoryAPI((directory_path / 'base-url').read_text().strip(),
-                                     (directory_path / 'api-token').read_text().strip()),
-                         json.loads((directory_path / 'subjects.json').read_text()))
-    state = json.loads(state_file.read_text()) if state_file.exists() else {}
-    owner_file = state_file.with_name('owners.json')
-    owners = json.loads(owner_file.read_text()) if owner_file.exists() else {}
-    failures = 0
-    for mapping in config['accounts']:
-        name = mapping['name']
+    with state_file.with_suffix('.lock').open('a') as lock:
         try:
-            account_state = state.setdefault(name, {})
-            def checkpoint():
-                binding = {'native_id': mapping['owner_id'], 'subject': mapping['portal_owner']}
-                if name in owners and owners[name] != binding:
-                    raise ValueError('Cannot reassign an existing private sync state owner')
-                owners[name] = binding
-                save_state(owner_file, owners)
-                save_state(state_file, state)
-                publish_health(config, state, state_file.with_name('health.json'))
-            result = sync_mapping(mapping, account_state, checkpoint, permitted_sources(mapping, directory))
-            LOG.info('Sync complete account=%s counts=%s', name, json.dumps(result))
-        except Exception as error:
-            # HTTPError bodies, credentials and document contents never reach logs.
-            LOG.error('Sync failed account=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
-            failures += 1
-    return 1 if failures else 0
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            LOG.info('Another sync is active; skipping overlapping run')
+            return 0
+        from access import snapshot
+        from http_client import API as DirectoryAPI
+        directory_path = Path(os.environ.get('BLAK_DIRECTORY_PATH', '/directory'))
+        directory = snapshot(DirectoryAPI((directory_path / 'base-url').read_text().strip(),
+                                         (directory_path / 'api-token').read_text().strip()),
+                             json.loads((directory_path / 'subjects.json').read_text()))
+        state = json.loads(state_file.read_text()) if state_file.exists() else {}
+        owner_file = state_file.with_name('owners.json')
+        owners = json.loads(owner_file.read_text()) if owner_file.exists() else {}
+        failures = 0
+        for mapping in config['accounts']:
+            name = mapping['name']
+            try:
+                account_state = state.setdefault(name, {})
+                def checkpoint():
+                    binding = {'native_id': mapping['owner_id'], 'subject': mapping['portal_owner']}
+                    if name in owners and owners[name] != binding:
+                        raise ValueError('Cannot reassign an existing private sync state owner')
+                    owners[name] = binding
+                    save_state(owner_file, owners)
+                    save_state(state_file, state)
+                    publish_health(config, state, state_file.with_name('health.json'))
+                result = sync_mapping(mapping, account_state, checkpoint, permitted_sources(mapping, directory))
+                LOG.info('Sync complete account=%s counts=%s', name, json.dumps(result))
+            except Exception as error:
+                # HTTPError bodies, credentials and document contents never reach logs.
+                LOG.error('Sync failed account=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
+                failures += 1
+        return 1 if failures else 0
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')

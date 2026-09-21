@@ -250,6 +250,43 @@ class SearchTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):sync.SearchIndex(API())
 
 class SourceRevocationTests(unittest.TestCase):
+    def test_missing_owner_rejected_before_any_native_mutation(self):
+        import access
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / 'accounts.json'
+            state = root / 'state.json'
+            config.write_text(sync.json.dumps({'accounts': [{'name': 'legacy', 'owner_id': 'owner', 'hermes': {}, 'sources': {'draw': {}}}]}))
+            original = {'legacy': {'draw': {'files': {'doc': {'file_id': 'preserve'}}}}}
+            state.write_text(sync.json.dumps(original))
+            (root / 'base-url').write_text('https://directory.example')
+            (root / 'api-token').write_text('fixture')
+            (root / 'subjects.json').write_text('{}')
+            with patch.dict(sync.os.environ, {'SYNC_CONFIG': str(config), 'SYNC_STATE': str(state), 'BLAK_DIRECTORY_PATH': str(root)}), patch.object(access, 'snapshot', return_value={}), patch.object(sync, 'sync_mapping') as mutate:
+                self.assertEqual(sync.main(), 1)
+            mutate.assert_not_called()
+            self.assertEqual(sync.json.loads(state.read_text()), original)
+
+    def test_transient_processing_error_preserves_authorized_copy_but_explicit_denial_revokes(self):
+        class Hermes:
+            def __init__(self): self.deleted = []
+            def json(self, method, path, data=None):
+                if method == 'DELETE': self.deleted.append(path)
+                if path == '/api/v1/auths/': return {'id': 'owner'}
+                return {'user_id': 'owner', 'access_grants': []}
+        for code in (500, 403):
+            with self.subTest(code=code):
+                api = Hermes()
+                mapping = {'owner_id': 'owner', 'hermes': {}, 'sources': {'draw': {}}}
+                state = {'draw': {'collection': 'private', 'files': {'doc': {'file_id': 'copy'}}}}
+                error = sync.urllib.error.HTTPError('https://fixture.test', code, 'fixture failure', {}, None)
+                with patch.object(sync, 'API', return_value=api), patch.object(sync, 'portal_documents', return_value=[]), patch.object(sync, 'reconcile', side_effect=error), patch.object(sync, 'ensure_workspace_model') as model:
+                    with self.assertRaises(RuntimeError): sync.sync_mapping(mapping, state, lambda: None, {'draw'})
+                self.assertEqual(bool(api.deleted), code == 403)
+                self.assertEqual(bool(state['draw']['files']), code == 500)
+                self.assertIn('last_error', state['draw'])
+                self.assertEqual(model.call_args.args[2], {})
+
     def test_hermes_and_source_grants_both_required(self):
         mapping = {'portal_owner': 'frozen-subject'}
         self.assertEqual(sync.permitted_sources(mapping, {}), set())

@@ -45,6 +45,8 @@ spec:
           value: /directory/subjects.json
         - name: HERMES_SYNC_STATE
           value: /hermes-state/state.json
+        - name: BLAK_NATIVE_CA_FILE
+          value: /native-ca/rootCA.pem
         - name: VAULT_OPERATOR_TOKEN_FILE
           value: /operator/admin-token
         resources:
@@ -68,6 +70,9 @@ spec:
           mountPath: /hermes-state
         - name: temporary
           mountPath: /tmp
+        - name: native-ca
+          mountPath: /native-ca
+          readOnly: true
         readinessProbe:
           exec:
             command:
@@ -96,3 +101,6 @@ spec:
         emptyDir:
           medium: Memory
           sizeLimit: 8Mi
+      - name: native-ca
+        configMap:
+          name: blak-ca
