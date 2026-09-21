@@ -5,7 +5,7 @@ function createOIDC({ issuer, clientId }) {
   let configuration, keys;
   async function discovery() {
     if (configuration) return configuration;
-    const result = await textRequest(new URL('.well-known/openid-configuration', issuer).href);
+    const result = await textRequest(issuer.replace(/\/$/, '') + '/.well-known/openid-configuration');
     if (result.status !== 200) throw new Error('Blak ID discovery unavailable');
     const value = JSON.parse(result.body);
     if (value.issuer !== issuer) throw new Error('Unexpected OIDC issuer');

@@ -16,7 +16,10 @@
       case 'forms': await request('/logout'); break;
       case 'crm': await request('/api/method/logout'); break;
       case 'projects': await request('/api/auth/sign-out',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); break;
-      case 'sites': await request('/api/auth.delete',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); break;
+      case 'sites': {
+        const csrf=document.cookie.split('; ').find(value=>value.startsWith('__Host-csrfToken='))?.slice('__Host-csrfToken='.length);
+        await request('/api/auth.delete',{method:'POST',headers:{'content-type':'application/json',...(csrf?{'x-csrf-token':decodeURIComponent(csrf)}:{})},body:'{}'}); break;
+      }
       case 'hermes': {
         const token=localStorage.getItem('token');
         await request('/api/v1/auths/signout',{method:'POST',headers:token?{authorization:'Bearer '+token}:{}});
@@ -35,6 +38,7 @@
         break;
       default: throw Error('No maintained logout adapter');
     }
+    localStorage.setItem('blak-last-signout',String(Date.now()));
     document.getElementById('status').textContent='Signed out';
     window.parent.postMessage({type:'blak-signout',state,app:app.id,ok:true},portal);
   } catch {

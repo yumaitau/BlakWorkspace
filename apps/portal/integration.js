@@ -2,7 +2,7 @@
 
 // The catalog owns app identity. This contract owns its native integration.
 const INTEGRATIONS = {
-  forms: { application: 'blak-forms', group: 'Blak Forms users', login: '/connect/oidc', theme: 'heyform' },
+  forms: { application: 'blak-forms', group: 'Blak Forms users', login: '/connect/oidc', loginStateParameter: 'state', theme: 'heyform' },
   draw: { group: 'Blak Draw users', theme: 'excalidraw' },
   crm: { application: 'blak-crm', group: 'Blak CRM users', login: '/_blak/launch.html', theme: 'frappe' },
   drive: { application: 'opencloud', group: 'Blak Drive users', theme: 'opencloud' },

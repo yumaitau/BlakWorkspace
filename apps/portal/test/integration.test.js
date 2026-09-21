@@ -78,6 +78,13 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   assert.equal((await request('/api/modules',{headers:{origin:'https://untrusted.example'}})).status,403);
   const legacy=sign({sub:'owner',exp:Date.now()+60000});
   assert.equal((await fetch(base+'/api/me',{headers:{cookie:'blak_session='+legacy}})).status,401);
+  claims.blak_apps=['forms'];
+  const formSession=await login();
+  const formCookie=formSession.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
+  const formLaunch=await fetch(base+'/launch/forms',{redirect:'manual',headers:{cookie:formCookie}});
+  const target=new URL(formLaunch.headers.get('location'));
+  assert.equal(target.pathname,'/connect/oidc');assert.match(target.searchParams.get('state'),/^[a-f0-9]{32}$/);
+  claims.blak_apps=['draw'];
   const now=Date.now;
   try {
     Date.now=()=>now()+31000;

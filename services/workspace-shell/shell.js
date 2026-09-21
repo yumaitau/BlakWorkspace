@@ -6,6 +6,9 @@
   const app = location.hostname === 'docs.workspace.example.com' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
   if (!app) return;
   const portalURL=apps.find(a=>a.id==='portal').url;
+  window.addEventListener('storage',event=>{
+    if(event.key==='blak-last-signout' && event.newValue) location.replace(portalURL);
+  });
   // Rocket.Chat 7.9's native Meteor OAuth API creates and verifies its own state.
   if(app.id==='chat' && new URL(location.href).searchParams.get('blak_launch')==='1') {
     const start=Date.now();

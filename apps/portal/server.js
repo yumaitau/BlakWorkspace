@@ -501,8 +501,12 @@ async function handleRequest(req, res) {
     if (!app) { res.writeHead(404); res.end(); return; }
     if (!user) { res.writeHead(302, { location: '/login?app=' + encodeURIComponent(app.id) }); res.end(); return; }
     if (!allowedApps(APPS, user).includes(app)) { res.writeHead(403); res.end('Application access not granted'); return; }
-    const entry = INTEGRATIONS[app.id].login;
-    res.writeHead(302, { location: entry ? new URL(entry, app.url).href : app.url }); res.end(); return;
+    const integration = INTEGRATIONS[app.id];
+    const target = new URL(integration.login || app.url, new URL(app.url, REDIRECT_URI));
+    // HeyForm accepts a device identifier, then creates and verifies its own
+    // OAuth state, nonce and PKCE transaction in the native server.
+    if (integration.loginStateParameter) target.searchParams.set(integration.loginStateParameter, crypto.randomBytes(16).toString('hex'));
+    res.writeHead(302, { location: target.href }); res.end(); return;
   }
   if (url.pathname === '/oidc/backchannel-logout') {
     if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
