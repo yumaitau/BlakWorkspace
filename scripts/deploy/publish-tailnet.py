@@ -73,12 +73,17 @@ for model,fields in [(Brand,['branding_logo','branding_favicon','branding_defaul
         before={}
         for field in fields:
             value=str(getattr(item,field) or '')
+            stored_value=value
+            # Blank application URLs inherit the provider's first callback origin,
+            # which can still be the retained LAN address after migration.
+            if model is Application and field=='meta_launch_url' and not value:
+                value=str(item.get_launch_url() or '')
             updated=value
             for app,origin in origins.items():
                 for scheme in ['http','https']:
                     updated=updated.replace(scheme+'://'+app+'.'+domain,origin)
             if updated!=value:
-                before[field]=value
+                before[field]=stored_value
                 setattr(item,field,updated)
         if before:
             links.append({'model':model._meta.label,'pk':str(item.pk),'fields':before})
@@ -138,6 +143,12 @@ print('Application identity migration complete');
     if b'Restart chat' in migration_result:
         kube('rollout','restart','deploy/chat')
         kube('rollout','status','deploy/chat','--timeout=300s')
+    # Outline stores its team icon in the database, outside release URL rewriting.
+    def sql_string(value):return "'"+value.replace("'","''")+"'"
+    old_icons=[scheme+'://sites.'+CONFIG['domain']+'/_blak/logo.svg' for scheme in ['http','https']]
+    new_icon=TAILNET['origins']['sites']+'/_blak/logo.svg'
+    icon_sql='UPDATE teams SET "avatarUrl"='+sql_string(new_icon)+' WHERE "avatarUrl" IN ('+','.join(map(sql_string,old_icons))+');'
+    kube('exec','-i','deploy/postgres','--','sh','-c','psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d outline',input=icon_sql.encode())
     sync=json.loads(kube('get','secret','blak-hermes-sync','-o','json'))
     accounts=json.loads(base64.b64decode(sync['data']['accounts.json']))
     for account in accounts['accounts']:
