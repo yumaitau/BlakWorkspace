@@ -62,7 +62,7 @@ def configure(root,host,address):
                 changed=True
             if not doc or doc.get('kind')!='Deployment':continue
             spec=doc['spec']['template']['spec']
-            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault']:
+            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault','blak-app-role-sync']:
                 spec.setdefault('hostAliases',[]).append({'ip':address,'hostnames':[host]});changed=True
             if doc['metadata']['name']=='collabora':
                 for container in spec['containers']:

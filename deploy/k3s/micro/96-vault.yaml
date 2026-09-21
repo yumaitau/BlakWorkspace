@@ -66,7 +66,7 @@ spec:
         - {name: DISABLE_ICON_DOWNLOAD, value: 'true'}
         - {name: SHOW_PASSWORD_HINT, value: 'false'}
         - {name: PUSH_ENABLED, value: 'false'}
-        - {name: ADMIN_SESSION_LIFETIME, value: '5'}
+        - {name: ADMIN_SESSION_LIFETIME, value: '10'}
         - name: SSO_CLIENT_ID
           valueFrom:
             secretKeyRef: {name: blak-vault, key: client-id}

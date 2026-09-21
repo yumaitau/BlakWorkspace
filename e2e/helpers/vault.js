@@ -40,13 +40,16 @@ async function vaultLogin(page, account, base = 'https://vault.workspace.example
     } else if (await initial.isVisible()) {
       if (!account.allowCreate) throw Error('Unexpected native vault enrollment');
       await initial.fill(account.master);
+      await expect(initial).toHaveValue(account.master);
       await page.locator('#input-password-form_new-password-confirm').fill(account.master);
       // This is a disposable test password; no external breach lookup needed.
       await page.locator('#input-password-form_check-for-breaches').uncheck();
       await page.getByRole('button', { name: 'Create account', exact: true }).click();
+      await initial.waitFor({state:'hidden',timeout:45000});
     } else if (await unlock.isVisible()) {
       await page.locator('input[type=password]').first().fill(account.master);
       await unlock.click();
+      await unlock.waitFor({state:'hidden',timeout:30000});
     } else if (await skipExtension.isVisible()) {
       await skipExtension.click();
     } else if (await later.isVisible()) {
