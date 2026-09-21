@@ -4,6 +4,9 @@ COPY services/vault/index-transform.sed /tmp/blak-index.sed
 COPY services/vault/brand.css /web-vault/css/blak.css
 COPY apps/portal/fonts/ /web-vault/fonts/
 COPY services/workspace-shell/logo.svg /web-vault/images/blak-logo.svg
-RUN test "$(grep -o '<body class="layout_frontend">' /web-vault/index.html | wc -l)" -eq 1 \
+RUN for anchor in '<body class="layout_frontend">' '<title page-title>Vaultwarden Web</title>' '</head>' '<link rel="stylesheet" href="css/vaultwarden.css"/>'; do \
+      test "$(grep -Fo "$anchor" /web-vault/index.html | wc -l)" -eq 1 || exit 1; \
+    done \
     && sed -i -f /tmp/blak-index.sed /web-vault/index.html \
+    && grep -Fq '<link rel="stylesheet" href="/css/blak.css"/>' /web-vault/index.html \
     && rm /tmp/blak-index.sed

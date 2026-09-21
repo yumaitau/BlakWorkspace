@@ -52,6 +52,8 @@ def snapshot(root,key):
         finally:tar.stdout.close()
         if tar.wait():raise RuntimeError('Vault archive failed')
         Path(str(output)+'.partial').replace(output)
+    for old in sorted(root.glob('vault-*.tar.gpg'))[:-7]:
+        old.unlink()
     print('Vault encrypted snapshot complete:',output.name)
 
 

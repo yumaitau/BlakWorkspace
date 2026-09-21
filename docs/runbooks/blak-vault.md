@@ -55,6 +55,9 @@ Prepare a clean committed release for the actual domain/tailnet, then run
 `scripts/deploy/deploy-vault.sh` on the deployment host. This builds Vault and the
 gateway, provisions a native OIDC provider and MFA stages, and applies only those
 resources. It preserves existing Serve ports, including unrelated port 8443.
+This deployment path currently requires a tailnet-prepared release. Non-tailnet
+deployments need an explicit, verified Blak ID HTTPS egress rule and are not yet
+supported by the deploy script; it refuses them before building or changing resources.
 
 The initial operator is seeded into the Vault admin group once. Removing that
 membership later is respected. Existing provider client credentials are retained.
@@ -85,6 +88,7 @@ The restore drill checks SQLite integrity, foreign keys and every attachment pat
 `scripts/deploy/backup/vault-snapshot.py` performs a Vault-only encrypted snapshot
 using the existing protected backup key and recovery journal. It briefly stops
 only Vault, restores its previous replica count, and never stops other apps.
+After a successful Vault-only snapshot, the newest seven Vault archives are kept.
 
 Back up the encrypted archive, protected backup key and deployment Secrets
 separately. A backup is not a replacement for users' master passwords. Restore to

@@ -1,12 +1,43 @@
 """Release checks for the vault's isolation and authentication boundaries."""
 from pathlib import Path
+import importlib.util
+import io
+import json
 import unittest
+from unittest.mock import MagicMock, patch
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class VaultConfigurationTests(unittest.TestCase):
+    def test_enrollment_preserves_normalized_owner_protection(self):
+        spec = importlib.util.spec_from_file_location('enroll_vault_roles', ROOT / 'scripts/deploy/enroll-vault-roles.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        owner = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+        org = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        collection = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+        data = {'controller_user_id': owner.upper(), 'organization_id': org.upper(),
+                'collection_ids': [collection.upper()], 'client_id': 'user.' + owner,
+                'client_secret': 'disposable-test-api-key'}
+        responses = {
+            '/api/accounts/profile': {'id': owner},
+            '/api/organizations/' + org + '/users': {'data': [{'userId': owner, 'type': 0, 'status': 2}]},
+            '/api/organizations/' + org + '/collections': {'data': [{'id': collection}]},
+        }
+        api = MagicMock(side_effect=lambda method, route: responses[route])
+        with patch.object(module, 'API', return_value=api), \
+                patch.object(module.Path, 'read_text', return_value=json.dumps({'domain': 'workspace.test'})), \
+                patch.object(module.sys, 'stdin', io.StringIO(json.dumps(data))), \
+                patch.object(module.subprocess, 'run') as write, patch('builtins.print'):
+            module.main()
+        secret = json.loads(write.call_args.kwargs['input'])
+        config = json.loads(secret['stringData']['config.json'])['vault']
+        self.assertEqual(config['controller_user_id'], owner)
+        self.assertEqual(config['organization_id'], org)
+        self.assertEqual(config['collection_ids'], [collection])
+
     def test_native_vault_is_non_root_and_has_no_cluster_credentials(self):
         docs = list(yaml.safe_load_all((ROOT / 'deploy/k3s/micro/96-vault.yaml').read_text()))
         pod = next(d for d in docs if d['kind'] == 'Deployment')['spec']['template']['spec']

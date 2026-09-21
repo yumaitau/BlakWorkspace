@@ -42,7 +42,8 @@ def main():
     available=api('GET','/api/organizations/'+org+'/collections')['data']
     if not collections<={c['id'] for c in available}:
         raise ValueError('Configured collections do not belong to organization')
-    config={'vault':{**data,'base':'http://vault:8080','issuer':issuer,'collection_ids':sorted(collections)}}
+    config={'vault':{**data,'organization_id':org,'controller_user_id':owner,
+                     'base':'http://vault:8080','issuer':issuer,'collection_ids':sorted(collections)}}
     resource={'apiVersion':'v1','kind':'Secret','metadata':{'name':'blak-app-roles','namespace':'blak-micro'},'stringData':{'config.json':json.dumps(config)}}
     subprocess.run(KUBE+['apply','-f','-'],input=json.dumps(resource).encode(),check=True)
     print('Native controller and collection ownership verified; role credentials enrolled')

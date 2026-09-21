@@ -3,6 +3,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 test -f .deployment.json || { echo 'Prepare a release first'; exit 1; }
+python3 - <<'PY'
+import json
+if not json.load(open('.deployment.json')).get('tailnet'):
+    raise SystemExit('Vault deployment currently requires a tailnet-prepared release with verified Blak ID HTTPS egress')
+PY
 REVISION=$(python3 -c 'import json; print(json.load(open(".deployment.json"))["revision"])')
 export VAULT_IMAGE="blak-vault:${REVISION:0:12}"
 export SHELL_IMAGE="blak-workspace-shell:${REVISION:0:12}"
