@@ -15,9 +15,9 @@ class FormsRolesTest(unittest.TestCase):
             calls.append((method, path, body))
             return counts
         directory = {
-            'reader': {'email': 'reader@example.com', 'is_active': True, 'roles': {'forms': 'reader'}},
-            'disabled': {'email': 'disabled@example.com', 'is_active': False, 'roles': {}},
-            'other': {'email': 'other@example.com', 'is_active': True, 'roles': {'search': 'admin'}},
+            'legacy-reader-alias': {'identity': 'reader', 'email': 'reader@example.com', 'is_active': True, 'roles': {'forms': 'reader'}},
+            'disabled': {'identity': 'disabled', 'email': 'disabled@example.com', 'is_active': False, 'roles': {}},
+            'other': {'identity': 'other', 'email': 'other@example.com', 'is_active': True, 'roles': {'search': 'admin'}},
         }
         self.assertEqual(forms.reconcile(api, directory), counts)
         self.assertEqual(calls, [('POST', '/api/blak/roles/reconcile', [
