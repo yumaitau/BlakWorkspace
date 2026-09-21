@@ -8,7 +8,7 @@ parser.add_argument('--replace',action='store_true',help='Explicitly replace an 
 args=parser.parse_args()
 if stat.S_IMODE(args.file.stat().st_mode) & 0o077: parser.error('Credential file must have mode 600')
 mapping=json.loads(args.file.read_text())
-for key in ('name','owner_id','hermes','sources'):
+for key in ('name','owner_id','portal_owner','hermes','sources'):
     if not mapping.get(key): parser.error('Missing '+key)
 if not isinstance(mapping['sources'],dict): parser.error('sources must be an object')
 allowed={'drive','outline','chat','projects','forms','draw','flow','crm','storage'}

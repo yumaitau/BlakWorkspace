@@ -3,20 +3,15 @@ import json
 import os
 import time
 from pathlib import Path
-from directory import users
+from access import snapshot as directory_snapshot
+from hermes import HermesRoles
+import hermes_copies
 from http_client import API
 from vault import VaultRoles
 from vault_identity import native_accounts
 
 
-def reconcile(session):
-    config = json.loads(Path(os.environ['ROLE_CONFIG']).read_text())
-    directory_api = API(Path(os.environ['BLAK_ID_BASE_FILE']).read_text().strip(),
-                        Path(os.environ['BLAK_ID_TOKEN_FILE']).read_text().strip())
-    snapshot = users(directory_api)
-    if not snapshot:
-        raise ValueError('Empty directory snapshot; refusing mass membership removal')
-    vault = config['vault']
+def reconcile_vault(vault, snapshot, session):
     if session.get('operator') is None or time.monotonic() >= session.get('until', 0):
         operator = API(vault['base'])
         operator.login_operator(Path(os.environ['VAULT_OPERATOR_TOKEN_FILE']).read_text().strip())
@@ -40,6 +35,36 @@ def reconcile(session):
     print('Vault roles reconciled ' + json.dumps(result, sort_keys=True), flush=True)
 
 
+def reconcile(session):
+    config = json.loads(Path(os.environ['ROLE_CONFIG']).read_text())
+    api = API(Path(os.environ['BLAK_ID_BASE_FILE']).read_text().strip(),
+              Path(os.environ['BLAK_ID_TOKEN_FILE']).read_text().strip())
+    aliases = json.loads(Path(os.environ['BLAK_ID_SUBJECTS_FILE']).read_text())
+    directory = directory_snapshot(api, aliases)
+    if not config or not set(config) <= {'vault', 'hermes'}:
+        raise ValueError('Unknown or empty native role configuration')
+    failures = []
+    if config.get('hermes'):
+        try:
+            hermes = config['hermes']
+            native = API(hermes['base'], hermes['token'])
+            profile = native('GET', '/api/v1/auths/')
+            if profile['id'] != hermes['controller_user_id'] or profile['role'] != 'admin':
+                raise ValueError('Hermes controller identity mismatch')
+            removed = hermes_copies.reconcile(native, directory, os.environ['HERMES_SYNC_STATE'], hermes['controller_user_id'])
+            result = HermesRoles(native, hermes['controller_user_id'], hermes['collection_ids']).reconcile(directory)
+            print('Hermes roles reconciled ' + json.dumps({**result, 'revoked_copies': removed}, sort_keys=True), flush=True)
+        except Exception as error:
+            failures.append('Hermes:' + type(error).__name__)
+    if config.get('vault'):
+        try:
+            reconcile_vault(config['vault'], {member['identity']: member for member in directory.values()}, session)
+        except Exception as error:
+            failures.append('Vault:' + type(error).__name__)
+    if failures:
+        raise RuntimeError('Native role reconciliation failed: ' + ', '.join(failures))
+
+
 def main():
     session = {}
     while True:
@@ -48,7 +73,7 @@ def main():
             Path('/tmp/roles-ready').touch()
         except Exception as error:
             Path('/tmp/roles-ready').unlink(missing_ok=True)
-            print('Vault role reconciliation failed: ' + type(error).__name__, flush=True)
+            print('Native role reconciliation failed: ' + str(error) if isinstance(error, RuntimeError) else 'Native role reconciliation failed: ' + type(error).__name__, flush=True)
             if os.environ.get('ROLE_ONCE') == '1':
                 raise SystemExit(1)
         if os.environ.get('ROLE_ONCE') == '1':

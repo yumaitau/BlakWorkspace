@@ -14,6 +14,7 @@ import uuid
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'services/app-roles'))
 from http_client import API
+from enrollment import save_app
 
 KUBE=['kubectl','-n','blak-micro']
 
@@ -42,10 +43,8 @@ def main():
     available=api('GET','/api/organizations/'+org+'/collections')['data']
     if not collections<={c['id'] for c in available}:
         raise ValueError('Configured collections do not belong to organization')
-    config={'vault':{**data,'organization_id':org,'controller_user_id':owner,
-                     'base':'http://vault:8080','issuer':issuer,'collection_ids':sorted(collections)}}
-    resource={'apiVersion':'v1','kind':'Secret','metadata':{'name':'blak-app-roles','namespace':'blak-micro'},'stringData':{'config.json':json.dumps(config)}}
-    subprocess.run(KUBE+['apply','-f','-'],input=json.dumps(resource).encode(),check=True)
+    save_app(KUBE, 'vault', {**data,'organization_id':org,'controller_user_id':owner,
+                           'base':'http://vault:8080','issuer':issuer,'collection_ids':sorted(collections)})
     print('Native controller and collection ownership verified; role credentials enrolled')
     print('Enable the role controller only for an organization dedicated to Blak ID-managed membership.')
 

@@ -41,6 +41,12 @@ spec:
           value: /directory/base-url
         - name: BLAK_ID_TOKEN_FILE
           value: /directory/api-token
+        - name: BLAK_ID_SUBJECTS_FILE
+          value: /directory/subjects.json
+        - name: HERMES_SYNC_STATE
+          value: /hermes-state/state.json
+        - name: BLAK_NATIVE_CA_FILE
+          value: /native-ca/rootCA.pem
         - name: VAULT_OPERATOR_TOKEN_FILE
           value: /operator/admin-token
         resources:
@@ -60,8 +66,13 @@ spec:
         - name: operator
           mountPath: /operator
           readOnly: true
+        - name: hermes-state
+          mountPath: /hermes-state
         - name: temporary
           mountPath: /tmp
+        - name: native-ca
+          mountPath: /native-ca
+          readOnly: true
         readinessProbe:
           exec:
             command:
@@ -83,7 +94,13 @@ spec:
         secret:
           secretName: blak-vault-operator
           defaultMode: 288
+      - name: hermes-state
+        persistentVolumeClaim:
+          claimName: hermes-sync-state
       - name: temporary
         emptyDir:
           medium: Memory
           sizeLimit: 8Mi
+      - name: native-ca
+        configMap:
+          name: blak-ca

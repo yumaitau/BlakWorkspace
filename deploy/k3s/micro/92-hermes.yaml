@@ -75,7 +75,8 @@ spec:
             - { name: trusted-ca, mountPath: /trusted }
       containers:
         - name: webui
-          image: ghcr.io/open-webui/open-webui@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
+          image: blak-hermes:micro
+          imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8080 }]
           env:
             - { name: OLLAMA_BASE_URL, value: http://ollama:11434 }
@@ -87,7 +88,8 @@ spec:
             - { name: ENABLE_SIGNUP, value: "false" }
             - { name: ENABLE_LOGIN_FORM, value: "false" }
             - { name: ENABLE_OAUTH_SIGNUP, value: "true" }
-            - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "true" }
+            - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "false" }
+            - { name: BLAK_ROLE_CONTROLLER_ID, valueFrom: { secretKeyRef: { name: blak-hermes-role-controller, key: user-id, optional: true } } }
             - { name: OAUTH_CLIENT_ID, value: openwebui }
             - { name: OAUTH_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: blak-hermes, key: oidc-secret } } }
             - { name: OPENID_PROVIDER_URL, value: https://id.workspace.example.com/application/o/hermes/.well-known/openid-configuration }

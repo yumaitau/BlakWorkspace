@@ -1,3 +1,4 @@
+# Generated from services/app-roles/directory.py. Do not edit.
 """Complete authenticated directory snapshots; never treat a failed read as empty."""
 import uuid
 

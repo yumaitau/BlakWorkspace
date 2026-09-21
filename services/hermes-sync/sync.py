@@ -26,7 +26,8 @@ MAX_BYTES = 20 * 1024 * 1024
 EXTENSIONS = {'.txt', '.md', '.csv', '.json', '.pdf', '.docx', '.xlsx', '.pptx', '.odt', '.ods', '.odp', '.html', '.xml', '.log'}
 EXTRACTOR_VERSION = '3'
 WORKSPACE_LOGO_URL = os.environ.get('WORKSPACE_LOGO_URL', 'https://portal.workspace.example.com/brand/logo.svg')
-SOURCE_NAMES = {key: value['label'] for key, value in json.loads(Path(__file__).with_name('content-sources.json').read_text()).items()}
+CONTENT_SOURCES = json.loads(Path(__file__).with_name('content-sources.json').read_text())
+SOURCE_NAMES = {key: value['label'] for key, value in CONTENT_SOURCES.items()}
 LOG = logging.getLogger('hermes-sync')
 
 class API:
@@ -488,7 +489,42 @@ def search_document(hermes, hermes_owner, portal_owner, source_name, source, doc
             'url': link, 'expiresAt': int(time.time()) + SEARCH_TTL_SECONDS}
 
 
-def sync_mapping(mapping, state, checkpoint):
+def permitted_sources(mapping, directory):
+    subject = mapping.get('portal_owner')
+    if not isinstance(subject, str) or not subject or subject.strip() != subject:
+        raise ValueError('Sync mapping requires an immutable portal owner before access reconciliation')
+    member = directory.get(subject)
+    if not member or 'hermes' not in member['apps']:
+        return set()
+    return {name for name, source in CONTENT_SOURCES.items() if source['app'] in member['apps']}
+
+
+def revoke_source(hermes, owner, record, checkpoint):
+    """Delete only tracked sync copies, including their native KB associations."""
+    deleted = 0
+    for key in list(record.get('files', {})):
+        item = record['files'][key]
+        for file_id in list(dict.fromkeys(item.get('cleanup', []) + [item['file_id']])):
+            try:
+                file = hermes.json('GET', '/api/v1/files/' + file_id)
+            except urllib.error.HTTPError as error:
+                if error.code != 404:
+                    raise
+            else:
+                if file.get('user_id') != owner:
+                    raise ValueError('Revoked sync file belongs to another owner')
+                hermes.json('DELETE', '/api/v1/files/' + file_id)
+                deleted += 1
+        del record['files'][key]
+        checkpoint()
+    record['access_revoked'] = True
+    record.pop('revocation_pending', None)
+    record.pop('last_error', None)
+    checkpoint()
+    return {'uploaded': 0, 'unchanged': 0, 'deleted': deleted}
+
+
+def sync_mapping(mapping, state, checkpoint, allowed_sources):
     hermes = API(**mapping['hermes'])
     owner = hermes.json('GET', '/api/v1/auths/')['id']
     if owner != mapping['owner_id']:
@@ -498,9 +534,18 @@ def sync_mapping(mapping, state, checkpoint):
     search_records = []
     if search and not mapping.get('portal_owner'):
         raise ValueError('Search mapping requires portal owner')
-    for name, source in mapping['sources'].items():
+    for name in sorted(set(mapping['sources']) | set(state)):
+        if name not in CONTENT_SOURCES:
+            raise ValueError('Unknown source in sync state')
+        source_validated = False
         try:
             record = state.setdefault(name, {'files': {}})
+            if name not in allowed_sources or name not in mapping['sources']:
+                results[name] = revoke_source(hermes, owner, record, checkpoint)
+                continue
+            source = mapping['sources'][name]
+            record.pop('access_revoked', None)
+            record.pop('revocation_pending', None)
             if not record.get('collection'):
                 created = hermes.json('POST', '/api/v1/knowledge/create', {'name': 'Blak Workspace · ' + SOURCE_NAMES[name], 'description': 'Automatically synced private workspace content. Source permissions belong to this account.', 'access_grants': []})
                 record['collection'] = created['id']
@@ -527,6 +572,7 @@ def sync_mapping(mapping, state, checkpoint):
                 docs = storage_documents(api)
             else:
                 raise ValueError('unsupported workspace source')
+            source_validated = True
             for doc in docs:
                 if doc['revision']:
                     # Public links are part of extracted content even when the
@@ -542,13 +588,24 @@ def sync_mapping(mapping, state, checkpoint):
             checkpoint()
         except Exception as error:
             failures.append(name)
-            state.setdefault(name, {'files': {}})['last_error'] = {'time': int(time.time()), 'type': type(error).__name__}
+            record = state.setdefault(name, {'files': {}})
+            # An unavailable source listing cannot establish continuing access.
+            # Once listing succeeds, preserve authorized copies on transient
+            # extraction/vector/index failures; explicit denial still revokes.
+            if not source_validated or isinstance(error, urllib.error.HTTPError) and error.code in (401, 403, 404):
+                try:
+                    revoke_source(hermes, owner, record, checkpoint)
+                    if name in allowed_sources:
+                        record.pop('access_revoked', None)
+                except Exception as cleanup_error:
+                    LOG.error('Source cleanup failed source=%s error=%s', name, type(cleanup_error).__name__)
+            record['last_error'] = {'time': int(time.time()), 'type': type(error).__name__}
             checkpoint()
             LOG.error('Source sync failed source=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
     if search:
         search.replace_owner(mapping['portal_owner'], search_records)
     # Unavailable sources are detached until their credentials/access recover.
-    available = {name: record for name, record in state.items() if name in mapping['sources'] and name not in failures}
+    available = {name: record for name, record in state.items() if name in mapping['sources'] and name in allowed_sources and name not in failures}
     ensure_workspace_model(hermes, owner, available, mapping.get('model', 'qwen2.5:1.5b'))
     if mapping.get('portal_owner'):
         ensure_assistant_model(hermes, owner, mapping.get('model', 'qwen2.5:1.5b'))
@@ -616,6 +673,7 @@ def publish_health(config, state, file):
             sources.append({'name':name, 'label':SOURCE_NAMES[name],
                             'last_success':record.get('last_success'),
                             'last_error':bool(record.get('last_error')),
+                            'access_revoked':bool(record.get('access_revoked')),
                             'documents':len(record.get('files', {})),
                             'expires_at':credential.get('expires_at'),
                             'credential_checked_at':record.get('last_success') or credential.get('checked_at')})
@@ -627,28 +685,41 @@ def main():
     config = json.loads(Path(os.environ.get('SYNC_CONFIG', '/config/accounts.json')).read_text())
     state_file = Path(os.environ.get('SYNC_STATE', '/data/state.json'))
     state_file.parent.mkdir(parents=True, exist_ok=True)
-    lock = state_file.with_suffix('.lock').open('a')
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        LOG.info('Another sync is active; skipping overlapping run')
-        return 0
-    state = json.loads(state_file.read_text()) if state_file.exists() else {}
-    failures = 0
-    for mapping in config['accounts']:
-        name = mapping['name']
+    with state_file.with_suffix('.lock').open('a') as lock:
         try:
-            account_state = state.setdefault(name, {})
-            def checkpoint():
-                save_state(state_file, state)
-                publish_health(config, state, state_file.with_name('health.json'))
-            result = sync_mapping(mapping, account_state, checkpoint)
-            LOG.info('Sync complete account=%s counts=%s', name, json.dumps(result))
-        except Exception as error:
-            # HTTPError bodies, credentials and document contents never reach logs.
-            LOG.error('Sync failed account=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
-            failures += 1
-    return 1 if failures else 0
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            LOG.info('Another sync is active; skipping overlapping run')
+            return 0
+        from access import snapshot
+        from http_client import API as DirectoryAPI
+        directory_path = Path(os.environ.get('BLAK_DIRECTORY_PATH', '/directory'))
+        directory = snapshot(DirectoryAPI((directory_path / 'base-url').read_text().strip(),
+                                         (directory_path / 'api-token').read_text().strip()),
+                             json.loads((directory_path / 'subjects.json').read_text()))
+        state = json.loads(state_file.read_text()) if state_file.exists() else {}
+        owner_file = state_file.with_name('owners.json')
+        owners = json.loads(owner_file.read_text()) if owner_file.exists() else {}
+        failures = 0
+        for mapping in config['accounts']:
+            name = mapping['name']
+            try:
+                account_state = state.setdefault(name, {})
+                def checkpoint():
+                    binding = {'native_id': mapping['owner_id'], 'subject': mapping['portal_owner']}
+                    if name in owners and owners[name] != binding:
+                        raise ValueError('Cannot reassign an existing private sync state owner')
+                    owners[name] = binding
+                    save_state(owner_file, owners)
+                    save_state(state_file, state)
+                    publish_health(config, state, state_file.with_name('health.json'))
+                result = sync_mapping(mapping, account_state, checkpoint, permitted_sources(mapping, directory))
+                LOG.info('Sync complete account=%s counts=%s', name, json.dumps(result))
+            except Exception as error:
+                # HTTPError bodies, credentials and document contents never reach logs.
+                LOG.error('Sync failed account=%s error=%s status=%s', name, type(error).__name__, getattr(error, 'code', '-'))
+                failures += 1
+        return 1 if failures else 0
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')

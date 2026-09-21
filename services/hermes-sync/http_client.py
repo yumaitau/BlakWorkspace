@@ -1,3 +1,4 @@
+# Generated from services/app-roles/http_client.py. Do not edit.
 """Small, origin-bound HTTP client for native directory/role APIs."""
 import http.cookies
 import json

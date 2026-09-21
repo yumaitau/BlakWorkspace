@@ -11,7 +11,15 @@ function write(file, contents) {
     if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== contents) throw new Error(`Stale generated theme: ${file}`);
   } else fs.writeFileSync(target, contents);
 }
+write('services/app-roles/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
 write('services/hermes-sync/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
+const { INTEGRATIONS } = require('../../apps/portal/integration');
+const grants = JSON.stringify(Object.fromEntries(Object.entries(INTEGRATIONS).filter(([, value]) => value.group || value.roleGroups).map(([app, { group, roleGroups }]) => [app, { group, roleGroups }])), null, 2) + '\n';
+write('services/app-roles/app-grants.json', grants);
+write('services/hermes-sync/app-grants.json', grants);
+for (const file of ['access.py', 'directory.py', 'http_client.py']) {
+  write('services/hermes-sync/' + file, '# Generated from services/app-roles/' + file + '. Do not edit.\n' + fs.readFileSync(path.join(root, 'services/app-roles', file), 'utf8'));
+}
 const theme = JSON.stringify(blakTheme(), null, 2) + '\n';
 write('deploy/k3s/micro/blak-theme/theme.json', theme);
 const { LOGO_SVG: logo } = require('../../apps/portal/brand');
