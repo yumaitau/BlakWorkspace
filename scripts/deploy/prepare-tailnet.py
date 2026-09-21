@@ -51,7 +51,7 @@ def configure(root,host,address):
     text=text.replace("  default '';", "  default '';\n"+routes,1)
     text=text.replace('if ($host != drive.'+domain+')', 'if ($http_host != '+origins['drive'].removeprefix('https://')+')')
     assets='<link rel="stylesheet" href="/_blak/shell.css"><script src="/_blak/shell.js" defer></script>'
-    text='map $http_host $blak_assets { default \''+assets+'\'; '+origins['id'].removeprefix('https://')+' \"\"; }\n'+text
+    text='map $http_host $blak_assets { default \''+assets+'\'; '+origins['id'].removeprefix('https://')+' \"<link rel=stylesheet href=/_blak/fonts.css>\"; }\n'+text
     text=text.replace("sub_filter '</head>' '"+assets+"</head>';", "sub_filter '</head>' '$blak_assets</head>';")
     text=text.replace('    proxy_pass http://$blak_upstream;', '    rewrite ^/application/o/[^/]+/(authorize|token|userinfo)/$ /application/o/$1/ break;\n    proxy_pass http://$blak_upstream;')
     nginx.write_text(text)

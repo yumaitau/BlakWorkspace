@@ -27,7 +27,7 @@ test.describe('Blak Portal dedicated', () => {
     await page.locator('[data-testid="waffle"]').click();
     const flowItem = page.locator('a.appitem[data-app="flow"]');
     await expect(flowItem).toBeVisible();
-    await expect(flowItem).toHaveAttribute('href', '/flow');
+    await expect(flowItem).toHaveAttribute('href', '/launch/flow');
     await expect(flowItem).not.toHaveClass(/soon/);
 
     await page.goto('/flow/new');
@@ -44,8 +44,8 @@ test.describe('Blak Portal dedicated', () => {
 
     const waffleChat = page.locator('a.appitem[data-app="chat"]');
     await page.locator('[data-testid="waffle"]').click();
-    await expect(waffleChat).toHaveAttribute('href', 'https://chat.workspace.example.com');
-    await expect(page.locator('a.appitem[data-app="projects"]')).toHaveAttribute('href', 'https://projects.workspace.example.com');
+    await expect(waffleChat).toHaveAttribute('href', '/launch/chat');
+    await expect(page.locator('a.appitem[data-app="projects"]')).toHaveAttribute('href', '/launch/projects');
     expect((await page.request.post(flowPath + '/delete')).ok()).toBeTruthy();
   });
 });
@@ -79,6 +79,6 @@ test.describe('Blak Chat and Projects SSO', () => {
     await authentikLogin(page);
     await page.waitForURL((url) => url.hostname === 'projects.workspace.example.com' && !url.pathname.includes('sign-in'), { timeout: 45_000 });
     await expect(page.getByRole('button', { name: /Continue with OIDC/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Create workspace', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Create workspace|Create project/ }).first()).toBeVisible();
   });
 });

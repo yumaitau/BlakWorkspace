@@ -14,6 +14,8 @@ COPY logout-page.js logout.js ./
 COPY server.js catalog.js flow-engine.js cloud-object.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
 COPY brand-icons/ ./brand-icons/
 COPY brand-home-logo.jpg brand.js welcome.js login-background.png ./
+COPY fonts.css ./
+COPY fonts/ ./fonts/
 COPY sync-health.js draw-store.js knowledge-export.js ./
 COPY --from=draw-build /draw/dist/ ./draw-dist/
 ENV PORT=3000 NODE_ENV=production

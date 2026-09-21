@@ -14,6 +14,8 @@ function syncAccount() {
   return account;
 }
 function serviceURL(name, port) {
+  const overrides=JSON.parse(process.env.BLAK_E2E_SERVICE_ORIGINS||'{}');
+  if(overrides[name]) return overrides[name];
   const address = kubectl(['get', 'service', name, '-o', 'jsonpath={.spec.clusterIP}']);
   return `http://${address}:${port}`;
 }

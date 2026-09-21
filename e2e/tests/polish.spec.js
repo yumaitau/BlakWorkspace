@@ -16,6 +16,9 @@ for(const [name,url] of apps)test(`shared shell ${name}: themes, navigation, key
  if(name==='hermes')await expect(page.locator('#chat-input')).toBeVisible();
  if(name==='chat')await expect(page.getByRole('button',{name:'Create channel',exact:true})).toBeVisible();
  const shell=page.locator('#blak-workspace-shell');await expect(shell).toBeVisible();
+ await page.evaluate(()=>document.fonts.load('400 16px Inter'));
+ expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
+ await expect(page).toHaveTitle(new RegExp(name==='portal'?'Blak Workspace':name==='knowledge'?'Blak Knowledge':name==='crm'?'Blak CRM':'Blak '+name[0].toUpperCase()+name.slice(1)));
  const open=shell.getByRole('button',{name:'Blak Workspace',exact:true});
  await open.click();await expect(shell.getByRole('link',{name:'Workspace home',exact:true})).toBeFocused();await page.keyboard.press('Escape');await expect(open).toBeFocused();
  for(const mode of ['light','dark']){

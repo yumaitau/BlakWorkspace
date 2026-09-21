@@ -7,7 +7,7 @@ const ACCENT = {
   meet: '#21818A', mail: '#737BB8', knowledge: '#66996B', projects: '#D8792E', admin: '#7583B0',
   flow: '#3199A2', hermes: '#A26CC1', idp: '#7583B0', search: '#D68B2C', storage: '#21818A',
 };
-const ICON_IMG = { forms: 'docs', draw: 'flow', crm: 'projects', drive: 'drive', docs: 'docs', chat: 'chat', projects: 'projects', idp: 'admin', flow: 'flow', hermes: 'hermes', sites: 'knowledge' };
+const ICON_IMG = Object.fromEntries(Object.keys(require('./brand').APP_ICONS).map(id=>[id,id]));
 const RAIL_ICON = {
   forms: '▤', draw: '◇', crm: '▦', home: '⌂', drive: '▤', docs: '▤', notes: '▦', chat: '◫', meet: '◉', mail: '✉', knowledge: '▦',
   projects: '▤', admin: '⚙', flow: '⇄', hermes: '✦', idp: '◉', search: '⌕', storage: '⬢',

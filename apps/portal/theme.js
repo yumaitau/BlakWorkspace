@@ -4,7 +4,7 @@ const path = require('node:path');
 const tokens = require('./theme-tokens.json');
 const declarations = (values) => Object.entries(values).map(([key, value]) => `--${key}:${value};`).join('');
 const tokenCSS = `:root{color-scheme:dark;${declarations(tokens.dark)}}[data-theme="light"]{color-scheme:light;${declarations(tokens.light)}}`;
-const CSS = tokenCSS + fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+const CSS = fs.readFileSync(path.join(__dirname,'fonts.css'),'utf8') + tokenCSS + fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
 const themeScript = `(()=>{
 const key='blak-theme',root=document.documentElement;
 function apply(theme){root.dataset.theme=theme==='light'?'light':'dark';const button=document.getElementById('themebtn');if(button){const light=root.dataset.theme==='light';button.setAttribute('aria-label','Switch to '+(light?'dark':'light')+' theme');button.textContent=light?'☾':'☀';}}

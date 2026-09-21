@@ -63,7 +63,7 @@
   if (window.top !== window.self) return; // WOPI editor keeps parent navigation.
   const host = document.createElement('aside'); host.id='blak-workspace-shell'; host.setAttribute('aria-label','Blak Workspace');
   const shadow = host.attachShadow({mode:'open'});
-  const style=document.createElement('style'); style.textContent=`:host{position:fixed;right:16px;bottom:16px;z-index:2147483000;font:14px/1.5 system-ui,sans-serif;color:var(--blak-text-primary)}*{box-sizing:border-box}button,a{font:inherit}button{cursor:pointer}button,a{border-radius:8px}button{border:1px solid var(--blak-border-strong);background:var(--blak-surface);color:inherit;padding:10px 14px;min-height:44px}button:hover,a:hover{background:var(--blak-surface-hover)}:focus-visible{outline:3px solid var(--blak-focus);outline-offset:3px}#open{font-weight:600;box-shadow:0 4px 16px #0003}#panel{width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;background:var(--blak-surface);border:1px solid var(--blak-border-strong);border-radius:12px;padding:16px;margin-bottom:8px;box-shadow:0 12px 40px #0004}#panel[hidden]{display:none}h2{font-size:16px;margin:0 0 12px}nav{display:grid;grid-template-columns:1fr 1fr;gap:4px}a{padding:10px;color:inherit;text-decoration:none;min-height:44px}a[aria-current]{background:var(--blak-surface-selected);font-weight:600}#theme{width:100%;margin-top:12px}.footer{font-size:12px;color:var(--blak-text-secondary);margin-top:12px}#home{display:block;border-bottom:1px solid var(--blak-border-subtle);margin-bottom:8px} @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}`;
+  const style=document.createElement('style'); style.textContent=`:host{position:fixed;right:16px;bottom:16px;z-index:2147483000;font:14px/1.5 Inter,system-ui,sans-serif;color:var(--blak-text-primary)}*{box-sizing:border-box}button,a{font:inherit}button{cursor:pointer}button,a{border-radius:8px}button{border:1px solid var(--blak-border-strong);background:var(--blak-surface);color:inherit;padding:10px 14px;min-height:44px}button:hover,a:hover{background:var(--blak-surface-hover)}:focus-visible{outline:3px solid var(--blak-focus);outline-offset:3px}#open{font-weight:600;box-shadow:0 4px 16px #0003}#panel{width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;background:var(--blak-surface);border:1px solid var(--blak-border-strong);border-radius:12px;padding:16px;margin-bottom:8px;box-shadow:0 12px 40px #0004}#panel[hidden]{display:none}h2{font-size:16px;margin:0 0 12px}nav{display:grid;grid-template-columns:1fr 1fr;gap:4px}a{padding:10px;color:inherit;text-decoration:none;min-height:44px}a[aria-current]{background:var(--blak-surface-selected);font-weight:600}#theme{width:100%;margin-top:12px}.footer{font-size:12px;color:var(--blak-text-secondary);margin-top:12px}#home{display:block;border-bottom:1px solid var(--blak-border-subtle);margin-bottom:8px} @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}`;
   shadow.append(style);
   const panel=document.createElement('section'); panel.id='panel'; panel.hidden=true; panel.setAttribute('aria-label','Workspace apps');
   const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; panel.append(heading);
@@ -103,13 +103,20 @@
   shadow.append(panel,button);document.body.append(host);apply(mode);
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
-    const title=app.name + (app.backend ? ' · ' + app.backend : '');
-    if (app.id!=='portal' && document.title!==title) document.title=title;
-
+    if(app.id==='portal') return;
+    const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI'}[app.id];
+    let title=document.title;
+    if(upstream) title=title.replaceAll(upstream,app.name);
+    if(!title.includes(app.name)) title=(title?title+' — ':'')+app.name;
+    if(document.title!==title) document.title=title;
+    let icon=document.querySelector('link[rel="icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='icon';document.head.append(icon);}
+    if(icon.getAttribute('href')!=='/_blak/logo.svg'){icon.href='/_blak/logo.svg';icon.type='image/svg+xml';}
   }
   if(app.id==='projects') {
     const brandLogo=()=>{for(const img of document.querySelectorAll('img[alt="Kaneo"]')) {img.src='/_blak/projects-logo.svg';img.alt='Blak Projects';}};
     brandLogo();new MutationObserver(brandLogo).observe(document.body,{childList:true,subtree:true});
   }
   brandChrome();
+  new MutationObserver(brandChrome).observe(document.head,{childList:true,subtree:true,characterData:true});
 })().catch(() => { /* Upstream app remains usable if cosmetic assets fail. */ });

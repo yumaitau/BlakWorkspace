@@ -1,3 +1,4 @@
+@import url('/_blak/fonts.css');
 /* Scope native adapters to app chrome; document canvases retain document formatting. */
 html[data-blak-app] { color-scheme:dark; --primary:var(--blak-primary);--primary-foreground:var(--blak-sand-50);--ring:var(--blak-focus);--background:var(--blak-surface);--foreground:var(--blak-text-primary);--card:var(--blak-surface-raised);--card-foreground:var(--blak-text-primary);--popover:var(--blak-surface-raised);--popover-foreground:var(--blak-text-primary);--muted:var(--blak-surface-hover);--muted-foreground:var(--blak-text-secondary);--accent:var(--blak-surface-selected);--accent-foreground:var(--blak-text-primary);--border:var(--blak-border);--input:var(--blak-border);--sidebar:var(--blak-surface-base);--sidebar-foreground:var(--blak-text-primary);--sidebar-accent:var(--blak-surface-hover);--sidebar-border:var(--blak-border); }
 html[data-blak-app] body {font-family:Inter,system-ui,sans-serif}

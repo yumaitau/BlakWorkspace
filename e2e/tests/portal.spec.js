@@ -2,7 +2,7 @@
 const {test,expect,session}=require('../helpers/fixtures');
 const {APPS}=require('../../apps/portal/catalog');
 const {tokens}=require('../../apps/portal/theme');
-const pages=['/','/flow','/flow/new','/flow/activity','/search','/cloud'];
+const pages=['/','/welcome','/flow','/flow/new','/flow/activity','/search','/cloud','/draw','/sync'];
 for(const route of ['/api/me','/api/modules','/api/status','/cloud/object?bucket=abc&key=a']) test(`anonymous API denied ${route}`,async({request})=>{
   expect((await request.get(route)).status()).toBe(401);
 });
@@ -25,6 +25,8 @@ for(const mode of ['dark','light'])for(const route of pages)test(`${mode} theme 
   await page.goto('/');
   if(mode==='light')await page.getByRole('button',{name:'Switch to light theme'}).click();
   await page.goto(route);await expect(page.locator('html')).toHaveAttribute('data-theme',mode);
+  await page.evaluate(()=>document.fonts.load('400 16px Inter'));
+  expect(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Inter'&&f.status==='loaded'))).toBe(true);
   const colours=await page.locator('body').evaluate(el=>({surface:getComputedStyle(el).getPropertyValue('--surface').trim(),primary:getComputedStyle(el).getPropertyValue('--primary').trim()}));
   expect(colours.surface).toBe((tokens[mode].surface||tokens.dark.surface));expect(colours.primary).toBe(tokens.dark.primary);
   await expect(page.getByRole('button',{name:`Switch to ${mode==='dark'?'light':'dark'} theme`})).toBeVisible();
