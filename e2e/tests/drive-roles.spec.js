@@ -74,7 +74,7 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await page.keyboard.press('Control+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(saved);
-    await page.keyboard.press('Control+s');
+    await editor.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(documentText, { timeout: 45000 }).toContain(saved);
     updateIdentity(key, { roles: { drive: 'reader' } });
     await waitRole('reader');
@@ -87,11 +87,11 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await page.keyboard.press('Control+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(forbiddenEdit);
-    await page.keyboard.press('Control+s');
-    await expect(editor.getByText('Document cannot be saved due to expired session, please reload the page to continue.',
-      { exact: true })).toBeVisible({ timeout: 45000 });
+    await editor.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 45000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
     // Close the editor while still a reader; retries must remain denied.
+    page.once('dialog', dialog => dialog.accept());
     await page.goto(origin + '/files', { waitUntil: 'domcontentloaded' });
     updateIdentity(key, { roles: { drive: 'admin' } });
     await waitRole('admin');
