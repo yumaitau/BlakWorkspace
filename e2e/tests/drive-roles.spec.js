@@ -10,11 +10,7 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
   test.setTimeout(720000);
   const key = 'drive-roles-' + crypto.randomBytes(6).toString('hex');
   const origin = 'https://drive.workspace.example.com', endpoint = serviceURL('drive', 9200);
-  let subject, token, file, documentFile;
-  let saveRejected = false;
-  page.on('websocket', socket => socket.on('framereceived', event => {
-    if (/error:.*cmd=storage.*kind=.*(?:save|unauthor|forbidden)/i.test(String(event.payload))) saveRejected = true;
-  }));
+  let subject, token, file, documentFile, failure;
   page.on('request', request => {
     if (new URL(request.url()).origin === origin && request.headers().authorization?.startsWith('Bearer ')) {
       token = request.headers().authorization;
@@ -92,7 +88,8 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await page.keyboard.press('Enter');
     await page.keyboard.type(forbiddenEdit);
     await page.keyboard.press('Control+s');
-    await expect.poll(() => saveRejected, { timeout: 45000 }).toBe(true);
+    await expect(editor.getByText('Document cannot be saved due to expired session, please reload the page to continue.',
+      { exact: true })).toBeVisible({ timeout: 45000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
     // Close the editor while still a reader; retries must remain denied.
     await page.goto(origin + '/files', { waitUntil: 'domcontentloaded' });
@@ -118,7 +115,11 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     expect((await (await request('/graph/v1.0/me')).json()).id).toBe(identity);
     expect(await (await request(file)).text()).toBe(key);
     expect([200, 201, 204]).toContain((await request(file, 'PUT', key + '-restored')).status);
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
+    await page.close({ runBeforeUnload: false });
     if (subject) {
       try {
         updateIdentity(key, { active: true, grants: ['drive'], roles: { drive: 'writer' } });
@@ -127,6 +128,9 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
           if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE')).status),
             { timeout: 30000 }).toBe(true);
         }
+      } catch (cleanupError) {
+        if (!failure) throw cleanupError;
+        console.log('Drive fixture cleanup failed after primary test failure');
       } finally {
         updateIdentity(key, { active: false });
         await waitRole('', false);
