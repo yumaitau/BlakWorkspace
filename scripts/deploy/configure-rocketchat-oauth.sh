@@ -16,6 +16,10 @@ function req(method,path,body,headers){
   });
 }
 (async()=>{
+  if(process.env.BLAK_CHAT_ROLES === "true") {
+    console.log("rocketchat OAuth is provisioned by the native startup hook from deployment settings");
+    return;
+  }
   const login=JSON.parse((await req("POST","/api/v1/login",{user:"akadmin",password:process.env.ADMIN_PASS})).body);
   if(!login.data) throw new Error("login failed");
   const auth={"X-Auth-Token":login.data.authToken,"X-User-Id":login.data.userId};

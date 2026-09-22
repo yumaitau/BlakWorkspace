@@ -373,3 +373,39 @@ CRM/Draw/Flow/Cloud indexing, answer and owner-isolation journey passed in
 All 308 repository tests and 21 native-function tests passed. The native tests
 include rejection of stale human server-admin roles. Runtime grant tests reject
 foreign-owned presets and repair only configured controller-owned base models.
+
+## Chat native enforcement
+
+Chat retains Rocket.Chat room ACLs and adds current Blak ID role checks to native
+REST operations, Meteor methods, publications, room access and uploads. Readers
+can inspect permitted rooms and adjust personal preferences. Writers can create
+rooms and messages; admins additionally manage permitted rooms. Room ownership
+cannot override a reader downgrade. Human app admins cannot change directory
+roles, passwords, OAuth trust or server settings.
+
+The controller pre-provisions accounts using the immutable native `blakid`
+subject. It rejects duplicate subjects and email collisions before mutation.
+Native CustomOAuth validation receives the provisioned profile fields so it
+cannot erase the stable username. Local registration, password login and native
+startup admin promotion are disabled. New accounts do not automatically acquire
+Rocket.Chat email MFA; existing explicit MFA settings are preserved.
+
+Role changes retain native content and ownership, remove stale global roles,
+and disconnect Meteor sessions. REST and resumed sessions recheck current roles.
+Only the upstream system bot is excluded from human reconciliation. Controller
+routes require a separate high-entropy bearer credential; human app roles never
+grant access. Public bootstrap methods expose only native public metadata.
+
+`scripts/deploy/deploy-chat-roles.sh` backs up MongoDB before rolling the pinned,
+patched native image and activating directory reconciliation. The browser journey
+in `e2e/tests/chat-roles.spec.js` checks SSO, rendered room content, owner downgrades,
+existing tokens and sockets, admin boundaries, disablement, cross-app grants,
+renamed identities and restoration.
+
+Live acceptance passed on 2026-09-22 against `blak-chat:e1797bf`: both browser
+journeys passed in 5.9 minutes. The separate private Chat/Projects to Hermes
+indexing journey passed in 28.5 seconds against `blak-chat:70e516c`; the subsequent
+native change only allows controller identity reads during reconciliation.
+Twelve focused native tests and required CI passed. A live post-restart check
+confirmed zero human server-admin accounts; the latest two scheduled Hermes
+sync jobs completed successfully.
