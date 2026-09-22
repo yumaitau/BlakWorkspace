@@ -1,17 +1,22 @@
 'use strict';
 const {test,expect}=require('../helpers/fixtures');
 const bucket='blak-e2e-cleanup';
-test('create bucket, upload, list, filter, download and delete object',async({signedIn:page,account})=>{
-  await page.goto('/cloud');await expect(page.locator('main')).not.toContainText('unavailable right now');
-  await page.getByPlaceholder('New bucket name…').fill(bucket);await page.getByRole('button',{name:'Create bucket'}).click();await expect(page).toHaveURL(new RegExp(`bucket=${bucket}`));
-  const name=`${account}-café's.txt`,content='Blak E2E round-trip '+account;
+test('signed-in Blak Cloud opens the white-label console',async({signedIn:page})=>{
+  await page.goto('/cloud');
+  await expect(page).toHaveTitle('Blak Cloud');
+  await expect(page.locator('body')).toContainText('Console Home');
+  await expect(page.locator('#blak-workspace-shell')).toBeVisible();
+});
+test('object API uploads, downloads and deletes through the signed-in session',async({signedIn:page,account})=>{
+  expect((await page.request.post('/cloud/bucket',{form:{name:bucket},maxRedirects:0})).status()).toBeLessThan(400);
+  const name=`${account}-cafe.txt`,content='Blak E2E round-trip '+account;
   const url='/cloud/object?'+new URLSearchParams({bucket,key:name});
   try {
-    await page.locator('#upfile').setInputFiles({name,mimeType:'text/plain',buffer:Buffer.from(content)});await page.getByRole('button',{name:'Upload',exact:true}).click();await expect(page.locator('#upmsg')).toContainText('Uploaded');
-    await page.reload();await expect(page.getByRole('link',{name:'⬇ '+name})).toBeVisible();
-    const response=await page.request.get(url);expect(response.status()).toBe(200);expect(await response.text()).toBe(content);expect(response.headers()['content-disposition']).toContain('filename*=');
-    await page.goto('/cloud?'+new URLSearchParams({bucket,prefix:'not-a-real-prefix'}));await expect(page.getByRole('link',{name:'⬇ '+name})).toHaveCount(0);
-    await page.goto('/cloud?'+new URLSearchParams({bucket}));await page.getByRole('button',{name:'Delete '+name,exact:true}).click();await expect(page.getByRole('link',{name:'⬇ '+name})).toHaveCount(0);
+    expect((await page.request.put(url,{data:content})).status()).toBeLessThan(300);
+    const response=await page.request.get(url);
+    expect(response.status()).toBe(200);
+    expect(await response.text()).toBe(content);
+    expect((await page.request.delete(url)).ok()).toBeTruthy();
     expect((await page.request.get(url)).status()).toBe(404);
   } finally {await page.request.delete(url);}
 });

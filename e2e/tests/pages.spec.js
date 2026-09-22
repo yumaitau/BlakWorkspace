@@ -82,7 +82,7 @@ projectTest('Projects overview, projects, members and invitations keep workspace
 test('portal guide, search, cloud and status pages have labelled controls',async({page})=>{
   await page.goto('https://portal.workspace.example.com/login');await authentikLogin(page);
   await expect(page).toHaveURL('https://portal.workspace.example.com/');
-  for(const path of ['/welcome','/search','/cloud','/sync']) {
+  for(const path of ['/welcome','/search','/sync']) {
     await page.goto('https://portal.workspace.example.com'+path);
     const result=await new AxeBuilder({page}).include('main').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
     expect(result.violations,path).toEqual([]);

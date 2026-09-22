@@ -29,7 +29,7 @@ const APPS = [
   { id: 'flow', name: 'Blak Flow', desc: 'Automations', url: '/flow', backend: 'Powered by Blak Flow engine', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: null },
   { id: 'hermes', name: 'Blak Hermes', desc: 'Local AI assistant', url: 'https://hermes.workspace.example.com', backend: 'Powered by Open WebUI + Ollama', group: 'Platform', status: 'live', oidcClient: 'hermes', check: { proto: 'http', host: 'hermes', port: 8080, path: '/' } },
   { id: 'search', name: 'Blak Search', desc: 'Permission-aware workspace search', url: '/search', backend: 'Powered by Meilisearch', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: { proto: 'http', host: 'meilisearch', port: 7700, path: '/health' } },
-  { id: 'storage', name: 'Blak Cloud', desc: 'Local cloud services', url: '/cloud', backend: 'Powered by Floci', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: { proto: 'http', host: 'floci', port: 4566, path: '/_localstack/health' } },
+  { id: 'storage', name: 'Blak Cloud', desc: 'Private cloud console', url: 'https://cloud.workspace.example.com', backend: 'Powered by Floci', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: { proto: 'http', host: 'floci-ui', port: 4500, path: '/api/health' } },
 ];
 
 function liveApps() {

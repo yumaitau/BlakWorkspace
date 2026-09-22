@@ -10,6 +10,7 @@ const { supportsAccessFilter, accessFilter } = require('./search-access');
 const { readBody, MAX_UPLOAD_BYTES } = require('./request-body');
 const { request: upstreamRequest, textRequest } = require('./http-client');
 const { dispatchCloudObject, writeCloudResult, validBucketName } = require('./cloud-object');
+const { rewriteConsoleDocument, rewriteConsoleScript, consoleUpstreamPath } = require('./cloud-console');
 const { createDrawStore } = require('./draw-store');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -66,6 +67,9 @@ const { sign, verifySession, COOKIE, SESSION_TTL_MS, LOGIN_TTL_MS, loginCookie, 
 const MEILI_KEY = process.env.MEILI_MASTER_KEY || '';
 const FLOCI_HOST = process.env.FLOCI_HOST || 'floci';
 const FLOCI_PORT = parseInt(process.env.FLOCI_PORT || '4566', 10);
+const FLOCI_UI_HOST = process.env.FLOCI_UI_HOST || 'floci-ui';
+const FLOCI_UI_PORT = process.env.FLOCI_UI_PORT || '4500';
+const CLOUD_PUBLIC_URL = process.env.CLOUD_PUBLIC_URL || '';
 const FLOCI_KEY = process.env.FLOCI_KEY || 'test';
 const FLOCI_SECRET = process.env.FLOCI_SECRET || 'test';
 const FLOCI_REGION = process.env.FLOCI_REGION || 'us-east-1';
@@ -85,6 +89,26 @@ function awsSign(service, method, path, query, extraHeaders, payloadHash) {
   const sig = crypto.createHmac('sha256', sk).update(sts).digest('hex');
   headers.authorization = `AWS4-HMAC-SHA256 Credential=${FLOCI_KEY}/${scope}, SignedHeaders=${signed.join(';')}, Signature=${sig}`;
   return { headers, queryString: q };
+}
+async function proxyCloudConsole(req, res, url) {
+  const upstreamPath = consoleUpstreamPath(url.pathname);
+  const target = `http://${FLOCI_UI_HOST}:${FLOCI_UI_PORT}${upstreamPath}${url.search}`;
+  const headers = {};
+  if (req.headers.accept) headers.accept = req.headers.accept;
+  if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
+  const body = req.method === 'GET' || req.method === 'HEAD' ? null : await readBody(req);
+  try {
+    const result = await upstreamRequest(target, { method: req.method, headers, body });
+    const type = String(result.headers['content-type'] || 'application/octet-stream');
+    let payload = result.body;
+    if (type.includes('text/html')) payload = Buffer.from(rewriteConsoleDocument(payload.toString('utf8')));
+    else if (type.includes('javascript') || upstreamPath.endsWith('.js')) payload = Buffer.from(rewriteConsoleScript(payload.toString('utf8')));
+    res.writeHead(result.status, { 'content-type': type, 'cache-control': 'no-store' });
+    res.end(payload);
+  } catch {
+    res.writeHead(502, { 'content-type': 'text/html; charset=utf-8' });
+    res.end('<!doctype html><html data-blak-app="storage"><head><title>Blak Cloud</title></head><body><main><h1>Blak Cloud is unavailable</h1><p>The cloud console could not be reached.</p></main></body></html>');
+  }
 }
 function awsReq(service, method, path, query, body, contentType) {
   const { headers, queryString } = awsSign(service, method, path, query, contentType ? { 'content-type': contentType } : {}, 'UNSIGNED-PAYLOAD');
@@ -635,10 +659,17 @@ async function handleRequest(req, res) {
     res.end(await searchPage(user, url.searchParams.get('q') || ''));
     return;
   }
-  if (url.pathname === '/cloud') {
+  if (url.pathname === '/api/cloud-access') {
+    if (!user || !can(user, 'storage', 'reader')) { res.writeHead(401); res.end(); return; }
+    res.writeHead(204); res.end(); return;
+  }
+  if ((url.pathname === '/cloud' || url.pathname === '/cloud/') && CLOUD_PUBLIC_URL) {
     if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(await cloudPage(user, url.searchParams.get('bucket') || '', url.searchParams.get('prefix') || '', url.searchParams.get('msg') || ''));
+    res.writeHead(302, { location: CLOUD_PUBLIC_URL }); res.end(); return;
+  }
+  if (consoleUpstreamPath(url.pathname)) {
+    if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+    await proxyCloudConsole(req, res, url);
     return;
   }
   if (url.pathname === '/cloud/object') {
