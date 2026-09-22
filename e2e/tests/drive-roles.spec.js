@@ -16,6 +16,9 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
       token = request.headers().authorization;
     }
   });
+  if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true') page.on('response', response => {
+    if (response.status() >= 400) console.log('Drive HTTP rejection', response.status(), new URL(response.url()).pathname);
+  });
   async function waitRole(role, active = true) {
     await expect.poll(() => {
       try {
@@ -25,9 +28,10 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
         return member ? { role: member.role, active: member.active } : null;
       } catch { return null; }
     }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role, active });
+    if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true') console.log('Drive grant observed', role || 'none', active);
   }
   async function request(path, method = 'GET', body) {
-    return fetch(endpoint + path, { method, headers: { authorization: token, 'content-type': 'application/json' },
+    return fetch(endpoint + path, { method, signal: AbortSignal.timeout(30000), headers: { authorization: token, 'content-type': 'application/json' },
       ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
   }
   try {
@@ -36,6 +40,9 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await waitRole('writer');
     await page.goto(origin, { waitUntil: 'domcontentloaded' });
     await expect.poll(() => Boolean(token), { timeout: 90000 }).toBe(true);
+    // A token is emitted before the callback finishes loading account metadata.
+    // Reloading that callback would replay its already-consumed authorization code.
+    await page.waitForURL(url => url.origin === origin && /^\/files(?:\/|$)/.test(url.pathname), { timeout: 90000 });
     await expect.poll(async () => (await request('/graph/v1.0/me')).status, { timeout: 60000 }).toBe(200);
     const identity = (await (await request('/graph/v1.0/me')).json()).id;
     const drives = await (await request('/graph/v1.0/drives')).json();
@@ -65,6 +72,12 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     expect([401, 403]).toContain((await request(file)).status);
     updateIdentity(key, { grants: ['drive'], roles: { drive: 'writer' }, rename: true });
     await waitRole('writer');
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await context.addCookies(await identityCookies(key, 'Drive native role fixture', ['drive'], { drive: 'writer' }));
+    token = undefined;
+    await page.goto(origin, { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(url => url.origin === origin && /^\/files(?:\/|$)/.test(url.pathname), { timeout: 90000 });
+    await expect.poll(() => Boolean(token), { timeout: 90000 }).toBe(true);
     expect((await (await request('/graph/v1.0/me')).json()).id).toBe(identity);
     expect(await (await request(file)).text()).toBe(key);
     expect([200, 201, 204]).toContain((await request(file, 'PUT', key + '-restored')).status);
