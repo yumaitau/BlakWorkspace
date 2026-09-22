@@ -76,3 +76,27 @@ test('native permissions add only scoped role grants and preserve upstream roles
   assert.deepEqual(permissions[1].roles, ['admin', 'blak-chat-writer', 'blak-chat-admin']);
   assert.deepEqual(permissions[2].roles, ['admin', 'blak-chat-admin']);
 });
+
+test('identity status reads remain available during reconciliation while overlapping writes fail', async () => {
+  const { native } = fixture(), routes = {};
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const find = native.Roles.findOneById;
+  native.Roles.findOneById = async id => { await gate; return find(id); };
+  process.env.BLAK_CHAT_ROLE_TOKEN = 'controller-fixture-'.repeat(3);
+  const api = { v1: {
+    addRoute(name, options, handlers) { routes[name] = handlers.post; },
+    success(value) { return { success: true, ...value }; },
+    failure() { return { success: false }; },
+    forbidden() { return { success: false }; },
+  } };
+  controller.register(api, native);
+  const request = { request: { headers: { get() { return 'Bearer ' + process.env.BLAK_CHAT_ROLE_TOKEN; } } }, bodyParams: { members: [member()] } };
+  const pending = routes['blak.roles.reconcile'].call(request);
+  await new Promise(resolve => setImmediate(resolve));
+  try {
+    assert.equal((await routes['blak.roles.identities'].call(request)).success, true);
+    assert.equal((await routes['blak.roles.reconcile'].call(request)).success, false);
+  } finally { release(); }
+  assert.equal((await pending).success, true);
+});

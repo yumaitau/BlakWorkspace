@@ -107,9 +107,14 @@ function register(API, native) {
       async post() {
         try { requireController(this.request); }
         catch { return API.v1.forbidden('Blak ID controller required'); }
+        // Reading native identities is safe while individual atomic role updates run.
+        if (operation === 'identities') {
+          try { return API.v1.success({ identities: await identities(native.Users) }); }
+          catch (error) { console.error('Chat identity read failed:', error.name); return API.v1.failure('Chat identity read failed'); }
+        }
         if (running) return API.v1.failure('Reconciliation already running');
         running = true;
-        try { return API.v1.success(operation === 'identities' ? { identities: await identities(native.Users) } : await reconcile(native, this.bodyParams.members)); }
+        try { return API.v1.success(await reconcile(native, this.bodyParams.members)); }
         catch (error) { console.error('Chat role reconciliation failed:', error.name); return API.v1.failure('Chat role reconciliation failed'); }
         finally { running = false; }
       },
