@@ -7,15 +7,16 @@ const { serviceURL, ownedPersonalDrive } = require('../helpers/sync');
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
 test('Drive native roles revoke owned-file writes and preserve immutable accounts', async ({ page, context }) => {
-  test.setTimeout(720000);
+  test.setTimeout(900000);
   const key = 'drive-roles-' + crypto.randomBytes(6).toString('hex');
   const origin = 'https://drive.workspace.example.com', endpoint = serviceURL('drive', 9200);
   let subject, token, file, documentFile, failure;
-  page.on('request', request => {
+  const captureToken = request => {
     if (new URL(request.url()).origin === origin && request.headers().authorization?.startsWith('Bearer ')) {
       token = request.headers().authorization;
     }
-  });
+  };
+  page.on('request', captureToken);
   if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true') page.on('response', response => {
     if (response.status() >= 400) console.log('Drive HTTP rejection', response.status(), new URL(response.url()).pathname);
   });
@@ -30,8 +31,8 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role, active });
     if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true') console.log('Drive grant observed', role || 'none', active);
   }
-  async function request(path, method = 'GET', body) {
-    return fetch(endpoint + path, { method, signal: AbortSignal.timeout(30000), headers: { authorization: token, 'content-type': 'application/json' },
+  async function request(path, method = 'GET', body, headers = {}) {
+    return fetch(endpoint + path, { method, signal: AbortSignal.timeout(30000), headers: { authorization: token, 'content-type': 'application/json', ...headers },
       ...(body === undefined ? {} : { body: typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body) }) });
   }
   async function documentText() {
@@ -91,7 +92,8 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
       await editor.locator('#document-container').screenshot({ path: test.info().outputPath('fixture-before-save.png') });
     }
     await editor.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 45000 });
+    // Collabora retries token refresh before surfacing a WOPI 403 to the user.
+    await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 150000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
     // Close the editor while still a reader; retries must remain denied.
     page.once('dialog', dialog => dialog.accept());
@@ -131,7 +133,25 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
       try {
         updateIdentity(key, { active: true, grants: ['drive'], roles: { drive: 'writer' } });
         await waitRole('writer');
+        if (token && !(await request('/graph/v1.0/me')).ok) {
+          await context.addCookies(await identityCookies(key, 'Drive native role fixture', ['drive'], { drive: 'writer' }));
+          const cleanupPage = await context.newPage();
+          cleanupPage.on('request', captureToken);
+          await cleanupPage.goto(origin);
+          await cleanupPage.waitForURL(url => url.origin === origin && /^\/files(?:\/|$)/.test(url.pathname), { timeout: 90000 });
+          await cleanupPage.close();
+        }
         for (const path of [file, documentFile].filter(Boolean)) {
+          if (path === documentFile && token) {
+            const discovery = await request(path, 'PROPFIND', '<d:propfind xmlns:d="DAV:"><d:prop><d:lockdiscovery/></d:prop></d:propfind>',
+              { 'content-type': 'application/xml', Depth: '0' });
+            if (discovery.status === 207) {
+              const lock = execFileSync('python3', ['-c', "import sys,xml.etree.ElementTree as E; print(E.fromstring(sys.stdin.buffer.read()).findtext('.//{DAV:}locktoken/{DAV:}href', ''))"],
+                { input: await discovery.text() }).toString().trim();
+              // Release only this fixture's lock, as its restored native owner.
+              if (lock) expect([200, 204]).toContain((await request(path, 'UNLOCK', undefined, { 'Lock-Token': '<' + lock + '>' })).status);
+            }
+          }
           if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE')).status),
             { timeout: 30000 }).toBe(true);
         }
