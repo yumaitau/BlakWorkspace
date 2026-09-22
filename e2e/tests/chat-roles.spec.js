@@ -18,7 +18,23 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
   const key = 'chat-roles-' + crypto.randomBytes(6).toString('hex');
   const endpoint = serviceURL('chat', 3000), origin = 'https://chat.workspace.example.com';
   const controller = controllerToken();
-  let subject, native, token, room;
+  if (process.env.BLAK_E2E_CHAT_DIAGNOSTICS === 'true') {
+    page.on('response', result => {
+      const path = new URL(result.url()).pathname;
+      if (result.status() >= 400 && path.startsWith('/api/')) console.log('Chat HTTP rejection', result.status(), path);
+    });
+    page.on('pageerror', error => console.log('Chat browser exception', error.name));
+    page.on('websocket', socket => {
+      const methods = new Map();
+      socket.on('framesent', frame => {
+        try { const value = JSON.parse(String(frame.payload)); if (value.msg === 'method') methods.set(value.id, value.method); } catch {}
+      });
+      socket.on('framereceived', frame => {
+        try { const value = JSON.parse(String(frame.payload)); if (value.msg === 'result' && value.error) console.log('Chat DDP rejection', methods.get(value.id), value.error.error); } catch {}
+      });
+    });
+  }
+  let subject, native, token, room, failure;
   async function response(path, body, operator = false) {
     return fetch(endpoint + '/api/v1/' + path, { method: body === undefined ? 'GET' : 'POST',
       headers: { 'content-type': 'application/json', ...(operator ? { authorization: 'Bearer ' + controller } : { 'X-Auth-Token': token, 'X-User-Id': native.id }) },
@@ -114,13 +130,16 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     await denied('groups.history?roomId=' + room._id);
     await api('logout', {});
     await denied('me');
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
     if (subject) { updateIdentity(key, { active: false }); await waitRole(null); }
     if (native?.id) {
       const fixture = { id: native.id, subject, room: room?._id, key };
       const script = 'const fixture=' + JSON.stringify(fixture) + `;
 const dbx=db.getSiblingDB('rocketchat'), user=dbx.users.findOne({_id:fixture.id,'services.blakid.id':fixture.subject});
-if(!user || user.active || !user.emails?.some(email=>email.address.endsWith('@example.invalid')))throw Error('Fixture ownership check failed');
+if(!user || user.active || !Array.isArray(user.emails) || !user.emails.some(function(email){return /@example[.]invalid$/.test(email.address)}))throw Error('Fixture ownership check failed');
 if(fixture.room){
  const room=dbx.rocketchat_room.findOne({_id:fixture.room,name:fixture.key});
  const owner=dbx.rocketchat_subscription.findOne({rid:fixture.room,'u._id':fixture.id,roles:'owner'});
@@ -129,7 +148,10 @@ if(fixture.room){
 }
 dbx.rocketchat_subscription.deleteMany({'u._id':fixture.id});dbx.users.deleteOne({_id:fixture.id,'services.blakid.id':fixture.subject});`;
       try { execFileSync('kubectl', ['-n', 'blak-micro', 'exec', 'deploy/mongo', '--', 'mongosh', '--quiet', '--eval', script], { stdio: ['pipe', 'pipe', 'pipe'] }); }
-      catch { throw Error('Native Chat fixture cleanup failed; details omitted'); }
+      catch {
+        if (!failure) throw Error('Native Chat fixture cleanup failed; details omitted');
+        console.warn('Native Chat fixture cleanup also failed; original error retained');
+      }
     }
   }
 });
