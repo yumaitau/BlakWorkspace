@@ -142,17 +142,19 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
           await cleanupPage.close();
         }
         for (const path of [file, documentFile].filter(Boolean)) {
+          const deleteHeaders = {};
           if (path === documentFile && token) {
             const discovery = await request(path, 'PROPFIND', '<d:propfind xmlns:d="DAV:"><d:prop><d:lockdiscovery/></d:prop></d:propfind>',
               { 'content-type': 'application/xml', Depth: '0' });
             if (discovery.status === 207) {
               const lock = execFileSync('python3', ['-c', "import sys,xml.etree.ElementTree as E; print(E.fromstring(sys.stdin.buffer.read()).findtext('.//{DAV:}locktoken/{DAV:}href', ''))"],
                 { input: await discovery.text() }).toString().trim();
-              // Release only this fixture's lock, as its restored native owner.
-              if (lock) expect([200, 204]).toContain((await request(path, 'UNLOCK', undefined, { 'Lock-Token': '<' + lock + '>' })).status);
+              // Native DAV deletion accepts the current lock token. WOPI locks
+              // cannot be released by DAV UNLOCK because their app names differ.
+              if (lock) deleteHeaders.If = '(<'+ lock + '>)';
             }
           }
-          if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE')).status),
+          if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE', undefined, deleteHeaders)).status),
             { timeout: 30000 }).toBe(true);
         }
       } catch (cleanupError) {
