@@ -12,7 +12,7 @@ const READ_METHODS = new Set(`
   getAvatarSuggestion listCustomSounds listCustomUserStatus logoutCleanUp
 `.trim().split(/\s+/));
 // Native bootstrap returns only non-hidden public settings and locale assets.
-const PUBLIC_METHODS = new Set(['public-settings/get', 'loadLocale']);
+const PUBLIC_METHODS = new Set(['public-settings/get', 'loadLocale', 'listCustomSounds']);
 const WRITE_METHODS = new Set(`
   sendMessage updateMessage deleteMessage sendFileMessage createChannel
   createPrivateGroup createDirectMessage createDiscussion joinRoom leaveRoom

@@ -16,7 +16,8 @@ async function checkRoute(id, version, route, method, body) {
 }
 async function validateLogin(login) {
   if (!enabled()) return;
-  if (!['oauth', 'resume'].includes(login.type) || !await canRead(login.user?._id)) throw forbidden();
+  // Meteor reports successful OAuth login using the service name, not "oauth".
+  if (!['blakid', 'resume'].includes(login.type) || !await canRead(login.user?._id)) throw forbidden();
 }
 async function validateExternal(service, data) {
   if (!enabled()) return;

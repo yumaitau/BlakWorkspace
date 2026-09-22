@@ -46,7 +46,9 @@ test('newly registered methods remain capped; password and foreign-subject login
   Meteor.methods({ deleteMessage() { calls++; } });
   await assert.rejects(Meteor.server.method_handlers.deleteMessage.call({ userId: 'member' }));
   await assert.rejects(bridge.validateLogin({ type: 'password', user }));
-  await bridge.validateLogin({ type: 'oauth', user });
+  await assert.rejects(bridge.validateLogin({ type: 'oauth', user }));
+  await assert.rejects(bridge.validateLogin({ type: 'google', user }));
+  await bridge.validateLogin({ type: 'blakid', user });
   await bridge.validateLogin({ type: 'resume', user });
   await assert.rejects(bridge.validateExternal('blakid', { id: 'different', email: 'same@example.invalid' }));
   await assert.rejects(bridge.validateExternal('google', { id: 'immutable' }));
