@@ -400,5 +400,12 @@ grant access. Public bootstrap methods expose only native public metadata.
 patched native image and activating directory reconciliation. The browser journey
 in `e2e/tests/chat-roles.spec.js` checks SSO, rendered room content, owner downgrades,
 existing tokens and sockets, admin boundaries, disablement, cross-app grants,
-renamed identities and restoration. Live acceptance remains pending until that
-entire journey passes; CI or a successful rollout alone is insufficient.
+renamed identities and restoration.
+
+Live acceptance passed on 2026-09-22 against `blak-chat:e1797bf`: both browser
+journeys passed in 5.9 minutes. The separate private Chat/Projects to Hermes
+indexing journey passed in 28.5 seconds against `blak-chat:70e516c`; the subsequent
+native change only allows controller identity reads during reconciliation.
+Twelve focused native tests and required CI passed. A live post-restart check
+confirmed zero human server-admin accounts; the latest two scheduled Hermes
+sync jobs completed successfully.
