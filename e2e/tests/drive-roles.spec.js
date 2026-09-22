@@ -95,7 +95,10 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     // Collabora retries token refresh before surfacing a WOPI 403 to the user.
     await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 150000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
-    // Close the editor while still a reader; retries must remain denied.
+    // Restore the fixture owner before closing so Collabora can release its
+    // WOPI lock through the native editor session after the denial assertion.
+    updateIdentity(key, { roles: { drive: 'writer' } });
+    await waitRole('writer');
     page.once('dialog', dialog => dialog.accept());
     await page.goto(origin + '/files', { waitUntil: 'domcontentloaded' });
     updateIdentity(key, { roles: { drive: 'admin' } });
@@ -142,20 +145,10 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
           await cleanupPage.close();
         }
         for (const path of [file, documentFile].filter(Boolean)) {
-          const deleteHeaders = {};
-          if (path === documentFile && token) {
-            const discovery = await request(path, 'PROPFIND', '<d:propfind xmlns:d="DAV:"><d:prop><d:lockdiscovery/></d:prop></d:propfind>',
-              { 'content-type': 'application/xml', Depth: '0' });
-            if (discovery.status === 207) {
-              const lock = execFileSync('python3', ['-c', "import sys,xml.etree.ElementTree as E; print(E.fromstring(sys.stdin.buffer.read()).findtext('.//{DAV:}locktoken/{DAV:}href', ''))"],
-                { input: await discovery.text() }).toString().trim();
-              // Native DAV deletion accepts the current lock token. WOPI locks
-              // cannot be released by DAV UNLOCK because their app names differ.
-              if (lock) deleteHeaders.If = '(<'+ lock + '>)';
-            }
-          }
-          if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE', undefined, deleteHeaders)).status),
-            { timeout: 30000 }).toBe(true);
+          if (token) await expect.poll(async () => {
+            const status = (await request(path, 'DELETE')).status;
+            return [200, 204, 404].includes(status) ? 'removed' : status;
+          }, { timeout: 60000 }).toBe('removed');
         }
       } catch (cleanupError) {
         if (!failure) throw cleanupError;
