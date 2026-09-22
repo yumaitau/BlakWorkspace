@@ -357,7 +357,19 @@ response, review, indexing and deletion. All 303 repository tests, manifest
 validation and generated-theme checks passed.
 
 
-Hermes scoped-administration follow-up: 21 native-function tests pass, including
-managed-group plus explicit-grant checks and rejection of stale human admin roles
-by the native server-admin dependency. Expanded live identity-authority acceptance
-is pending; previous privacy acceptance does not cover these new boundaries.
+Hermes scoped-administration acceptance passed on 2026-09-22. All human grants
+use native users with managed groups; server administration is restricted to the
+enrolled controller. Shared knowledge administration also requires a native write
+grant. Password sign-in is disabled at the API. Configured base runtimes receive
+group read grants for inference; private owner presets retain their own ACLs.
+
+The expanded role journey passed in 7.5 minutes against native image
+`blak-hermes:e19f6c8ff669` and controller `blak-app-roles:6c5fb8b7e9ea`.
+It covered reader inference, disabled-session inference denial, private content,
+password/role mutations, OAuth trust and session access, group creation,
+shared-knowledge administration, revocation and restoration. The separate
+CRM/Draw/Flow/Cloud indexing, answer and owner-isolation journey passed in
+2.5 minutes; both Forms journeys also passed against the scoped native image.
+All 308 repository tests and 21 native-function tests passed. The native tests
+include rejection of stale human server-admin roles. Runtime grant tests reject
+foreign-owned presets and repair only configured controller-owned base models.
