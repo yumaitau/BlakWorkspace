@@ -29,6 +29,6 @@ function driveRoles(mode) {
 }
 function blakTheme(logo = 'themes/blak/assets/logo.svg') {
   const slogan = 'Your work. Your workspace.';
-  return { common:{name:'Blak Drive',slogan,logo},clients:{web:{defaults:{logo,favicon:logo,slogan},themes:['dark','light'].map(mode=>({isDark:mode==='dark',label:`Blak ${mode === 'dark' ? 'Dark' : 'Light'}`,designTokens:{roles:driveRoles(mode)}}))}}};
+  return { common:{name:'Blak Drive',slogan,logo},clients:{web:{defaults:{logo,favicon:logo,slogan,background:''},themes:['dark','light'].map(mode=>({isDark:mode==='dark',label:`Blak ${mode === 'dark' ? 'Dark' : 'Light'}`,designTokens:{roles:driveRoles(mode)}}))}}};
 }
 module.exports = { CSS, tokenCSS, tokens, themeScript, blakTheme };
