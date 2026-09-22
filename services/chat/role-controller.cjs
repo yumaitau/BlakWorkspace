@@ -77,7 +77,8 @@ async function reconcile(native, value) {
   for (const member of creations) {
     const id = await native.Accounts.insertUserDoc({ skipAdminCheck: true, skipAdminEmail: true, skipNewUserRolesSetting: true }, {
       username: member.username, name: member.email.split('@')[0], type: 'user', active: false, roles: [], blakRole: null,
-      emails: [{ address: member.email, verified: true }], services: { blakid: { id: member.subject } },
+      emails: [{ address: member.email, verified: true }], // Native CustomOAuth validateNewUser copies these profile fields.
+      services: { blakid: { id: member.subject, username: member.username, email: member.email, name: member.email.split('@')[0] } },
     });
     users.push({ id, subject: member.subject, role: null, roles: [], active: false, type: 'user' });
     counts.created++;

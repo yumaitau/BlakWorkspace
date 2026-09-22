@@ -15,7 +15,10 @@ function fixture() {
       async findOne(query) { return users.find(user => query.$or.some(term => term.username && term.username === user.username || term['emails.address'] && user.emails?.some(email => email.address === term['emails.address']))); },
       async updateOne(query, update) { Object.assign(users.find(user => user._id === query._id), update.$set); },
     },
-    Accounts: { async insertUserDoc(options, user) { assert.equal(options.skipAdminCheck, true); const _id = 'native-' + users.length; users.push({ _id, ...user }); return _id; } },
+    Accounts: { async insertUserDoc(options, user) { assert.equal(options.skipAdminCheck, true); const _id = 'native-' + users.length;
+      // Reproduce native CustomOAuth validateNewUser profile copying.
+      user.username = user.services.blakid.username; user.name = user.services.blakid.name;
+      users.push({ _id, ...user }); return _id; } },
     Roles: { async findOneById(id) { return roles.find(role => role._id === id); }, async insertOne(role) { roles.push(role); } },
     Permissions: {
       find() { return { async toArray() { return structuredClone(permissions); } }; },
@@ -30,6 +33,8 @@ test('native identity and ownership survive reader downgrade, disable, email cha
   const { native, users } = fixture();
   assert.equal((await controller.reconcile(native, [member()])).created, 1);
   const user = users[1], id = user._id;
+  assert.match(user.username, /^blak-[a-f0-9]{24}$/);
+  assert.equal(user.name, 'fixture');
   user.ownedRoom = 'keep';
   await controller.reconcile(native, [member('reader')]);
   assert.deepEqual(user.roles, ['blak-chat-reader']);
