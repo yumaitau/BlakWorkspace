@@ -100,10 +100,19 @@ spec:
           hostnames: [id.workspace.example.com]
       containers:
         - name: rocketchat
-          image: rocketchat/rocket.chat:7.9.3
+          image: blak-chat:7.9.3-blak1
           ports:
             - containerPort: 3000
           env:
+            - name: BLAK_CHAT_ROLES
+              value: "true"
+            - name: BLAK_CHAT_ROLE_TOKEN
+              valueFrom:
+                secretKeyRef: { name: blak-chat-role-controller, key: token }
+            - name: OVERWRITE_SETTING_Accounts_AllowAnonymousRead
+              value: "false"
+            - name: OVERWRITE_SETTING_Accounts_OAuth_Custom-Blakid-merge_users
+              value: "false"
             - name: OVERWRITE_SETTING_theme-custom-css
               valueFrom:
                 configMapKeyRef: { name: blak-app-themes, key: chat.css }
@@ -121,13 +130,6 @@ spec:
               value: completed
             - name: OVERWRITE_SETTING_Accounts_ShowFormLogin
               value: "false"
-            - name: ADMIN_EMAIL
-              value: admin@blak.local
-            - name: ADMIN_USERNAME
-              value: akadmin
-            - name: ADMIN_PASS
-              valueFrom:
-                secretKeyRef: { name: blak-chat, key: admin-password }
             - name: Accounts_OAuth_Custom-Blakid
               value: "true"
             - name: Accounts_OAuth_Custom-Blakid-url
@@ -155,7 +157,7 @@ spec:
             - name: Accounts_OAuth_Custom-Blakid-name_field
               value: name
             - name: Accounts_OAuth_Custom-Blakid-merge_users
-              value: "true"
+              value: "false"
             - name: Accounts_OAuth_Custom-Blakid-id
               value: rocketchat
             - name: Accounts_OAuth_Custom-Blakid-secret

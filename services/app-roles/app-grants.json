@@ -37,7 +37,12 @@
     "group": "Blak Drive users"
   },
   "chat": {
-    "group": "Blak Chat users"
+    "group": "Blak Chat users",
+    "roleGroups": [
+      "blak-chat-reader",
+      "blak-chat-writer",
+      "blak-chat-admin"
+    ]
   },
   "sites": {
     "group": "Blak Knowledge users",
