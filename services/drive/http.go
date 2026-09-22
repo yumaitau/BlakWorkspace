@@ -48,7 +48,7 @@ func HTTPAllowed(role, method, path string) bool {
 		switch path {
 		case "/api/v0/settings/bundle-get", "/api/v0/settings/bundles-list",
 			"/api/v0/settings/values-list", "/api/v0/settings/values-get-by-unique-identifiers",
-			"/api/v0/settings/roles-list":
+			"/api/v0/settings/roles-list", "/api/v0/settings/assignments-list", "/api/v0/settings/permissions-list":
 			return true // Read RPCs; native filters and current-user checks still apply.
 		}
 	}

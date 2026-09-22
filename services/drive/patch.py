@@ -93,6 +93,17 @@ replace(name, anchor, '''roleIDs, err = blakroles.PermissionRoleIDs(ctx, account
  }
  ''' + anchor)
 
+# HTTP settings middleware supplies a verified user. Preserve internal role
+# provisioning reads, while human metadata RPCs can inspect only their account.
+anchor = 'func (g Service) ListRoleAssignments(ctx context.Context, req *settingssvc.ListRoleAssignmentsRequest, res *settingssvc.ListRoleAssignmentsResponse) error {\n\treq.AccountUuid = getValidatedAccountUUID(ctx, req.GetAccountUuid())'
+replace(name, anchor, anchor + '''
+ if blakroles.Enabled() {
+  if user, present := ctxpkg.ContextGetUser(ctx); present && blakroles.UserRole(user) != "system" && !g.isCurrentUser(ctx, req.GetAccountUuid()) {
+   return merrors.Forbidden(g.id, "cannot read another user's role assignments")
+  }
+ }
+''')
+
 name = 'services/proxy/pkg/userroles/oidcroles.go'
 native_import(name)
 start = sources[name].index('\troleNamesToRoleIDs, err := ra.roleNamesToRoleIDs()')
