@@ -1,0 +1,16 @@
+{
+  "vendor/modules.txt": "93d7230f7d27f8db63703813030814764ba410b7471accb57961b70e35b6b550",
+  "services/settings/pkg/store/defaults/defaults.go": "ae60a4d3b1ddb58959be5c22627e30c429e1922da88501e9ca87827ba289407c",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/token/manager/jwt/jwt.go": "c67814263634ff578b2febe14b9f51ce919bf7b94b8b9630f671da829208f0ab",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/pkg/decomposedfs/permissions/spacepermissions.go": "ed9763c2fd45097b897ae405f391e953f72da72a51fd1414f236c4a18d6a3d1c",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/pkg/decomposedfs/upload/upload.go": "3b3dee1ef3a354ce86fb88460ffd4666a506124f633902cfb43ad7748f976b83",
+  "services/settings/pkg/service/v0/service.go": "13777b27d59c07c565cec641a39c7cd1b491e45dbbfbcc725a9c10facb40d4a5",
+  "services/proxy/pkg/userroles/oidcroles.go": "814099747f56854d398d0b7c12ca8d93e59ef383ea6d6edf94684ba32b3399aa",
+  "services/collaboration/pkg/middleware/wopicontext.go": "a341e9c8b799dca35bbcab02358a0affaf77c7c8847e0a41629772e799107e3e",
+  "services/proxy/pkg/command/server.go": "e684ca408572f3d78e84de6e6fc9f036e1446267b9180fd4aa376a47d30ba8a4",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/permissions/spacepermissions.go": "aab23854c85ce547667cc9e74232ba5cc8ee36b932d4b733a9a677536aeee897",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload/upload.go": "a056dfa116340fa513ab314748a56ef79b46018cd640d7b62aced7196dee7849",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/pkg/decomposedfs/upload/session.go": "c86d330d18f0b94bfed7bb7fd2c97ff7ed837c62e3b1d66ea7066a7b4c7b8993",
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload/session.go": "d6c01ae7629ee70f615a30dead718651a934fc81f1b86a6386cd1ef3eaee752b",
+  "services/proxy/pkg/middleware/account_resolver.go": "cd0097fb0fa9ad15a5ff973c1b85e8b3cced0cd7adc297b4babdfdb42c1c2190"
+}

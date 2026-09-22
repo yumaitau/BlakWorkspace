@@ -17,7 +17,8 @@ data:
           "defaults": {
             "logo": "themes/blak/assets/logo.svg",
             "favicon": "themes/blak/assets/logo.svg",
-            "slogan": "Your work. Your workspace."
+            "slogan": "Your work. Your workspace.",
+            "background": "/_blak/login-background.png"
           },
           "themes": [
             {

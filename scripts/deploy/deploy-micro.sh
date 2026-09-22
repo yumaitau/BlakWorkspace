@@ -53,7 +53,7 @@ selected = {
     '30-portal.yaml': {'portal', 'portal-flow-data'},
     '50-drive-theme.yaml': {'drive-theme'},
     '50-opencloud-csp.yaml': {'drive-csp'},
-    '50-opencloud.yaml': {'opencloud', 'drive'},
+    '50-opencloud.yaml': {'drive'},
     '51-app-themes.yaml': {'blak-app-themes'},
     '90-rocketchat.yaml': {'chat', 'mongo'},
     '91-kaneo.yaml': {'projects'},
@@ -118,6 +118,7 @@ fi
 (cd e2e && npm ci --ignore-scripts)
 # Native Chat grants must exist before the source account signs in.
 scripts/deploy/deploy-chat-roles.sh
+scripts/deploy/deploy-drive-roles.sh
 node scripts/deploy/connect-hermes-apps.js
 python3 scripts/deploy/configure-hermes-tasks.py
 for active in $(kubectl -n "$NS" get cronjob hermes-workspace-sync -o jsonpath='{.status.active[*].name}'); do

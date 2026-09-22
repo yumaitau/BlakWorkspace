@@ -11,6 +11,7 @@ import projects
 import crm
 import forms
 import chat
+import drive
 from http_client import API
 from vault import VaultRoles
 from vault_identity import native_accounts
@@ -46,9 +47,16 @@ def reconcile(session):
               Path(os.environ['BLAK_ID_TOKEN_FILE']).read_text().strip())
     aliases = json.loads(Path(os.environ['BLAK_ID_SUBJECTS_FILE']).read_text())
     directory = directory_snapshot(api, aliases)
-    if not config or not set(config) <= {'vault', 'hermes', 'projects', 'knowledge', 'crm', 'forms', 'chat'}:
+    if not config or not set(config) <= {'vault', 'hermes', 'projects', 'knowledge', 'crm', 'forms', 'chat', 'drive'}:
         raise ValueError('Unknown or empty native role configuration')
     failures = []
+    if config.get('drive'):
+        try:
+            settings = config['drive']
+            result = drive.reconcile(API(settings['base'], settings['token']), directory)
+            print('Drive roles reconciled ' + json.dumps(result, sort_keys=True), flush=True)
+        except Exception as error:
+            failures.append('Drive:' + type(error).__name__)
     if config.get('chat'):
         try:
             settings = config['chat']

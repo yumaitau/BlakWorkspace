@@ -2,16 +2,20 @@
 const crypto=require('node:crypto');
 const {test,expect}=require('@playwright/test');
 const {authentikLogin}=require('../helpers/auth');
-const {syncAccount,serviceURL}=require('../helpers/sync');
+const {syncAccount,serviceURL,ownedPersonalDrive}=require('../helpers/sync');
 
 test('Blak Docs opens, edits and saves a real Drive document with themed chrome',async({page,playwright})=>{
  test.setTimeout(150000);
  const source=syncAccount().sources.drive;
  const drive=await playwright.request.newContext({proxy:undefined,baseURL:serviceURL('drive',9200),extraHTTPHeaders:{authorization:'Basic '+Buffer.from(source.username+':'+source.password).toString('base64')}});
  const drives=await (await drive.get('/graph/v1.0/drives')).json();
- const personal=drives.value.find(item=>item.driveType==='personal');expect(personal).toBeTruthy();
+ const personal=ownedPersonalDrive(await (await drive.get('/graph/v1.0/me')).json(),drives);
  const name='blak-docs-e2e-'+crypto.randomBytes(5).toString('hex')+'.odt';
  const path=new URL(personal.root.webDavUrl).pathname+'/'+name;
+ let failure;
+ if(process.env.BLAK_E2E_DRIVE_DIAGNOSTICS==='true')page.on('response',response=>{
+  if(response.status()>=400)console.log('Docs HTTP rejection',response.status(),new URL(response.url()).pathname);
+ });
  try {
   expect((await drive.put(path,{data:require('node:fs').readFileSync(require('node:path').join(__dirname,'../fixtures/docs.odt')),headers:{'content-type':'application/vnd.oasis.opendocument.text'}})).ok()).toBeTruthy();
   await page.goto('https://drive.workspace.example.com');await authentikLogin(page);
@@ -30,10 +34,16 @@ test('Blak Docs opens, edits and saves a real Drive document with themed chrome'
   await editor.locator('#document-container').click();await page.keyboard.press('Control+End');await page.keyboard.press('Enter');await page.keyboard.type(edited);await page.keyboard.press('Control+s');
   await expect.poll(async()=>{const data=await (await drive.get(path)).body();return require('node:child_process').execFileSync('python3',['-c',"import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],{input:data}).toString();},{timeout:45000}).toContain(edited);
   await page.screenshot({path:test.info().outputPath('docs-editor.png'),fullPage:true});
+ } catch(error) {
+  failure=error;throw error;
  } finally {
   await page.close();
   // Collabora releases its WOPI lock asynchronously after the editor closes.
-  await expect.poll(async()=>{const response=await drive.delete(path);return response.ok()||response.status()===404;},{timeout:30000}).toBe(true);
-  await drive.dispose();
+  try {
+   await expect.poll(async()=>{const response=await drive.delete(path);return response.ok()||response.status()===404;},{timeout:30000}).toBe(true);
+  } catch(cleanupError) {
+   if(!failure)throw cleanupError;
+   console.log('Docs fixture cleanup failed after primary test failure');
+  } finally {await drive.dispose();}
  }
 });

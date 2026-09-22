@@ -2,7 +2,7 @@
 const crypto = require('node:crypto');
 const { test, expect } = require('@playwright/test');
 const { authentikLogin } = require('../helpers/auth');
-const { syncAccount, serviceURL, syncNow } = require('../helpers/sync');
+const { syncAccount, serviceURL, syncNow, ownedPersonalDrive } = require('../helpers/sync');
 const HERMES = 'https://hermes.workspace.example.com';
 
 test('Hermes requires authentication for knowledge and chat', async ({ request }) => {
@@ -36,7 +36,7 @@ test('continuous sync creates, updates, retrieves and removes real Drive content
   const phrase = 'WORKSPACE-' + id.toUpperCase();
   const updated = 'UPDATED-' + id.toUpperCase();
   const drives = await (await drive.get('/graph/v1.0/drives')).json();
-  const personal = drives.value.find(item => item.driveType === 'personal');
+  const personal = ownedPersonalDrive(await (await drive.get('/graph/v1.0/me')).json(), drives);
   expect(personal).toBeTruthy();
   const path = new URL(personal.root.webDavUrl).pathname + '/hermes-e2e-' + id + '.md';
   let collection;
