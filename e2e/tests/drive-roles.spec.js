@@ -10,7 +10,11 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
   test.setTimeout(720000);
   const key = 'drive-roles-' + crypto.randomBytes(6).toString('hex');
   const origin = 'https://drive.workspace.example.com', endpoint = serviceURL('drive', 9200);
-  let subject, token, file;
+  let subject, token, file, documentFile;
+  let saveRejected = false;
+  page.on('websocket', socket => socket.on('framereceived', event => {
+    if (/error:.*cmd=storage.*kind=.*(?:save|unauthor|forbidden)/i.test(String(event.payload))) saveRejected = true;
+  }));
   page.on('request', request => {
     if (new URL(request.url()).origin === origin && request.headers().authorization?.startsWith('Bearer ')) {
       token = request.headers().authorization;
@@ -32,7 +36,13 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
   }
   async function request(path, method = 'GET', body) {
     return fetch(endpoint + path, { method, signal: AbortSignal.timeout(30000), headers: { authorization: token, 'content-type': 'application/json' },
-      ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
+      ...(body === undefined ? {} : { body: typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body) }) });
+  }
+  async function documentText() {
+    const response = await request(documentFile);
+    expect(response.status).toBe(200);
+    return execFileSync('python3', ['-c', "import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],
+      { input: Buffer.from(await response.arrayBuffer()) }).toString();
   }
   try {
     await context.addCookies(await identityCookies(key, 'Drive native role fixture', ['drive'], { drive: 'writer' }));
@@ -51,14 +61,41 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     const name = key + '.txt';
     file = new URL(personal.root.webDavUrl).pathname + '/' + name;
     expect([200, 201, 204]).toContain((await request(file, 'PUT', key)).status);
+    const documentName = key + '.odt';
+    documentFile = new URL(personal.root.webDavUrl).pathname + '/' + documentName;
+    expect([200, 201, 204]).toContain((await request(documentFile, 'PUT',
+      require('node:fs').readFileSync(require('node:path').join(__dirname, '../fixtures/docs.odt')))).status);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible({ timeout: 60000 });
+    await page.getByText(documentName, { exact: true }).dblclick();
+    const editor = page.frameLocator('iframe');
+    await expect(editor.locator('#document-container')).toBeVisible({ timeout: 60000 });
+    const welcome = editor.locator('iframe[title="Welcome Dialogue"]');
+    await welcome.waitFor({ timeout: 5000 }).catch(() => {});
+    if (await welcome.isVisible()) await editor.frameLocator('iframe[title="Welcome Dialogue"]').getByRole('button', { name: 'Close', exact: true }).click();
+    const saved = key + '-writer-saved';
+    await editor.locator('#document-container').click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type(saved);
+    await page.keyboard.press('Control+s');
+    await expect.poll(documentText, { timeout: 45000 }).toContain(saved);
     updateIdentity(key, { roles: { drive: 'reader' } });
     await waitRole('reader');
     expect(await (await request(file)).text()).toBe(key);
     for (const method of ['PUT', 'DELETE', 'PROPPATCH']) {
       expect((await request(file, method, method === 'DELETE' ? undefined : 'forbidden')).status).toBe(403);
     }
+    const forbiddenEdit = key + '-reader-must-not-save';
+    await editor.locator('#document-container').click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type(forbiddenEdit);
+    await page.keyboard.press('Control+s');
+    await expect.poll(() => saveRejected, { timeout: 45000 }).toBe(true);
+    expect(await documentText()).not.toContain(forbiddenEdit);
+    // Close the editor while still a reader; retries must remain denied.
+    await page.goto(origin + '/files', { waitUntil: 'domcontentloaded' });
     updateIdentity(key, { roles: { drive: 'admin' } });
     await waitRole('admin');
     for (const path of ['/graph/v1.0/users', '/graph/v1.0/groups', '/api/v0/settings/assignments-add', '/blak/roles/reconcile']) {
@@ -86,7 +123,10 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
       try {
         updateIdentity(key, { active: true, grants: ['drive'], roles: { drive: 'writer' } });
         await waitRole('writer');
-        if (file && token) expect([200, 204, 404]).toContain((await request(file, 'DELETE')).status);
+        for (const path of [file, documentFile].filter(Boolean)) {
+          if (token) await expect.poll(async () => [200, 204, 404].includes((await request(path, 'DELETE')).status),
+            { timeout: 30000 }).toBe(true);
+        }
       } finally {
         updateIdentity(key, { active: false });
         await waitRole('', false);
