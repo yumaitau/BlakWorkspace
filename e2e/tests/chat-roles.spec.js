@@ -134,6 +134,7 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     failure = error;
     throw error;
   } finally {
+    try {
     if (subject) { updateIdentity(key, { active: false }); await waitRole(null); }
     if (native?.id) {
       const fixture = { id: native.id, subject, room: room?._id, key };
@@ -148,10 +149,11 @@ if(fixture.room){
 }
 dbx.rocketchat_subscription.deleteMany({'u._id':fixture.id});dbx.users.deleteOne({_id:fixture.id,'services.blakid.id':fixture.subject});`;
       try { execFileSync('kubectl', ['-n', 'blak-micro', 'exec', 'deploy/mongo', '--', 'mongosh', '--quiet', '--eval', script], { stdio: ['pipe', 'pipe', 'pipe'] }); }
-      catch {
-        if (!failure) throw Error('Native Chat fixture cleanup failed; details omitted');
-        console.warn('Native Chat fixture cleanup also failed; original error retained');
-      }
+      catch { throw Error('Native Chat fixture cleanup failed; details omitted'); }
+    }
+    } catch (cleanupError) {
+      if (!failure) throw cleanupError;
+      console.warn('Native Chat fixture cleanup also failed; original error retained');
     }
   }
 });

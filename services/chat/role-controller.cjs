@@ -102,7 +102,7 @@ async function reconcile(native, value) {
 function register(API, native) {
   let running = false;
   for (const operation of ['identities', 'reconcile']) {
-    API.v1.addRoute('blak.roles.' + operation, { authRequired: false }, {
+    API.v1.addRoute('blak.roles.' + operation, { authRequired: false, rateLimiterOptions: { numRequestsAllowed: 120, intervalTimeInMS: 60000 } }, {
       async post() {
         try { requireController(this.request); }
         catch { return API.v1.forbidden('Blak ID controller required'); }

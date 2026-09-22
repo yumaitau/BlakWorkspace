@@ -45,4 +45,8 @@ test('method tunnel checks parsed operation; unknown routes and HTTP methods fai
   assert.equal(routeAllowed(reader, 'v1', 'channels.history', 'POST'), false);
   assert.equal(routeAllowed(reader, 'v2', 'channels.history', 'GET'), false);
   assert.equal(routeAllowed(member('admin'), 'v1', 'new.serverAdminEndpoint', 'GET'), false);
+  assert.equal(methodAllowed(null, 'public-settings/get'), true);
+  assert.equal(methodAllowed(null, 'loadLocale'), true);
+  assert.equal(methodAllowed(null, 'loadHistory'), false);
+  assert.equal(methodAllowed(null, 'saveSetting'), false);
 });

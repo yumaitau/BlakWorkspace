@@ -11,6 +11,8 @@ const READ_METHODS = new Set(`
   saveNotificationSettings saveUserPreferences userPresence userSetUtcOffset
   getAvatarSuggestion listCustomSounds listCustomUserStatus logoutCleanUp
 `.trim().split(/\s+/));
+// Native bootstrap returns only non-hidden public settings and locale assets.
+const PUBLIC_METHODS = new Set(['public-settings/get', 'loadLocale']);
 const WRITE_METHODS = new Set(`
   sendMessage updateMessage deleteMessage sendFileMessage createChannel
   createPrivateGroup createDirectMessage createDiscussion joinRoom leaveRoom
@@ -68,6 +70,7 @@ function allowed(user, read, write, admin) {
 }
 
 function methodAllowed(user, name) {
+  if (PUBLIC_METHODS.has(name)) return true;
   return allowed(user, READ_METHODS.has(name), WRITE_METHODS.has(name), ADMIN_METHODS.has(name));
 }
 
