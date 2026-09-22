@@ -58,8 +58,8 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
   }
   async function api(path, body, operator = false) {
     const result = await response(path, body, operator);
-    if (!result.ok) throw Error('Native Chat fixture returned HTTP ' + result.status + ' at ' + path);
     const value = await result.json();
+    if (!result.ok) throw Error('Native Chat fixture returned HTTP ' + result.status + ' at ' + path + ' (' + String(value.errorType || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) + ')');
     if (!value.success) throw Error('Native Chat fixture rejected operation at ' + path);
     return value;
   }

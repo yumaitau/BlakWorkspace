@@ -2,6 +2,7 @@
 
 // These caps supplement native room ACLs; ownership never overrides a downgrade.
 const READ_METHODS = new Set(`
+  subscriptions/get rooms/get permissions/get license:getModules
   canAccessRoom browseChannels channelsList getChannelHistory getFirstRoomMessage
   getMessages getRoomById getRoomIdByNameOrId getRoomNameById getRoomRoles getS3FileUrl
   getSingleMessage getSupportedLanguages getThreadMessages getThreadsList
@@ -26,6 +27,7 @@ const ADMIN_METHODS = new Set(`
 `.trim().split(/\s+/));
 
 const READ_ROUTES = new Set(`
+  banners commands.list licenses.info roles.list
   me users.info users.getPresence users.presence users.list users.autocomplete
   subscriptions.get subscriptions.getOne rooms.get rooms.info rooms.getDiscussions
   channels.list channels.list.joined channels.info channels.history channels.messages

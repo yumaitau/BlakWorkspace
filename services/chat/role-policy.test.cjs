@@ -50,3 +50,16 @@ test('method tunnel checks parsed operation; unknown routes and HTTP methods fai
   assert.equal(methodAllowed(null, 'loadHistory'), false);
   assert.equal(methodAllowed(null, 'saveSetting'), false);
 });
+
+ test('authenticated client metadata loads without granting private settings or mutations', () => {
+  for (const name of ['subscriptions/get', 'rooms/get', 'permissions/get', 'license:getModules']) {
+    assert.equal(methodAllowed(member('reader'), name), true);
+    assert.equal(methodAllowed(null, name), false);
+  }
+  for (const route of ['banners', 'commands.list', 'licenses.info', 'roles.list']) {
+    assert.equal(routeAllowed(member('reader'), 'v1', route, 'GET'), true);
+    assert.equal(routeAllowed(member('reader'), 'v1', route, 'POST'), false);
+    assert.equal(routeAllowed(null, 'v1', route, 'GET'), false);
+  }
+  assert.equal(methodAllowed(member('admin'), 'private-settings/get'), false);
+});

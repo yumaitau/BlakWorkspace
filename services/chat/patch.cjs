@@ -16,6 +16,8 @@ replace('const addOAuthServiceMethod = async (userId, name) => {',
   `if (${bridge}.enabled()) Meteor.startup(() => addOAuthService('blakid'));\n    const addOAuthServiceMethod = async (userId, name) => {`);
 replace('async function insertAdminUserFromEnv() {',
   `async function insertAdminUserFromEnv() {\n      if (${bridge}.enabled()) return;`);
+replace("if ((await Roles.countUsersInRole('admin')) === 0) {\n        const oldestUser",
+  `if (!${bridge}.enabled() && (await Roles.countUsersInRole('admin')) === 0) {\n        const oldestUser`);
 replace('if (options.deprecation) {',
   `if ((options.authRequired || options.authOrAnonRequired) && !await ${bridge}.checkRoute(this.userId, api.apiPath, route, this.request.method, this.bodyParams)) return api.forbidden('Blak ID does not grant this Chat operation');\n                if (options.deprecation) {`);
 replace('const validateLoginAttemptAsync = async function (login) {',
