@@ -57,6 +57,9 @@ spec:
             - { name: OIDC_BASE, value: https://id.workspace.example.com/application/o }
             - { name: MEILI_MASTER_KEY, valueFrom: { secretKeyRef: { name: blak-core, key: meili-master-key } } }
             - { name: FLOCI_PORT, value: "4566" }
+            - { name: FLOCI_UI_HOST, value: floci-ui }
+            - { name: FLOCI_UI_PORT, value: "4500" }
+            - { name: CLOUD_PUBLIC_URL, value: https://cloud.workspace.example.com }
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           volumeMounts:
