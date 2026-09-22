@@ -5,7 +5,7 @@ const { role, methodAllowed, routeAllowed } = require('./role-policy.cjs');
 const member = (blakRole, extra = {}) => ({ active: true, blakRole, roles: ['blak-chat-' + blakRole], ...extra });
 
 test('reader keeps native reads and personal preferences but cannot mutate owned content', () => {
-  const reader = member('reader', { roles: ['blak-chat-reader', 'owner', 'admin'] });
+  const reader = member('reader', { roomRoles: ['owner', 'moderator'] });
   for (const name of ['loadHistory', 'readMessages', 'saveUserPreferences']) assert.equal(methodAllowed(reader, name), true);
   for (const name of ['sendMessage', 'updateMessage', 'deleteMessage', 'saveRoomSettings']) assert.equal(methodAllowed(reader, name), false);
   assert.equal(routeAllowed(reader, 'v1', 'channels.history', 'GET'), true);
@@ -27,7 +27,7 @@ test('writer edits content while admin manages rooms; neither controls directory
 });
 
 test('revoked, disabled and mismatched native grants cannot read', () => {
-  for (const user of [null, member(null), member('reader', { active: false }), member('reader', { roles: ['admin'] })]) {
+  for (const user of [null, member(null), member('reader', { active: false }), member('reader', { roles: ['admin'] }), member('reader', { roles: ['blak-chat-reader', 'admin'] })]) {
     assert.equal(role(user), null);
     assert.equal(methodAllowed(user, 'loadHistory'), false);
     assert.equal(routeAllowed(user, 'v1', 'channels.history', 'GET'), false);

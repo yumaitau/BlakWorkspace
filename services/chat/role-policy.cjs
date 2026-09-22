@@ -59,7 +59,7 @@ const PERSONAL_ROUTES = new Set(`
 
 function role(user) {
   if (!user || user.active !== true || !['reader', 'writer', 'admin'].includes(user.blakRole)) return null;
-  return user.roles?.includes('blak-chat-' + user.blakRole) ? user.blakRole : null;
+  return Array.isArray(user.roles) && user.roles.length === 1 && user.roles[0] === 'blak-chat-' + user.blakRole ? user.blakRole : null;
 }
 
 function allowed(user, read, write, admin) {
