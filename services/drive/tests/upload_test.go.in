@@ -1,0 +1,19 @@
+package upload
+
+import (
+	"testing"
+	users "github.com/cs3org/go-cs3apis/cs3/identity/user/v1beta1"
+	tusd "github.com/tus/tusd/v2/pkg/handler"
+)
+
+func TestBlakUploadRestoresNativeIdentityType(t *testing.T) {
+	for _, kind := range []users.UserType{users.UserType_USER_TYPE_PRIMARY, users.UserType_USER_TYPE_SERVICE} {
+		session := &SESSION_TYPE{info: tusd.FileInfo{Storage: map[string]string{}}}
+		user := &users.User{Id: &users.UserId{OpaqueId: "native-id", Idp: "native-issuer", Type: kind}, Username: "frozen-subject"}
+		session.SetExecutant(user)
+		if restored := session.executantUser(); restored.Id.Type != kind || restored.Username != user.Username || restored.Id.OpaqueId != user.Id.OpaqueId {
+			t.Fatal("resumed upload changed native identity")
+		}
+		if session.Executant().Type != kind { t.Fatal("upload event changed native identity type") }
+	}
+}

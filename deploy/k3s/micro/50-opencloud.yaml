@@ -32,7 +32,7 @@ spec:
           hostnames: [docs.workspace.example.com, id.workspace.example.com]
       containers:
         - name: opencloud
-          image: opencloudeu/opencloud-rolling:7.5.0
+          image: blak-drive:7.5.0-blak1
           command: ["/bin/sh", "-c", "opencloud init || true; opencloud server"]
           ports: [{ containerPort: 9200 }]
           resources:
@@ -66,7 +66,10 @@ spec:
             - { name: PROXY_AUTOPROVISION_CLAIM_DISPLAYNAME, value: name }
             - { name: GRAPH_USERNAME_MATCH, value: none }
             - { name: GRAPH_LDAP_SERVER_WRITE_ENABLED, value: "true" }
-            - { name: PROXY_ROLE_ASSIGNMENT_DRIVER, value: default }
+            - { name: PROXY_ROLE_ASSIGNMENT_DRIVER, value: oidc }
+            - { name: BLAK_DRIVE_ROLES, value: "true" }
+            - { name: BLAK_DRIVE_ROLES_FILE, value: /var/lib/opencloud/blak-roles.json }
+            - { name: BLAK_DRIVE_ROLE_TOKEN, valueFrom: { secretKeyRef: { name: blak-drive-role-controller, key: token } } }
             - { name: PROXY_CSP_CONFIG_FILE_LOCATION, value: /etc/opencloud/csp.yaml }
             - { name: WEB_ASSET_THEMES_PATH, value: /etc/opencloud/themes }
             - { name: WEB_UI_THEME_PATH, value: /themes/blak/theme.json }

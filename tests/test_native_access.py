@@ -32,7 +32,8 @@ class NativeAccessTests(unittest.TestCase):
         result = self.snapshot()[self.identity]
         self.assertNotIn('draw', result['apps'])
         self.assertNotIn('hermes', result['apps'])
-        self.assertIn('drive', result['apps'])  # Existing legacy contract, until native migration.
+        self.assertNotIn('drive', result['apps'])
+        self.assertNotIn('docs', result['apps'])
     def test_disabled_user_has_no_grants(self):
         self.user['is_active'] = False
         self.assertEqual(self.snapshot()[self.identity]['apps'], [])
@@ -47,3 +48,8 @@ class NativeAccessTests(unittest.TestCase):
     def test_app_admin_does_not_grant_other_roles(self):
         self.groups[1]['name'] = 'blak-draw-admin'
         self.assertEqual(self.snapshot()[self.identity]['roles'], {'draw': 'admin'})
+    def test_drive_and_docs_share_the_same_native_file_role(self):
+        self.groups[1]['name'] = 'blak-drive-reader'
+        result = self.snapshot()[self.identity]
+        self.assertEqual(result['roles'], {'drive': 'reader', 'docs': 'reader'})
+        self.assertEqual(set(result['apps']), {'drive', 'docs'})

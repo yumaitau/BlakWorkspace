@@ -31,10 +31,20 @@
     ]
   },
   "drive": {
-    "group": "Blak Drive users"
+    "group": "Blak Drive users",
+    "roleGroups": [
+      "blak-drive-reader",
+      "blak-drive-writer",
+      "blak-drive-admin"
+    ]
   },
   "docs": {
-    "group": "Blak Drive users"
+    "group": "Blak Drive users",
+    "roleGroups": [
+      "blak-drive-reader",
+      "blak-drive-writer",
+      "blak-drive-admin"
+    ]
   },
   "chat": {
     "group": "Blak Chat users",
