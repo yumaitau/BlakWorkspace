@@ -86,7 +86,7 @@
   {
     "id": "storage",
     "name": "Blak Cloud",
-    "url": "https://cloud.workspace.example.com",
+    "url": "https://cloud.workspace.example.com/",
     "backend": "Powered by Floci"
   }
 ]
