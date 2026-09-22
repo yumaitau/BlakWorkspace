@@ -127,6 +127,15 @@ replace(name, anchor, anchor + '''
  }
 ''')
 
+name = 'services/proxy/pkg/middleware/account_resolver.go'
+native_import(name)
+anchor = "// resolve the user's roles"
+replace(name, anchor, '''if blakroles.Enabled() && blakroles.UserRole(user) == "" {
+   http.Error(w, "Blak ID does not grant Drive access", http.StatusForbidden)
+   return
+  }
+  ''' + anchor)
+
 name = 'services/proxy/pkg/command/server.go'
 native_import(name)
 replace(name, 'middleware.Security(cspConfig),', 'middleware.Security(cspConfig),\n\t\tblakroles.Controller,')

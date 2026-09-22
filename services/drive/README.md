@@ -38,5 +38,10 @@ Build from this directory. The Dockerfile verifies source and web archive hashes
 pins base images by digest, runs native tests, and builds with VIPS enabled.
 `patch.py` rejects any unexpected upstream source change before editing files.
 
-Deployment acceptance remains pending: helper tests are not proof of live
-OIDC, owned-file downgrades, resumed uploads, or active Docs session revocation.
+Isolated native HTTP acceptance passes for owned-file downgrades, scoped admin,
+disabled access and restored identity/content. Signed WOPI tests verify an
+already-issued editor token loses writes after downgrade. Native RPC tests
+verify signed identity and current roles override stored assignments.
+
+Live deployment acceptance remains pending: isolated tests are not proof of
+production OIDC, resumed uploads, or active browser-based Docs revocation.

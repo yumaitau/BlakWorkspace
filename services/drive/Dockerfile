@@ -23,7 +23,8 @@ RUN python3 /patch/patch.py /source
 RUN --mount=type=cache,target=/root/.cache/go-build go test -mod=vendor github.com/opencloud-eu/reva/v2/pkg/blakroles \
     github.com/opencloud-eu/reva/v2/pkg/storage/pkg/decomposedfs/upload \
     github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload \
-    ./services/proxy/pkg/userroles ./services/settings/pkg/service/v0 ./services/collaboration/pkg/middleware
+    ./services/proxy/pkg/userroles ./services/proxy/pkg/middleware \
+    ./services/settings/pkg/service/v0 ./services/collaboration/pkg/middleware
 RUN --mount=type=cache,target=/root/.cache/go-build make -C opencloud release-linux-docker-amd64 ENABLE_VIPS=true DIST=/dist VERSION=7.5.0 EDITION=rolling STRING=blak-drive
 
 FROM opencloudeu/opencloud-rolling@sha256:6db1cfb06d430a663f16e9f33dcd4596d82a4875be0b4df233c26ce5f667ea74

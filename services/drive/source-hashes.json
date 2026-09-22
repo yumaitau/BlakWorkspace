@@ -11,5 +11,6 @@
   "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/permissions/spacepermissions.go": "aab23854c85ce547667cc9e74232ba5cc8ee36b932d4b733a9a677536aeee897",
   "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload/upload.go": "a056dfa116340fa513ab314748a56ef79b46018cd640d7b62aced7196dee7849",
   "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/pkg/decomposedfs/upload/session.go": "c86d330d18f0b94bfed7bb7fd2c97ff7ed837c62e3b1d66ea7066a7b4c7b8993",
-  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload/session.go": "d6c01ae7629ee70f615a30dead718651a934fc81f1b86a6386cd1ef3eaee752b"
+  "vendor/github.com/opencloud-eu/reva/v2/pkg/storage/utils/decomposedfs/upload/session.go": "d6c01ae7629ee70f615a30dead718651a934fc81f1b86a6386cd1ef3eaee752b",
+  "services/proxy/pkg/middleware/account_resolver.go": "cd0097fb0fa9ad15a5ff973c1b85e8b3cced0cd7adc297b4babdfdb42c1c2190"
 }
