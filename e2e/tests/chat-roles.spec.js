@@ -29,9 +29,15 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
   const endpoint = serviceURL('chat', 3000), origin = 'https://chat.workspace.example.com';
   const controller = controllerToken();
   if (process.env.BLAK_E2E_CHAT_DIAGNOSTICS === 'true') {
-    page.on('response', result => {
+    page.on('response', async result => {
       const path = new URL(result.url()).pathname;
       if (result.status() >= 400 && path.startsWith('/api/')) console.log('Chat HTTP rejection', result.status(), path);
+      if (path.startsWith('/api/v1/method.call')) {
+        try {
+          const value = await result.json(), message = JSON.parse(value.message);
+          if (message.error) console.log('Chat RPC rejection', path, message.error.error);
+        } catch {}
+      }
     });
     page.on('pageerror', error => console.log('Chat browser exception', error.name));
     page.on('websocket', socket => {
