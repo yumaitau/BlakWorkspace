@@ -90,6 +90,9 @@ func TestHTTPRoleCapsCannotReachDirectoryOrServerMutations(t *testing.T) {
 		if !HTTPAllowed(role, "POST", "/api/v0/settings/values-list") {
 			t.Fatal("native current-user preference reads denied")
 		}
+		if !HTTPAllowed(role, "GET", "/graph/v1beta1/me/drives") || HTTPAllowed(role, "POST", "/graph/v1beta1/roleManagement/permissions/roleAssignments") {
+			t.Fatal("beta Graph did not preserve read and directory boundaries")
+		}
 	}
 	if HTTPAllowed("reader", "PUT", "/dav/spaces/owned/file") {
 		t.Fatal("reader retains owned-file writes")

@@ -30,6 +30,11 @@ func HTTPAllowed(role, method, path string) bool {
 	if role == "system" {
 		return true
 	}
+	// The pinned Web client uses both native Graph API versions. Apply identical
+	// operation caps; beta directory and role-management mutations stay denied.
+	if strings.HasPrefix(path, "/graph/v1beta1/") {
+		path = "/graph/v1.0/" + strings.TrimPrefix(path, "/graph/v1beta1/")
+	}
 	if method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions {
 		for _, prefix := range []string{"/graph/v1.0/", "/ocs/", "/dav/", "/remote.php/dav/", "/data/", "/api/v0/settings/", "/search", "/app/", "/thumbnails/", "/avatars/"} {
 			if strings.HasPrefix(path, prefix) {
