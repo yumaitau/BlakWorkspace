@@ -36,8 +36,8 @@ def main():
         raise ValueError('Hermes controller requires a verified HTTPS origin')
     ca = json.loads(subprocess.check_output(KUBE + ['get', 'configmap', 'blak-ca', '-o', 'json']))['data']['rootCA.pem']
     values = secret(SECRET)
+    accounts = json.loads(secret('blak-hermes-sync')['accounts.json'])['accounts']
     if not values:
-        accounts = json.loads(secret('blak-hermes-sync')['accounts.json'])['accounts']
         requested = os.environ.get('BLAK_CONTROLLER_BOOTSTRAP_ACCOUNT')
         account = next((account for account in accounts if account['name'] == requested), None) if requested else accounts[0] if len(accounts) == 1 else None
         if not account:
@@ -68,7 +68,8 @@ def main():
     if collection['user_id'] != profile['id']:
         raise ValueError('Shared collection is not owned by the native controller')
     save_app(KUBE, 'hermes', {'base': origin, 'controller_user_id': profile['id'],
-                            'token': values['api-key'], 'collection_ids': [collection['id']]})
+                            'token': values['api-key'], 'collection_ids': [collection['id']],
+                            'model_ids': sorted({account.get('model', 'qwen2.5:1.5b') for account in accounts})})
     print('Native Hermes controller and shared collection enrolled; credentials omitted')
 
 
