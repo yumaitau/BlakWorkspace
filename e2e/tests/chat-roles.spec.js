@@ -69,6 +69,11 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     if (!value.success) throw Error('Native Chat fixture rejected operation at ' + path);
     return value;
   }
+  async function logout() {
+    // Native logout is not an API.success envelope and may have no response body.
+    expect([200, 204]).toContain((await response('logout', {})).status);
+    await expect.poll(async () => (await response('me')).status, { timeout: 15000 }).toBe(401);
+  }
   async function waitRole(role) {
     await expect.poll(async () => {
       const users = (await api('blak.roles.identities', {}, true)).identities;
@@ -140,7 +145,7 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     await waitRole('reader');
     expect((await api('me'))._id).toBe(native.id);
     expect((await api('groups.history?roomId=' + room._id)).messages.some(item => item.msg === 'Native role fixture ' + key)).toBe(true);
-    await api('logout', {});
+    await logout();
     await page.evaluate(() => { for (const name of ['Meteor.loginToken', 'Meteor.userId', 'Meteor.loginTokenExpires']) localStorage.removeItem(name); });
     await context.addCookies(await identityCookies(key, 'Chat native role fixture', ['chat'], { chat: 'reader' }));
     await page.goto(origin + '/home?blak_launch=1', { waitUntil: 'domcontentloaded' });
@@ -150,7 +155,7 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     updateIdentity(key, { grants: [] });
     await waitRole(null);
     await denied('groups.history?roomId=' + room._id);
-    await api('logout', {});
+    await logout();
     await denied('me');
   } catch (error) {
     failure = error;
