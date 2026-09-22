@@ -13,6 +13,16 @@ function controllerToken() {
   } catch { throw Error('Cannot load native Chat controller; credential omitted'); }
 }
 
+test('Chat login loads public bootstrap metadata while private settings stay denied', async ({ page }) => {
+  await page.goto('https://chat.workspace.example.com');
+  await expect(page.getByRole('button', { name: /Blak ID/i })).toBeVisible({ timeout: 60000 });
+  const result = await page.request.post('https://chat.workspace.example.com/api/v1/method.callAnon/private-settings%3Aget', {
+    data: { message: JSON.stringify({ msg: 'method', id: 'private-settings-denied', method: 'private-settings/get', params: [] }) },
+  });
+  expect(result.status()).toBe(200);
+  expect(JSON.parse((await result.json()).message).error).toBeTruthy();
+});
+
 test('Chat native roles cap room owners, existing tokens and websocket sessions', async ({ page, context }) => {
   test.setTimeout(720000);
   const key = 'chat-roles-' + crypto.randomBytes(6).toString('hex');
