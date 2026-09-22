@@ -111,6 +111,10 @@ spec:
                 secretKeyRef: { name: blak-chat-role-controller, key: token }
             - name: OVERWRITE_SETTING_Accounts_AllowAnonymousRead
               value: "false"
+            - name: OVERWRITE_SETTING_Accounts_RegistrationForm
+              value: Disabled
+            - name: OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_By_Email_Auto_Opt_In
+              value: "false"
             - name: OVERWRITE_SETTING_Accounts_OAuth_Custom-Blakid-merge_users
               value: "false"
             - name: OVERWRITE_SETTING_theme-custom-css
