@@ -86,13 +86,13 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     await context.addCookies(await identityCookies(key, 'Chat native role fixture', ['chat'], { chat: 'writer' }));
     subject = (await (await page.request.get('/api/me')).json()).sub;
     await waitRole('writer');
-    await page.goto(origin + '/home?blak_launch=1');
+    await page.goto(origin + '/home?blak_launch=1', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => Boolean(localStorage.getItem('Meteor.loginToken')), undefined, { timeout: 90000 });
     token = await page.evaluate(() => localStorage.getItem('Meteor.loginToken'));
     expect(await page.evaluate(() => localStorage.getItem('Meteor.userId'))).toBe(native.id);
     room = (await api('groups.create', { name: key, members: [] })).group;
     const message = (await api('chat.sendMessage', { message: { rid: room._id, msg: 'Native role fixture ' + key } })).message;
-    await page.goto(origin + '/group/' + key);
+    await page.goto(origin + '/group/' + key, { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Native role fixture ' + key, { exact: true }).first()).toBeVisible({ timeout: 60000 });
     await denied('users.update', { userId: native.id, data: { roles: ['admin'] } });
     await page.evaluate(async () => {
@@ -122,7 +122,7 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     await denied('chat.delete', { roomId: room._id, msgId: message._id });
     await denied('method.call/updateMessage', { message: JSON.stringify({ msg: 'method', id: 'deny', method: 'updateMessage', params: [{ _id: message._id, rid: room._id, msg: 'forbidden' }] }) });
     await denied('groups.setDescription', { roomId: room._id, description: 'forbidden' });
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Native role fixture ' + key, { exact: true }).first()).toBeVisible({ timeout: 60000 });
     updateIdentity(key, { roles: { chat: 'admin' } });
     await waitRole('admin');
@@ -143,7 +143,7 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
     await api('logout', {});
     await page.evaluate(() => { for (const name of ['Meteor.loginToken', 'Meteor.userId', 'Meteor.loginTokenExpires']) localStorage.removeItem(name); });
     await context.addCookies(await identityCookies(key, 'Chat native role fixture', ['chat'], { chat: 'reader' }));
-    await page.goto(origin + '/home?blak_launch=1');
+    await page.goto(origin + '/home?blak_launch=1', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => Boolean(localStorage.getItem('Meteor.loginToken')), undefined, { timeout: 90000 });
     token = await page.evaluate(() => localStorage.getItem('Meteor.loginToken'));
     expect(await page.evaluate(() => localStorage.getItem('Meteor.userId'))).toBe(native.id);
