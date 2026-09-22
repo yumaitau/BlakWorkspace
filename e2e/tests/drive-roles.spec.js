@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { test, expect } = require('@playwright/test');
 const { identityCookies, updateIdentity } = require('../helpers/identity');
-const { serviceURL } = require('../helpers/sync');
+const { serviceURL, ownedPersonalDrive } = require('../helpers/sync');
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
 test('Drive native roles revoke owned-file writes and preserve immutable accounts', async ({ page, context }) => {
@@ -39,7 +39,7 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await expect.poll(async () => (await request('/graph/v1.0/me')).status, { timeout: 60000 }).toBe(200);
     const identity = (await (await request('/graph/v1.0/me')).json()).id;
     const drives = await (await request('/graph/v1.0/drives')).json();
-    const personal = drives.value.find(drive => drive.driveType === 'personal');
+    const personal = ownedPersonalDrive({ id: identity }, drives);
     expect(personal).toBeTruthy();
     const name = key + '.txt';
     file = new URL(personal.root.webDavUrl).pathname + '/' + name;

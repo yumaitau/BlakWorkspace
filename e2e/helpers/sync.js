@@ -40,4 +40,10 @@ function syncNow() {
   }
   throw new Error('Scheduled sync remained busy after three attempts');
 }
-module.exports = { syncAccount, serviceURL, syncNow };
+function ownedPersonalDrive(profile, drives) {
+  if (typeof profile?.id !== 'string' || !profile.id) throw Error('Native Drive identity required');
+  const personal = drives.value.find(item => item.driveType === 'personal' && item.owner?.user?.id === profile.id);
+  if (!personal) throw Error('Authenticated user has no personal Drive');
+  return personal;
+}
+module.exports = { syncAccount, serviceURL, syncNow, ownedPersonalDrive };
