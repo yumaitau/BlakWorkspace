@@ -87,6 +87,9 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     await page.keyboard.press('Control+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(forbiddenEdit);
+    if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true') {
+      await editor.locator('#document-container').screenshot({ path: test.info().outputPath('fixture-before-save.png') });
+    }
     await editor.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 45000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
@@ -117,6 +120,10 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     expect([200, 201, 204]).toContain((await request(file, 'PUT', key + '-restored')).status);
   } catch (error) {
     failure = error;
+    if (process.env.BLAK_E2E_DRIVE_DIAGNOSTICS === 'true' && documentFile) {
+      await page.frameLocator('iframe').locator('#document-container').screenshot({ path: test.info().outputPath('fixture-document.png'), timeout: 5000 }).catch(() => {});
+      console.log('Drive acceptance failed:', error.message);
+    }
     throw error;
   } finally {
     await page.close({ runBeforeUnload: false });
