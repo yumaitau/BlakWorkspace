@@ -11,7 +11,12 @@ def blak_content_admin(user):
 async def blak_knowledge_admin(user, knowledge, db=None):
     if blak_content_admin(user):
         return True
-    if getattr(user, 'role', None) != 'admin':
+    if getattr(user, 'role', None) != 'user':
+        return False
+    from open_webui.models.groups import Groups
+    groups = await Groups.get_groups_by_member_id(user.id, db=db)
+    if not any((group.data or {}).get('blak_id_app') == 'hermes'
+               and (group.data or {}).get('blak_id_role') == 'admin' for group in groups):
         return False
     from open_webui.models.access_grants import AccessGrants
     return await AccessGrants.has_access(user_id=user.id, resource_type='knowledge',

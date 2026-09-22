@@ -12,6 +12,15 @@ function controller() {
   return Object.fromEntries(Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString()]));
 }
 
+function runtimeModel() {
+  try {
+    const secret = JSON.parse(execFileSync('kubectl', ['-n', 'blak-micro', 'get', 'secret', 'blak-app-roles', '-o', 'json'], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
+    const model = JSON.parse(Buffer.from(secret.data['config.json'], 'base64').toString()).hermes.model_ids[0];
+    if (typeof model !== 'string' || !model) throw Error('Missing model');
+    return model;
+  } catch { throw Error('Cannot load configured Hermes runtime; credentials omitted'); }
+}
+
 test('native Hermes roles constrain existing tokens, shared file ownership and app administration', async ({ page, context }) => {
   test.setTimeout(720000);
   const key = 'hermes-roles-' + crypto.randomBytes(6).toString('hex');
@@ -19,6 +28,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
   const origin = new URL(process.env.BLAK_E2E_HERMES_URL).origin;
   const collectionId = operator['collection-id'];
   const knowledgePath = '/api/v1/knowledge/' + collectionId;
+  const inference = { model: runtimeModel(), stream: false, messages: [{ role: 'user', content: 'Reply with one word: ready' }], max_tokens: 12 };
   async function response(token, method, path, data) {
     return fetch(endpoint + path, { method, headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, ...(data === undefined ? {} : { body: JSON.stringify(data) }) });
   }
@@ -36,7 +46,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
       if (!user) return null;
       const groups = await api(operator['api-key'], 'GET', '/api/v1/groups/');
       return { role: user.role, managed: groups.filter(group => user.group_ids.includes(group.id)).map(group => group.data?.blak_id_role).sort() };
-    }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role: role === 'admin' ? 'admin' : role ? 'user' : 'pending', managed: role ? [role] : [] });
+    }, { timeout: 150000, intervals: [2000, 4000] }).toEqual({ role: role ? 'user' : 'pending', managed: role ? [role] : [] });
   }
   async function denied(method, path, data) {
     const result = await response(token, method, path, data);
@@ -83,6 +93,8 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     updateIdentity(key, { roles: { hermes: 'reader' } });
     await waitRole('reader');
     expect((await api(token, 'GET', knowledgePath)).id).toBe(collectionId);
+    const answer = await api(token, 'POST', '/api/chat/completions', inference);
+    expect(answer.choices[0].message.content.trim().length).toBeGreaterThan(0);
     await denied('POST', knowledgePath + '/update', { name: original.name, description: 'forbidden' });
     await denied('POST', knowledgePath + '/file/remove', { file_id: uploaded.id });
     await denied('POST', '/api/v1/files/' + uploaded.id + '/data/content/update', { content: 'forbidden' });
@@ -113,7 +125,15 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     await denied('POST', '/api/v1/files/' + privateFile.id + '/rename', { filename: 'forbidden.txt' });
     expect((await api(operator['api-key'], 'GET', '/api/v1/knowledge/' + privateKnowledge.id)).name).toBe('Private role fixture ' + key);
 
-    expect((await response(token, 'GET', '/api/v1/users/')).status).toBe(200);
+    await denied('GET', '/api/v1/users/');
+    await denied('GET', '/api/v1/users/' + operator['user-id'] + '/oauth/sessions');
+    await denied('GET', '/api/v1/auths/admin/config/oauth');
+    await denied('POST', '/api/v1/auths/admin/config/oauth', {});
+    await denied('POST', '/api/v1/users/' + native.id + '/update', { role: 'admin' });
+    await denied('POST', '/api/v1/users/' + native.id + '/update', { password: key + '-not-used-A9!' });
+    await denied('POST', '/api/v1/auths/add', { name: key, email: key + '@example.invalid', password: key + '-not-used-A9!', role: 'admin' });
+    await denied('POST', '/api/v1/groups/create', { name: key, description: key, permissions: {}, data: {} });
+    expect((await response(token, 'POST', '/api/v1/auths/signin', { email: key + '@example.invalid', password: 'Unused-fixture-password-A9!' })).status).toBe(403);
     await api(token, 'POST', knowledgePath + '/access/update', { access_grants: (await api(operator['api-key'], 'GET', knowledgePath)).access_grants });
     await denied('POST', '/api/v1/users/' + operator['user-id'] + '/update', { role: 'pending' });
     await denied('DELETE', '/api/v1/users/' + operator['user-id']);
@@ -123,6 +143,7 @@ test('native Hermes roles constrain existing tokens, shared file ownership and a
     updateIdentity(key, { active: false });
     await waitRole(null);
     await denied('GET', knowledgePath);
+    await denied('POST', '/api/chat/completions', inference);
     updateIdentity(key, { active: true, grants: ['search'], roles: { search: 'admin' } });
     await waitRole(null);
     await denied('GET', knowledgePath);

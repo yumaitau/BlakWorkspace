@@ -202,7 +202,10 @@ and existing native tokens after role removal, not just a fresh OIDC login.
 ## Hermes native enforcement
 
 `blak-hermes-reader`, `blak-hermes-writer` and `blak-hermes-admin` map to native
-Open WebUI groups and user roles. The controller reconciles every 60 seconds.
+Open WebUI groups. Every granted human account uses native `user`; only the
+enrolled controller retains native server `admin`. The controller reconciles every
+60 seconds. App administration is a managed group capability, not server identity
+authority.
 Native users link through their stored OIDC subject, including the frozen subject
 aliases used before the UUID migration. Email does not establish that link.
 Unlinked, disabled and removed users become native `pending`, which rejects data
@@ -215,8 +218,8 @@ knowledge; only collection owners or app admins with an explicit native write gr
 change collection access or delete the collection itself. Native personal resources retain owner capabilities.
 An uploaded file attached to shared knowledge requires current write access to
 **every** containing shared collection, even for its uploader. This check covers
-content updates, renames, deletion and ingestion APIs. Human app admins retain native application administration but cannot bypass
-private content ownership or native sharing grants. Only the enrolled controller
+content updates, renames, deletion and ingestion APIs. Human app admins can administer knowledge explicitly shared with write access,
+using the managed admin group. They cannot bypass private ownership or sharing. Only the enrolled controller
 has cross-owner content access. Global file/vector resets, reindexing and database
 export require that controller; ordinary admins cannot invoke them.
 
@@ -227,7 +230,11 @@ retry; per-file vector collections are actually deleted rather than silently
 left behind. Shared knowledge membership changes cannot be smuggled through the
 metadata update endpoint. The enrolled controller alone may reconcile the
 original human administrator's role, and other app admins cannot edit or delete
-that controller.
+that controller. The native server-admin dependency also rejects human accounts
+with stale native admin roles. User/password changes, local account creation,
+OAuth/LDAP trust configuration, group mutation and server configuration therefore
+remain operator-only. Password authentication is disabled at the API, separately
+from hiding the login form.
 
 The role controller shares only the indexer's state volume and immutable owner
 journal; it does not receive source credentials. When source access is removed,
@@ -348,3 +355,21 @@ email changes and restoration of the same account. The separate two-test Forms
 publishing and Hermes journey passed in 43 seconds: create, publish, anonymous
 response, review, indexing and deletion. All 303 repository tests, manifest
 validation and generated-theme checks passed.
+
+
+Hermes scoped-administration acceptance passed on 2026-09-22. All human grants
+use native users with managed groups; server administration is restricted to the
+enrolled controller. Shared knowledge administration also requires a native write
+grant. Password sign-in is disabled at the API. Configured base runtimes receive
+group read grants for inference; private owner presets retain their own ACLs.
+
+The expanded role journey passed in 7.5 minutes against native image
+`blak-hermes:e19f6c8ff669` and controller `blak-app-roles:6c5fb8b7e9ea`.
+It covered reader inference, disabled-session inference denial, private content,
+password/role mutations, OAuth trust and session access, group creation,
+shared-knowledge administration, revocation and restoration. The separate
+CRM/Draw/Flow/Cloud indexing, answer and owner-isolation journey passed in
+2.5 minutes; both Forms journeys also passed against the scoped native image.
+All 308 repository tests and 21 native-function tests passed. The native tests
+include rejection of stale human server-admin roles. Runtime grant tests reject
+foreign-owned presets and repair only configured controller-owned base models.

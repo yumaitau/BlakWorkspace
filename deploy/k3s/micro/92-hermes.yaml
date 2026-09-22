@@ -87,6 +87,7 @@ spec:
             - { name: ENABLE_API_KEYS, value: "true" }
             - { name: ENABLE_SIGNUP, value: "false" }
             - { name: ENABLE_LOGIN_FORM, value: "false" }
+            - { name: ENABLE_PASSWORD_AUTH, value: "false" }
             - { name: ENABLE_OAUTH_SIGNUP, value: "true" }
             - { name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL, value: "false" }
             - { name: BLAK_ROLE_CONTROLLER_ID, valueFrom: { secretKeyRef: { name: blak-hermes-role-controller, key: user-id, optional: true } } }

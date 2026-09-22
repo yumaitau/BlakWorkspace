@@ -1,5 +1,6 @@
 """Reconcile Blak ID roles through Open WebUI's native user/group APIs."""
 import uuid
+import hermes_models
 
 ROLES = ('reader', 'writer', 'admin')
 
@@ -29,10 +30,13 @@ def native_users(api):
 
 
 class HermesRoles:
-    def __init__(self, api, controller, collection_ids):
+    def __init__(self, api, controller, collection_ids, model_ids=()):
         self.api = api
         self.controller = identifier(controller)
         self.collections = [identifier(value) for value in collection_ids]
+        if not isinstance(model_ids, (list, tuple)) or any(not isinstance(value, str) or not value.strip() for value in model_ids):
+            raise ValueError('Invalid Hermes runtime model identifiers')
+        self.model_ids = sorted(set(model_ids))
 
     def reconcile(self, directory):
         api = self.api
@@ -97,7 +101,9 @@ class HermesRoles:
             role = member.get('roles', {}).get('hermes') if member and member['is_active'] else None
             if role not in ROLES:
                 role = None
-            desired = 'admin' if role == 'admin' else 'user' if role else 'pending'
+            # Native server admins can reset passwords and replace OAuth trust.
+            # Human app administration is scoped through the managed group.
+            desired = 'user' if role else 'pending'
             current_role = user['role']
             # Remove admin authority before changing groups during a downgrade.
             if current_role == 'admin' and desired != 'admin':
@@ -124,4 +130,5 @@ class HermesRoles:
             order = lambda grant: (grant['principal_type'], grant['principal_id'], grant['permission'])
             if sorted(actual, key=order) != sorted(grants, key=order):
                 api('POST', '/api/v1/knowledge/' + collection_id + '/access/update', {'access_grants': grants})
+        hermes_models.reconcile(api, self.controller, self.model_ids, managed)
         return counts

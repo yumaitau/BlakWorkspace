@@ -64,7 +64,7 @@ def reconcile(session):
             if profile['id'] != hermes['controller_user_id'] or profile['role'] != 'admin':
                 raise ValueError('Hermes controller identity mismatch')
             removed = hermes_copies.reconcile(native, directory, os.environ['HERMES_SYNC_STATE'], hermes['controller_user_id'])
-            result = HermesRoles(native, hermes['controller_user_id'], hermes['collection_ids']).reconcile(directory)
+            result = HermesRoles(native, hermes['controller_user_id'], hermes['collection_ids'], hermes.get('model_ids', [])).reconcile(directory)
             print('Hermes roles reconciled ' + json.dumps({**result, 'revoked_copies': removed}, sort_keys=True), flush=True)
         except Exception as error:
             failures.append('Hermes:' + type(error).__name__)
