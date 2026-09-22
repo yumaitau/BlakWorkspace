@@ -105,6 +105,29 @@ class SyncTests(unittest.TestCase):
         class Source:
             def json(self,*args):raise RuntimeError('offline')
         with self.assertRaises(RuntimeError):sync.drive_documents(Source())
+    def test_drive_processing_upload_does_not_block_committed_documents(self):
+        class Source:
+            status = 'HTTP/1.1 425 TOO EARLY'
+            collection = ''
+            def request(self, *args, **kwargs):
+                return f'''<d:multistatus xmlns:d="DAV:">
+                  <d:response><d:href>/dav/root/pending.txt</d:href><d:propstat>
+                    <d:status>{self.status}</d:status><d:prop><d:resourcetype>{self.collection}</d:resourcetype></d:prop>
+                  </d:propstat></d:response>
+                  <d:response><d:href>/dav/root/ready.txt</d:href><d:propstat>
+                    <d:status>HTTP/1.1 200 OK</d:status><d:prop><d:getetag>ready</d:getetag></d:prop>
+                  </d:propstat></d:response></d:multistatus>'''.encode()
+        source = Source()
+        self.assertEqual([d['name'] for d in sync.drive_documents(source, ['/dav/root'])], ['ready.txt'])
+        source.status = 'HTTP/1.1 200 OK'
+        self.assertEqual(len(sync.drive_documents(source, ['/dav/root'])), 2)
+        for status in ['HTTP/1.1 500 Internal Server Error', 'HTTP/1.1 403 Forbidden', '']:
+            source.status = status
+            with self.assertRaises(RuntimeError): sync.drive_documents(source, ['/dav/root'])
+        source.status = 'HTTP/1.1 425 TOO EARLY'
+        source.collection = '<d:collection/>'
+        with self.assertRaises(RuntimeError): sync.drive_documents(source, ['/dav/root'])
+
     def test_duplicate_source_ids_rejected(self):
         with self.assertRaises(ValueError):sync.reconcile(FakeHermes(),'private',[{'id':'x'},{'id':'x'}],{},None,lambda:None)
 

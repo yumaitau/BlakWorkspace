@@ -140,6 +140,14 @@ replace(name, anchor, anchor + '''
 
 name = 'services/proxy/pkg/middleware/account_resolver.go'
 native_import(name)
+anchor = 'user, token, err = m.userProvider.GetUserByClaims(req.Context(), m.userCS3Claim, value)'
+replace(name, anchor, '''// Verified OIDC subjects map to immutable native usernames. Check before
+  // the backend mints a token, which correctly refuses revoked identities.
+  if blakroles.Enabled() && m.userCS3Claim == "username" && blakroles.Directory().Role(value) == "" {
+   http.Error(w, "Blak ID does not grant Drive access", http.StatusForbidden)
+   return
+  }
+  ''' + anchor)
 anchor = "// resolve the user's roles"
 replace(name, anchor, '''if blakroles.Enabled() && blakroles.UserRole(user) == "" {
    http.Error(w, "Blak ID does not grant Drive access", http.StatusForbidden)
@@ -169,6 +177,7 @@ for source in here.glob('*.go'):
     shutil.copyfile(source, destination / source.name)
 shutil.copyfile(here / 'tests/wopi_test.go', root / 'services/collaboration/pkg/middleware/blak_roles_test.go')
 shutil.copyfile(here / 'tests/permission_test.go', root / 'services/settings/pkg/service/v0/blak_roles_test.go')
+shutil.copyfile(here / 'tests/account_test.go', root / 'services/proxy/pkg/middleware/blak_roles_test.go')
 for backend, session_type in [('pkg', 'DecomposedFsSession'), ('utils', 'OcisSession')]:
     target = root / reva / f'pkg/storage/{backend}/decomposedfs/upload/blak_roles_test.go'
     target.write_text((here / 'tests/upload_test.go.in').read_text().replace('SESSION_TYPE', session_type))

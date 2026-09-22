@@ -108,6 +108,16 @@ def drive_documents(api, roots=None):
                 continue
             propstat = next((p for p in entry.findall('{DAV:}propstat') if ' 200 ' in p.findtext('{DAV:}status', '')), None)
             if propstat is None:
+                # OpenCloud lists uploads still being processed as 425. They
+                # are not readable documents yet; retry on the next sweep.
+                # Never turn malformed, forbidden or failed listings into a
+                # successful empty corpus.
+                pending = entry.findall('{DAV:}propstat')
+                if pending and all(p.findtext('{DAV:}status', '') == 'HTTP/1.1 425 TOO EARLY'
+                                   and p.find('{DAV:}prop') is not None
+                                   and p.find('{DAV:}prop/{DAV:}resourcetype/{DAV:}collection') is None
+                                   for p in pending):
+                    continue
                 raise RuntimeError('incomplete DAV listing')
             prop = propstat.find('{DAV:}prop')
             if prop.find('{DAV:}resourcetype/{DAV:}collection') is not None:
