@@ -4,7 +4,7 @@
 const READ_METHODS = new Set(`
   subscriptions/get rooms/get permissions/get license:getModules license:isEnterprise
   canAccessRoom browseChannels channelsList getChannelHistory getFirstRoomMessage
-  getMessages getRoomById getRoomIdByNameOrId getRoomNameById getRoomRoles getS3FileUrl
+  getMessages getRoomByTypeAndName getRoomById getRoomIdByNameOrId getRoomNameById getRoomRoles getS3FileUrl
   getSingleMessage getSupportedLanguages getThreadMessages getThreadsList
   getUserMentionsByChannel getUserRoles getUserStatusText getUsersOfRoom
   loadHistory loadLocale loadMissedMessages loadNextMessages loadSurroundingMessages

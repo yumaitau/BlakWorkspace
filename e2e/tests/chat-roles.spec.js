@@ -40,13 +40,19 @@ test('Chat native roles cap room owners, existing tokens and websocket sessions'
       }
     });
     page.on('pageerror', error => console.log('Chat browser exception', error.name));
+    function frames(payload) {
+      try {
+        const text = String(payload), value = JSON.parse(text.startsWith('a[') ? text.slice(1) : text);
+        return (Array.isArray(value) ? value : [value]).map(item => typeof item === 'string' ? JSON.parse(item) : item);
+      } catch { return []; }
+    }
     page.on('websocket', socket => {
       const methods = new Map();
       socket.on('framesent', frame => {
-        try { const value = JSON.parse(String(frame.payload)); if (value.msg === 'method') methods.set(value.id, value.method); } catch {}
+        for (const value of frames(frame.payload)) if (value.msg === 'method') methods.set(value.id, value.method);
       });
       socket.on('framereceived', frame => {
-        try { const value = JSON.parse(String(frame.payload)); if (value.msg === 'result' && value.error) console.log('Chat DDP rejection', methods.get(value.id), value.error.error); } catch {}
+        for (const value of frames(frame.payload)) if (value.error) console.log('Chat DDP rejection', methods.get(value.id), value.error.error);
       });
     });
   }
