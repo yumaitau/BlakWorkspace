@@ -10,7 +10,7 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
   test.setTimeout(900000);
   const key = 'drive-roles-' + crypto.randomBytes(6).toString('hex');
   const origin = 'https://drive.workspace.example.com', endpoint = serviceURL('drive', 9200);
-  let subject, token, file, documentFile, failure;
+  let subject, token, file, documentFile, identity, failure;
   const captureToken = request => {
     if (new URL(request.url()).origin === origin && request.headers().authorization?.startsWith('Bearer ')) {
       token = request.headers().authorization;
@@ -35,6 +35,27 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     return fetch(endpoint + path, { method, signal: AbortSignal.timeout(30000), headers: { authorization: token, 'content-type': 'application/json', ...headers },
       ...(body === undefined ? {} : { body: typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body) }) });
   }
+  function releaseDocumentLock(accountId) {
+    const name = key + '.odt';
+    if (!/^[0-9a-f-]{36}$/.test(accountId) || !/^drive-roles-[0-9a-f]+\.odt$/.test(name)) {
+      throw new Error('refusing to clear a lock outside this fixture');
+    }
+    // DAV UNLOCK and DELETE cannot drop a Collabora app lock before it expires.
+    // Remove only this fixture document's lock record, then the caller deletes the file.
+    const script = [
+      'set -eu',
+      'root=/var/lib/opencloud/storage/users/users/' + accountId,
+      'file=$(find "$root" -name ' + JSON.stringify(name) + ' -type f | head -1)',
+      '[ -n "$file" ]',
+      'id=$(getfattr --only-values -n user.oc.id "$file" | tr -d "\\n")',
+      'tail=${id#????????}',
+      'find "$root/.oc-nodes/locks" -type f -name "$id.mlock" -exec rm -f {} \\;',
+      'find "$root/.oc-nodes/locks" -type f -name "$id.REV.*.mlock" -exec rm -f {} \\;',
+      'find "$root/.oc-nodes" -type f -name "$tail.lock" -exec rm -f {} \\;',
+    ].join('\n');
+    execFileSync('kubectl', ['-n', 'blak-micro', 'exec', 'deploy/opencloud', '--', 'sh', '-c', script],
+      { stdio: ['pipe', 'pipe', 'pipe'] });
+  }
   async function documentText() {
     const response = await request(documentFile);
     expect(response.status).toBe(200);
@@ -51,7 +72,7 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     // Reloading that callback would replay its already-consumed authorization code.
     await page.waitForURL(url => url.origin === origin && /^\/files(?:\/|$)/.test(url.pathname), { timeout: 90000 });
     await expect.poll(async () => (await request('/graph/v1.0/me')).status, { timeout: 60000 }).toBe(200);
-    const identity = (await (await request('/graph/v1.0/me')).json()).id;
+    identity = (await (await request('/graph/v1.0/me')).json()).id;
     const drives = await (await request('/graph/v1.0/drives')).json();
     const personal = ownedPersonalDrive({ id: identity }, drives);
     expect(personal).toBeTruthy();
@@ -95,8 +116,8 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
     // Collabora retries token refresh before surfacing a WOPI 403 to the user.
     await expect(editor.getByText(/Document cannot be saved/)).toBeVisible({ timeout: 150000 });
     expect(await documentText()).not.toContain(forbiddenEdit);
-    // Restore the fixture owner before closing so Collabora can release its
-    // WOPI lock through the native editor session after the denial assertion.
+    // Restore write before leaving the editor. Collabora still keeps its WOPI lock
+    // until expiry, so fixture removal handles that lock separately.
     updateIdentity(key, { roles: { drive: 'writer' } });
     await waitRole('writer');
     page.once('dialog', dialog => dialog.accept());
@@ -145,10 +166,13 @@ test('Drive native roles revoke owned-file writes and preserve immutable account
           await cleanupPage.close();
         }
         for (const path of [file, documentFile].filter(Boolean)) {
-          if (token) await expect.poll(async () => {
-            const status = (await request(path, 'DELETE')).status;
-            return [200, 204, 404].includes(status) ? 'removed' : status;
-          }, { timeout: 60000 }).toBe('removed');
+          if (!token) continue;
+          let status = (await request(path, 'DELETE')).status;
+          if (status === 423 && path === documentFile) {
+            releaseDocumentLock(identity);
+            status = (await request(path, 'DELETE')).status;
+          }
+          expect([200, 204, 404]).toContain(status);
         }
       } catch (cleanupError) {
         if (!failure) throw cleanupError;
