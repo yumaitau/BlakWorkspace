@@ -1,7 +1,10 @@
 /* Use Frappe's own server-generated OAuth URL and state cookie. */
 (async()=>{
   const apps=await fetch('/_blak/apps.json').then(r=>r.json());
-  const app=apps.find(a=>new URL(a.url).host===location.host);
+  const app=apps.find(a=>{
+    const url=new URL(a.url);
+    return location.host ? url.host===location.host : url.origin===location.origin;
+  });
   if(app?.id==='forms') {
     // HeyForm uses store.js (JSON) and a readable cookie for its device binding.
     const key='HEYFORM_DEVICE_ID';
@@ -23,6 +26,8 @@
   if(!link) { location.replace('/crm'); return; }
   const target=new URL(link.getAttribute('href'));
   const id=apps.find(a=>a.id==='idp');
-  if(!id || target.host!==new URL(id.url).host) throw Error('Unexpected login provider');
+  if(!id) throw Error('Unexpected login provider');
+  const idUrl=new URL(id.url);
+  if(target.host ? target.host!==idUrl.host : target.origin!==idUrl.origin) throw Error('Unexpected login provider');
   location.replace(target.href);
 })().catch(()=>{document.getElementById('status').textContent='Could not open this application. Return to the workspace and retry.';});
