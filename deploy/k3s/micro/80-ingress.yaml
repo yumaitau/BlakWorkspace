@@ -178,3 +178,31 @@ spec:
       services:
         - name: sites
           port: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: smith
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`smith.workspace.example.com`)
+      kind: Rule
+      services:
+        - name: smith
+          port: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: eyes
+  namespace: blak-micro
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`eyes.workspace.example.com`)
+      kind: Rule
+      services:
+        - name: eyes
+          port: 8765

@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "e2e-mark" },
+      "geometry": { "type": "Point", "coordinates": [131.2, -12.4] }
+    }
+  ]
+}

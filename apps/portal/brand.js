@@ -23,6 +23,8 @@ const paths={
   hermes:'m16 3 4 9 9 4-9 4-4 9-4-9-9-4 9-4z',
   search:'M14 3a11 11 0 1 0 0 22 11 11 0 0 0 0-22 M22 22l8 8',
   storage:'M8 25a7 7 0 0 1-1-14 10 10 0 0 1 19 1 7 7 0 0 1-1 13H8 M16 12v11 M11 18l5-6 5 6',
+  smith:'M6 8a4 4 0 1 0 .1 0 M26 8a4 4 0 1 0 .1 0 M16 20a4 4 0 1 0 .1 0 M10 12h12 M22 15l-3 5 M10 15l3 5',
+  eyes:'M2 16s5-8 14-8 14 8 14 8-5 8-14 8S2 16 2 16 M16 12a4 4 0 1 0 .1 0',
 };
 const APP_ICONS=Object.fromEntries(Object.entries(paths).map(([id,d])=>[id,`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#152022"/><path transform="translate(8 8)" d="${d}" fill="none" stroke="#f4eee2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="39" cy="39" r="3" fill="#d65b2e"/></svg>`]));
 module.exports = { LOGO_SVG, APP_ICONS };

@@ -16,6 +16,8 @@ const INTEGRATIONS = {
   hermes: { application: 'hermes', group: 'Blak Hermes users', roleGroups: ['blak-hermes-reader', 'blak-hermes-writer', 'blak-hermes-admin'], login: '/oauth/oidc/login', theme: 'openwebui' },
   search: { group: 'Blak Search users', roleGroups: ['blak-search-reader', 'blak-search-writer', 'blak-search-admin'], theme: 'portal' },
   storage: { group: 'Blak Cloud users', roleGroups: ['blak-cloud-reader', 'blak-cloud-writer', 'blak-cloud-admin'], theme: 'portal' },
+  smith: { application: 'blaksmith', group: 'BlakSmith users', roleGroups: ['blak-smith-reader', 'blak-smith-writer', 'blak-smith-admin'], login: '/login', theme: 'portal' },
+  eyes: { application: 'blak-eyes', group: 'BlakEyes users', roleGroups: ['blak-eyes-reader', 'blak-eyes-writer', 'blak-eyes-admin'], login: '/', theme: 'portal' },
 };
 
 function allowedApps(apps, user) {

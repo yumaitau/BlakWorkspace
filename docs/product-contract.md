@@ -23,6 +23,8 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
 | Blak Flow | Blak Flow engine (in-workspace automation; Drive + Sites connectors) |
 | Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off; evolves into Blak AI Gateway) |
+| BlakSmith | BlakSmith knowledge graph (separate checkout `yumaitau/BlakSmith`; catalog id `smith`) |
+| BlakEyes | BlakEyes drone imagery appliance (separate checkout `yumaitau/BlakEyes`; catalog id `eyes`) |
 
 Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels. Do not rename upstream internal identifiers.
 

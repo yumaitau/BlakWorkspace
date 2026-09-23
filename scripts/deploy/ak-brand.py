@@ -29,6 +29,6 @@ brand.save()
 from authentik.flows.models import Flow
 Flow.objects.filter(slug="default-authentication-flow").update(title="Welcome to Blak ID")
 from authentik.core.models import Application
-for slug,name in {"opencloud":"Blak Drive","blak-portal":"Blak Workspace","outline":"Blak Knowledge","hermes":"Blak Hermes","kaneo":"Blak Projects","openproject":"Blak Projects","rocketchat":"Blak Chat","blak-forms":"Blak Forms","blak-crm":"Blak CRM"}.items():
+for slug,name in {"opencloud":"Blak Drive","blak-portal":"Blak Workspace","outline":"Blak Knowledge","hermes":"Blak Hermes","kaneo":"Blak Projects","openproject":"Blak Projects","rocketchat":"Blak Chat","blak-forms":"Blak Forms","blak-crm":"Blak CRM","blaksmith":"BlakSmith","blak-eyes":"BlakEyes"}.items():
     Application.objects.filter(slug=slug).update(name=name,meta_icon="https://id.workspace.example.com/_blak/logo.svg")
 print("BRAND_CSS_OK")

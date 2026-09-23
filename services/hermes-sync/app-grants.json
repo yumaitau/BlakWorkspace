@@ -101,5 +101,21 @@
       "blak-cloud-writer",
       "blak-cloud-admin"
     ]
+  },
+  "smith": {
+    "group": "BlakSmith users",
+    "roleGroups": [
+      "blak-smith-reader",
+      "blak-smith-writer",
+      "blak-smith-admin"
+    ]
+  },
+  "eyes": {
+    "group": "BlakEyes users",
+    "roleGroups": [
+      "blak-eyes-reader",
+      "blak-eyes-writer",
+      "blak-eyes-admin"
+    ]
   }
 }

@@ -84,6 +84,8 @@ Rotate one confidential client during a planned maintenance window:
 | Projects | `blak-kaneo/oidc-secret` | `projects` |
 | Chat | `blak-chat/oidc-secret` | Custom OAuth settings and `chat` |
 | Hermes | `blak-hermes/oidc-secret` | OAuth configuration and `hermes` |
+| BlakSmith | `blak-smith/oidc-secret` | Better Auth OIDC client `blaksmith` and `smith` |
+| BlakEyes | `blak-eyes/oidc-secret` | Appliance OIDC client `blak-eyes` and `eyes` |
 
 OpenCloud's browser client is public and has no confidential client secret to rotate.
 

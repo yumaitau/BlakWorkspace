@@ -1,6 +1,6 @@
-# ClamAV keeps its own signatures updated. The Drive sidecar in 50-opencloud.yaml
-# asks it to scan named Drive files on a loop. Do not apply 50-opencloud.yaml
-# onto a live tailnet deploy; patch the sidecar on instead.
+# ClamAV keeps its own signatures updated. The Drive sidecar asks it to scan
+# named Drive files. Addresses here are in-cluster service names. Public app
+# URLs stay on the Drive and portal containers and are set per environment.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

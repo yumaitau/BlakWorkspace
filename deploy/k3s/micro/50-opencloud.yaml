@@ -83,8 +83,9 @@ spec:
             - { name: theme, mountPath: /etc/opencloud/themes/blak/theme.json, subPath: theme.json }
             - { name: theme, mountPath: /etc/opencloud/themes/blak/assets/logo.svg, subPath: logo.svg }
         - name: file-guard
-          image: node:22-alpine
+          image: blak-portal:micro
           imagePullPolicy: IfNotPresent
+          command: ["node", "/app/file-guard-run.js"]
           env:
             - { name: SCAN_ROOT, value: /var/lib/opencloud/storage/users/users }
             - { name: FILE_GUARD_DIR, value: /var/lib/file-guard }
@@ -93,17 +94,16 @@ spec:
             - { name: FILE_GUARD_PORT, value: "8092" }
             - { name: SCAN_EVERY_MS, value: "300000" }
             - { name: FILE_GUARD_TOKEN, valueFrom: { secretKeyRef: { name: blak-file-guard, key: token, optional: true } } }
-          command: ["node", "/opt/file-guard/file-guard-run.js"]
           ports: [{ name: guard, containerPort: 8092 }]
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
           volumeMounts:
             - { name: data, mountPath: /var/lib/opencloud }
             - { name: file-guard-data, mountPath: /var/lib/file-guard }
-            - { name: file-guard-code, mountPath: /opt/file-guard, readOnly: true }
       volumes:
         - { name: data, persistentVolumeClaim: { claimName: opencloud-data } }
         - { name: file-guard-data, persistentVolumeClaim: { claimName: file-guard-data } }
-        - name: file-guard-code
-          configMap: { name: blak-file-guard-code }
         - name: ca
           configMap: { name: blak-ca }
         - name: csp

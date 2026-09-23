@@ -24,10 +24,10 @@ def ensure_secret(name, values):
                    input=json.dumps(resource).encode(), check=True)
 
 
-def reconcile_oidc(script, marker, secret):
+def reconcile_oidc(script, marker, secret, prelude=''):
     # ak shell is interactive: execute the complete module so compound statements
     # cannot be split or silently discarded by its REPL parser.
-    source = Path(__file__).with_name('ak-provider-common.py').read_text() + '\n' + Path(__file__).with_name(script).read_text()
+    source = Path(__file__).with_name('ak-provider-common.py').read_text() + '\n' + prelude + '\n' + Path(__file__).with_name(script).read_text()
     result = subprocess.run(
         KUBECTL + ['exec', '-i', 'deploy/authentik-server', '--', 'ak', 'shell'],
         input=('exec(' + repr(source) + ')\n').encode(),

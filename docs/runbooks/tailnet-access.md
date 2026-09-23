@@ -3,7 +3,7 @@
 A prepared release can use one existing Tailscale node name with valid HTTPS.
 Portal uses port 443. Native applications use separate HTTPS origins:
 ID 8444, Drive 8445, Docs 8446, Knowledge 8447, Projects 8448, Forms 8449,
-CRM 8450, Chat 8451, Hermes 8452, Vault 8453, and Cloud 8454. Port 8443 is reserved for existing services.
+CRM 8450, Chat 8451, Hermes 8452, Vault 8453, Cloud 8454, BlakSmith 8455, and BlakEyes 8456. Port 8443 is reserved for existing services.
 Users connect through Tailscale; this does not enable Funnel or public access.
 
 Prepare from a clean committed checkout, using the existing installation domain
