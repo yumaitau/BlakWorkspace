@@ -10,6 +10,47 @@ Blak ID is the authority for membership. Every app must enforce its native data
 permissions as well as the login grant. A hidden launcher, proxy login gate, or
 unsigned browser value is not authorization.
 
+## Where do I add someone to an app?
+
+Use **People & access** in Blak Home (sidebar, or **My access** in the top bar).
+Everyone sees *How access works* and *My access*: their apps, role, what the role
+lets them do, and the group it came from. Workspace administrators also see:
+
+- **Apps**: pick an app, read what Reader, Writer and Admin can and can't do,
+  see who has each role (directly or through a team group), then add, change or
+  remove an assignment.
+- **Groups**: every Blak ID group with a type badge (App role group, Workspace
+  administrators, Team group, Retired: no effect). Create team groups and add or
+  remove members.
+- **People**: search a person, see their effective access table and change it.
+- **Recent changes**: the portal audit journal (`access-audit.jsonl` beside the
+  Flow store on the portal volume). Authentik also logs each group change.
+
+Every change shows its effect in plain words before you confirm, and success is
+only shown after Blak ID confirms it. Native apps pick the change up within about
+a minute (the `app-roles` reconciler); Draw, Flow, Cloud and Search within 30
+seconds. BlakSmith and BlakEyes take effect only after an operator runs the
+directory sync.
+
+**Team groups.** Giving a team group a role makes it a child group of the role
+group. Authentik 2026.8 groups can have several parents, and a member of a group
+is a member of all its ancestors (`User.all_groups()`, `ak_is_group_member`), so
+every team member gets the role in the OIDC claims and in the native reconcilers,
+which also follow `parents`. The highest role still wins.
+
+**Guardrails.** The portal uses the `blak-portal-access` service account
+(`scripts/deploy/provision-access-admin.py`, secret `blak-portal-access`,
+key `api-token`). It holds only `view_user`, `view_group`, `add_user_to_group`,
+`remove_user_from_group`, `add_group` and `change_group`. It never gets
+`enable_group_superuser` or `change_role`, so Authentik itself refuses superuser
+groups, superuser parents and permission grants. The portal also refuses any group
+with a superuser or permission-carrying ancestor, retired and built-in groups,
+service accounts, and every change to users themselves. Admin status is re-checked
+against Blak ID on every admin request. Posts need the same origin and a
+per-session CSRF token, and writes are limited to 20 a minute per administrator.
+The plain-language role texts live in `apps/portal/access-catalog.js`; identity
+provisioning copies them onto each group's `description` attribute.
+
 ## Group contract
 
 Use `blak-<app>-reader`, `blak-<app>-writer`, and `blak-<app>-admin`. Resolve multiple

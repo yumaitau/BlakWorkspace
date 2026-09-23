@@ -16,8 +16,12 @@ Run `python3 scripts/deploy/provision-id.py` from a prepared release. This recon
 group policies and claims and asserts that existing client IDs, secrets and
 subject modes did not change. It is safe to repeat.
 
-Assign users to the `Blak … users` groups listed in the integration contract.
-Workspace administrators retain all apps. Drive and Docs share one grant.
+Give people access from **People & access** in Blak Home (see "Where do I add
+someone to an app?" in `app-role-contract.md`). Access comes only from the
+`blak-<app>-reader|writer|admin` role groups. The `Blak … users` groups are retired
+and grant nothing. Workspace administrators (Blak ID superusers) get Blak ID and
+People & access; app roles are assigned to them like anyone else.
+Drive and Docs share one grant.
 The portal checks claims again at most 30 seconds after the last check. Protected
 portal routes enforce the same grants as navigation. Native app OIDC authorization
 also requires the corresponding group. Removing a grant prevents new native logins;
