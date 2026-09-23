@@ -52,6 +52,18 @@ with transaction.atomic():
                 member.groups.add(writer)
         legacy_group.attributes['blak_role_migration_completed'] = True
         legacy_group.save(update_fields=['attributes'])
+    # Plain-language descriptions from apps/portal/access-catalog.js, so the raw
+    # Blak ID admin UI explains each group too. Authentik 2026.8 groups have no
+    # native description field, so they live in attributes. Merge only; delete nothing.
+    notes = dict(globals().get('BLAK_GROUP_NOTES', {}))
+    admin_note = globals().get('BLAK_ADMIN_NOTE')
+    for group in Group.objects.filter(is_superuser=True) if admin_note else []:
+        notes.setdefault(group.name, {'blak_type': 'admins', 'description': admin_note})
+    for group_name, note in notes.items():
+        group = Group.objects.filter(name=group_name).first()
+        if group and note and any(group.attributes.get(key) != value for key, value in note.items()):
+            group.attributes.update(note)
+            group.save(update_fields=['attributes'])
     groups = {a['id']: a['group'] for a in BLAK_APPS if a.get('group') and not a.get('roleGroups')}
     for group in set(groups.values()):
         Group.objects.get_or_create(name=group)
