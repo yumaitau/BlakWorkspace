@@ -60,6 +60,12 @@ spec:
             - { name: FLOCI_UI_HOST, value: floci-ui }
             - { name: FLOCI_UI_PORT, value: "4500" }
             - { name: CLOUD_PUBLIC_URL, value: https://cloud.workspace.example.com }
+            # Optional. When set, replaces catalog hosts so a git-built image can
+            # launch tailnet apps without a prepared rewrite. Keys are catalog ids.
+            - { name: BLAK_APP_ORIGINS, value: '' }
+            - { name: OUTLINE_API_URL, value: http://sites:3000 }
+            - { name: OUTLINE_PUBLIC_URL, value: https://sites.workspace.example.com }
+            - { name: OUTLINE_API_KEY, valueFrom: { secretKeyRef: { name: blak-sites, key: api-key, optional: true } } }
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           volumeMounts:

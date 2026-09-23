@@ -62,4 +62,8 @@ test('method tunnel checks parsed operation; unknown routes and HTTP methods fai
     assert.equal(routeAllowed(null, 'v1', route, 'GET'), false);
   }
   assert.equal(methodAllowed(member('admin'), 'private-settings/get'), false);
+  assert.equal(routeAllowed(member('writer'), 'v1', 'rooms.nameExists', 'GET'), true);
+  assert.equal(routeAllowed(member('writer'), 'v1', 'rooms.nameExists', 'POST'), false);
+  assert.equal(routeAllowed(member('reader'), 'v1', 'teams.create', 'POST'), false);
+  assert.equal(routeAllowed(member('writer'), 'v1', 'teams.create', 'POST'), true);
 });

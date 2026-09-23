@@ -11,7 +11,7 @@ const INTEGRATIONS = {
   chat: { application: 'rocketchat', group: 'Blak Chat users', roleGroups: ['blak-chat-reader', 'blak-chat-writer', 'blak-chat-admin'], login: '/home?blak_launch=1', theme: 'rocketchat' },
   sites: { application: 'outline', group: 'Blak Knowledge users', roleGroups: ['blak-knowledge-reader', 'blak-knowledge-writer', 'blak-knowledge-admin'], login: '/auth/oidc', theme: 'outline' },
   projects: { application: 'kaneo', group: 'Blak Projects users', roleGroups: ['blak-projects-reader', 'blak-projects-writer', 'blak-projects-admin'], theme: 'kaneo' },
-  idp: { admin: true, theme: 'authentik' },
+  idp: { admin: true, theme: 'authentik', login: '/if/admin/#/identity/users' },
   flow: { group: 'Blak Flow users', roleGroups: ['blak-flow-reader', 'blak-flow-writer', 'blak-flow-admin'], theme: 'portal' },
   hermes: { application: 'hermes', group: 'Blak Hermes users', roleGroups: ['blak-hermes-reader', 'blak-hermes-writer', 'blak-hermes-admin'], login: '/oauth/oidc/login', theme: 'openwebui' },
   search: { group: 'Blak Search users', roleGroups: ['blak-search-reader', 'blak-search-writer', 'blak-search-admin'], theme: 'portal' },

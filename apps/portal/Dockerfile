@@ -12,7 +12,7 @@ RUN npm ci --omit=dev --ignore-scripts
 COPY integration.js app-roles.js session-store.js oidc.js ./
 COPY content-sources.json ./
 COPY logout-page.js logout.js ./
-COPY server.js catalog.js flow-engine.js cloud-object.js cloud-console.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
+COPY server.js catalog.js public-urls.js outline-sites.js flow-engine.js cloud-object.js cloud-console.js session.js http-client.js request-body.js search-access.js theme.js theme-tokens.json styles.css brand-banner.png ./
 COPY brand-icons/ ./brand-icons/
 COPY brand-home-logo.jpg brand.js welcome.js login-background.png ./
 COPY fonts.css ./

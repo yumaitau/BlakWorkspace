@@ -10,6 +10,28 @@ spec:
     requests:
       storage: 1Gi
 ---
+# Missing heyform data used to crash the OAuth error page with HTTP 500.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blak-forms-helper
+  namespace: blak-micro
+data:
+  handlebars.js: |
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    const hbs = require("hbs");
+    const h = hbs;
+    h.registerHelper('json', v1 => JSON.stringify(v1 == null ? null : v1)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029'));
+    h.registerHelper('eq', (v1, v2) => v1 === v2);
+    h.registerHelper('ne', (v1, v2) => v1 !== v2);
+    exports.default = h;
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -164,6 +186,9 @@ spec:
           subPath: rootCA.pem
         - name: frontend
           mountPath: /app/packages/server/view
+        - name: forms-helper
+          mountPath: /app/packages/server/dist/src/utils/handlebars.js
+          subPath: handlebars.js
         readinessProbe:
           httpGet:
             path: /
@@ -182,6 +207,9 @@ spec:
       - name: themes
         configMap:
           name: blak-app-themes
+      - name: forms-helper
+        configMap:
+          name: blak-forms-helper
       hostAliases:
       - ip: 10.43.169.184
         hostnames:
@@ -195,7 +223,7 @@ spec:
         args:
         - 'cp -R /app/packages/server/view/. /workspace/
 
-          node -e ''const fs=require("fs");const p="/workspace/index.html";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("</head>","<style>"+fs.readFileSync("/theme/forms.css","utf8")+"</style></head>"))''
+          node -e ''const fs=require("fs");const p="/workspace/index.html";let s=fs.readFileSync(p,"utf8");s=s.replace("</head>","<style>"+fs.readFileSync("/theme/forms.css","utf8")+"</style></head>");s=s.replace("const heyform = {{{json heyform}}};","const heyform = {{{json heyform}}} || {};");fs.writeFileSync(p,s)''
 
           '
         resources:
