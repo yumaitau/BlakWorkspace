@@ -88,5 +88,17 @@
     "name": "Blak Cloud",
     "url": "https://cloud.workspace.example.com/",
     "backend": "Powered by Floci"
+  },
+  {
+    "id": "smith",
+    "name": "BlakSmith",
+    "url": "https://smith.workspace.example.com/login",
+    "backend": "BlakSmith"
+  },
+  {
+    "id": "eyes",
+    "name": "BlakEyes",
+    "url": "https://eyes.workspace.example.com/",
+    "backend": "BlakEyes appliance"
   }
 ]

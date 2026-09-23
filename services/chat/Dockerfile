@@ -1,4 +1,5 @@
-FROM rocketchat/rocket.chat@sha256:2cc2f6a9e26d339b68e6a3a9805a74647d77f971f24ac8c1ecbf4755cbf8d052
+ARG ROCKET_CHAT_VERSION=8.8.1
+FROM rocketchat/rocket.chat:${ROCKET_CHAT_VERSION}
 USER root
 COPY *.cjs /app/bundle/blak/
 RUN node /app/bundle/blak/patch.cjs && node --check /app/bundle/programs/server/app/app.js && node --test /app/bundle/blak/*.test.cjs

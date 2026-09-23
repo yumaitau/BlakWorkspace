@@ -111,7 +111,7 @@
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
     if(app.id==='portal') return;
-    const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI'}[app.id];
+    const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI',smith:'BlakSmith',eyes:'BlakEyes'}[app.id];
     let title=document.title;
     if(upstream) {
       if(title.includes(app.name)) title=title.replaceAll(' ('+upstream+')','');

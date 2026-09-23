@@ -6,13 +6,13 @@ const ACCENT = {
   forms: '#D68B2C', draw: '#3199A2', crm: '#D65B2E', workspace: '#D65B2E', drive: '#3199A2', docs: '#66996B', notes: '#D68B2C', chat: '#C55235',
   meet: '#21818A', mail: '#737BB8', knowledge: '#66996B', projects: '#D8792E', admin: '#7583B0',
   flow: '#3199A2', hermes: '#A26CC1', idp: '#7583B0', search: '#D68B2C', storage: '#21818A',
-  vault: '#D68B2C',
+  vault: '#D68B2C', smith: '#7583B0', eyes: '#3199A2',
 };
 const ICON_IMG = Object.fromEntries(Object.keys(require('./brand').APP_ICONS).map(id=>[id,id]));
 const RAIL_ICON = {
   forms: '▤', draw: '◇', crm: '▦', home: '⌂', drive: '▤', docs: '▤', notes: '▦', chat: '◫', meet: '◉', mail: '✉', knowledge: '▦',
   projects: '▤', admin: '⚙', flow: '⇄', hermes: '✦', idp: '◉', search: '⌕', storage: '⬢',
-  vault: '▣',
+  vault: '▣', smith: '◈', eyes: '◉',
 };
 
 const APPS = [
@@ -30,6 +30,8 @@ const APPS = [
   { id: 'hermes', name: 'Blak Hermes', desc: 'Local AI assistant', url: 'https://hermes.workspace.example.com', backend: 'Powered by Open WebUI + Ollama', group: 'Platform', status: 'live', oidcClient: 'hermes', check: { proto: 'http', host: 'hermes', port: 8080, path: '/' } },
   { id: 'search', name: 'Blak Search', desc: 'Permission-aware workspace search', url: '/search', backend: 'Powered by Meilisearch', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: { proto: 'http', host: 'meilisearch', port: 7700, path: '/health' } },
   { id: 'storage', name: 'Blak Cloud', desc: 'Private cloud console', url: 'https://cloud.workspace.example.com', backend: 'Powered by Floci', group: 'Platform', status: 'live', oidcClient: 'blak-portal', check: { proto: 'http', host: 'floci-ui', port: 4500, path: '/api/health' } },
+  { id: 'smith', name: 'BlakSmith', desc: 'Knowledge graph for Country, title and heritage', url: 'https://smith.workspace.example.com/login', backend: 'BlakSmith', group: 'Organise', status: 'live', oidcClient: 'blaksmith', check: { proto: 'http', host: 'smith', port: 3000, path: '/api/health' } },
+  { id: 'eyes', name: 'BlakEyes', desc: 'Drone imagery for land and sea management on Country', url: 'https://eyes.workspace.example.com', backend: 'BlakEyes appliance', group: 'Workspace', status: 'live', oidcClient: 'blak-eyes', check: { proto: 'http', host: 'eyes', port: 8765, path: '/api/health' } },
 ];
 
 function liveApps() {

@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 
 function logoutPage(apps, endSessionURL) {
   const state = crypto.randomBytes(16).toString('hex');
-  const targets = apps.filter(a => ['forms','crm','drive','sites','projects','chat','hermes'].includes(a.id))
+  const targets = apps.filter(a => ['forms','crm','drive','sites','projects','chat','hermes','smith','eyes'].includes(a.id))
     .map(a => ({ id: a.id, name: a.name, origin: new URL(a.url).origin, url: new URL('/_blak/signout.html?state=' + state, a.url).href }));
   const data = JSON.stringify({ state, targets, endSessionURL }).replace(/</g, '\\u003c');
   const vaultNotice = apps.some(a => a.id === 'vault') ? '<p>Also lock or log out of Blak Vault in its own tab and in your Bitwarden apps. Workspace sign-out does not lock an already unlocked or offline vault.</p>' : '';

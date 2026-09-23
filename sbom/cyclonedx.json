@@ -16,7 +16,27 @@
     },
     {
       "type": "library",
-      "name": "Diagrams"
+      "name": "Diagrams (dedicated)"
+    },
+    {
+      "type": "library",
+      "name": "Diagrams (openDesk seed)"
+    },
+    {
+      "type": "library",
+      "name": "Forms (dedicated)"
+    },
+    {
+      "type": "library",
+      "name": "CRM (dedicated)"
+    },
+    {
+      "type": "library",
+      "name": "CRM framework"
+    },
+    {
+      "type": "library",
+      "name": "CRM rollback only"
     },
     {
       "type": "library",

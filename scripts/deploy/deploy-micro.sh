@@ -93,8 +93,9 @@ for file, names in selected.items():
         print(yaml.safe_dump(document, sort_keys=False))
 PY
 kubectl -n "$NS" exec -i deploy/authentik-server -- ak shell < scripts/deploy/ak-brand.py
+NS="$NS" PORTAL_IMAGE="$PORTAL_IMAGE" python3 scripts/deploy/file-guard.py up
 # Theme hashes in pod annotations replace subPath consumers when generated themes change.
-for app in workspace-shell portal collabora opencloud outline chat projects hermes-sessions hermes forms frappe-crm; do
+for app in workspace-shell portal collabora opencloud clamav outline chat projects hermes-sessions hermes forms frappe-crm; do
   kubectl -n "$NS" rollout status "deploy/$app" --timeout=900s
 done
 # Switch routing only after the new CRM is healthy. Keep Twenty storage for rollback.

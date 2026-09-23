@@ -31,6 +31,8 @@
         for(const key of ['Meteor.loginToken','Meteor.userId','Meteor.loginTokenExpires']) localStorage.removeItem(key);
         break;
       }
+      case 'smith': await request('/api/auth/sign-out',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}); break;
+      case 'eyes': await request('/api/auth/logout',{method:'POST',headers:{'X-BlakEyes-CSRF':'1'}}); break;
       case 'drive':
         // OpenCloud's browser OIDC client owns these records. The coordinator
         // ends the OP session after all app sessions have been cleared.

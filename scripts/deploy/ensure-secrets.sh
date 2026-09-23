@@ -48,6 +48,29 @@ if ! have blak-hermes; then
     --from-literal=oidc-secret="$(rand)" \
     --from-literal=session-secret="$(rand)"
 fi
+if ! have blak-smith; then
+  smith_pg="$(rand)"
+  smith_app="$(rand)"
+  kubectl -n "$NS" create secret generic blak-smith \
+    --from-literal=postgres-password="$smith_pg" \
+    --from-literal=app-password="$smith_app" \
+    --from-literal=database-url="postgres://blaksmith:${smith_pg}@smith-postgres:5432/blaksmith" \
+    --from-literal=app-database-url="postgres://blaksmith_app:${smith_app}@smith-postgres:5432/blaksmith" \
+    --from-literal=better-auth-secret="$(rand)$(rand)" \
+    --from-literal=scim-secret="$(rand)$(rand)" \
+    --from-literal=kek="$(rand)$(rand)" \
+    --from-literal=organization-id="$(openssl rand -hex 16)" \
+    --from-literal=controller-id="blaksmith-controller"
+fi
+if ! have blak-eyes; then
+  kubectl -n "$NS" create secret generic blak-eyes \
+    --from-literal=scim-secret="$(rand)$(rand)" \
+    --from-literal=organization-id="$(openssl rand -hex 16)"
+fi
+if ! have blak-file-guard; then
+  kubectl -n "$NS" create secret generic blak-file-guard \
+    --from-literal=token="$(rand)"
+fi
 if ! have blak-drive; then
   kubectl -n "$NS" create secret generic blak-drive \
     --from-literal=admin-password="$(rand)"

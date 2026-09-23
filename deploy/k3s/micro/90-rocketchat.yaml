@@ -37,6 +37,8 @@ spec:
           hostnames: [mongo]
       containers:
         - name: mongo
+          # 8.8.1 runs on 7.0. MongoDB 8.0 refuses to start on this host's kernel
+          # (7.0.0, SERVER-121912). Rocket.Chat 9 is the release that drops 7.0.
           image: mongo:7.0
           args: ["--replSet", "rs0", "--bind_ip_all"]
           ports: [{ containerPort: 27017 }]
@@ -100,7 +102,7 @@ spec:
           hostnames: [id.workspace.example.com]
       containers:
         - name: rocketchat
-          image: blak-chat:7.9.3-blak1
+          image: blak-chat:8.8.1-blak1
           ports:
             - containerPort: 3000
           env:

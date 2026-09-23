@@ -1,0 +1,304 @@
+# BlakSmith on the homelab suite. Images come from BlakSmith CI on GHCR.
+# Postgres is the BlakSmith image (PostgreSQL 18, pgvector, PostGIS), not the shared portal database.
+# File key custody is for this node. It is not classified-data custody.
+# Do not apply this file until secret blak-smith exists and provision-smith.py has stored oidc-secret.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smith-pgdata
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smith-redis
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smith-postgres
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: smith-postgres } }
+  template:
+    metadata: { labels: { app: smith-postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: ghcr.io/yumaitau/blaksmith-postgres:sha-e8de6e1
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_USER, value: blaksmith }
+            - { name: POSTGRES_DB, value: blaksmith }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: blak-smith, key: postgres-password } }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "blaksmith", "-d", "blaksmith"] }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 250m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: smith-pgdata } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smith-postgres
+  namespace: blak-micro
+spec:
+  selector: { app: smith-postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smith-redis
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: smith-redis } }
+  template:
+    metadata: { labels: { app: smith-redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--appendonly", "yes"]
+          ports: [{ containerPort: 6379 }]
+          readinessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: smith-redis } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smith-redis
+  namespace: blak-micro
+spec:
+  selector: { app: smith-redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smith
+  namespace: blak-micro
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: smith } }
+  template:
+    metadata: { labels: { app: smith } }
+    spec:
+      initContainers:
+        - name: app-role
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: blak-smith, key: postgres-password } }
+            - name: APP_PASSWORD
+              valueFrom: { secretKeyRef: { name: blak-smith, key: app-password } }
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              until pg_isready -h smith-postgres -U blaksmith; do sleep 2; done
+              psql -h smith-postgres -U blaksmith -d blaksmith -v ON_ERROR_STOP=1 \
+                -c "ALTER ROLE blaksmith_app WITH LOGIN PASSWORD '${APP_PASSWORD}'"
+        - name: kek
+          image: postgres:16-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              umask 077
+              cp /secret/kek /kek/kek
+              chown 1000:1000 /kek/kek
+              chmod 600 /kek/kek
+          volumeMounts:
+            - { name: kek-secret, mountPath: /secret, readOnly: true }
+            - { name: kek, mountPath: /kek }
+      containers:
+        - name: web
+          image: ghcr.io/yumaitau/blaksmith:sha-e8de6e1
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 3000 }]
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: blak-smith, key: database-url } }
+            - name: APP_DATABASE_URL
+              valueFrom: { secretKeyRef: { name: blak-smith, key: app-database-url } }
+            - { name: REDIS_URL, value: redis://smith-redis:6379 }
+            - { name: NODE_ENV, value: production }
+            - { name: AUTH_DISABLED, value: "false" }
+            - name: BETTER_AUTH_SECRET
+              valueFrom: { secretKeyRef: { name: blak-smith, key: better-auth-secret } }
+            - { name: BETTER_AUTH_URL, value: https://smith.workspace.example.com }
+            - { name: BETTER_AUTH_TRUSTED_ORIGINS, value: "https://smith.workspace.example.com,https://id.workspace.example.com" }
+            - { name: APP_URL, value: https://smith.workspace.example.com }
+            - { name: BLAKSMITH_SSO_PROVIDER_ID, value: blak-id }
+            - { name: BLAKSMITH_TENANT_SLUG, value: workspace }
+            - { name: BLAKSMITH_KEY_PROVIDER, value: file }
+            - { name: BLAKSMITH_KEK_FILE, value: /kek/kek }
+            - { name: PORT, value: "3000" }
+            - { name: HOSTNAME, value: 0.0.0.0 }
+            - { name: SMITH_OIDC_ISSUER, value: https://id.workspace.example.com/application/o/blaksmith/ }
+            - name: SMITH_OIDC_SECRET
+              valueFrom: { secretKeyRef: { name: blak-smith, key: oidc-secret } }
+            - name: SMITH_SCIM_SECRET
+              valueFrom: { secretKeyRef: { name: blak-smith, key: scim-secret } }
+            - name: SMITH_ORGANIZATION_ID
+              valueFrom: { secretKeyRef: { name: blak-smith, key: organization-id } }
+            - name: SMITH_CONTROLLER_ID
+              valueFrom: { secretKeyRef: { name: blak-smith, key: controller-id } }
+          args:
+            - sh
+            - -c
+            - |
+              set -eu
+              umask 077
+              node <<'NODE'
+              const fs = require('node:fs');
+              const cfg = {
+                providerId: 'blak-id',
+                scimProviderId: 'blak-id-scim',
+                organizationId: process.env.SMITH_ORGANIZATION_ID,
+                tenantSlug: 'workspace',
+                tenantName: 'Blak Workspace',
+                controllerId: process.env.SMITH_CONTROLLER_ID,
+                issuer: process.env.SMITH_OIDC_ISSUER,
+                clientId: 'blaksmith',
+                clientSecret: process.env.SMITH_OIDC_SECRET,
+                scimSecret: process.env.SMITH_SCIM_SECRET,
+              };
+              fs.writeFileSync('/work/bootstrap.json', JSON.stringify(cfg), { mode: 0o600 });
+              NODE
+              cd /migrate && node --import tsx src/ensure-extensions.ts && node --import tsx src/migrate.ts
+              cd /bootstrap && node --import tsx scripts/bootstrap-workspace.ts /work/bootstrap.json
+              exec node /app/apps/web/server.js
+          readinessProbe:
+            httpGet: { path: /api/health, port: 3000 }
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "2", memory: 2Gi }
+          volumeMounts:
+            - { name: kek, mountPath: /kek, readOnly: true }
+            - { name: work, mountPath: /work }
+      volumes:
+        - name: kek-secret
+          secret:
+            secretName: blak-smith
+            defaultMode: 256
+            items: [{ key: kek, path: kek }]
+        - { name: kek, emptyDir: {} }
+        - { name: work, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smith
+  namespace: blak-micro
+spec:
+  selector: { app: smith }
+  ports: [{ name: http, port: 3000, targetPort: 3000 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smith-api
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: smith-api } }
+  template:
+    metadata: { labels: { app: smith-api } }
+    spec:
+      initContainers:
+        - name: kek
+          image: postgres:16-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              umask 077
+              cp /secret/kek /kek/kek
+              chown 1000:1000 /kek/kek
+              chmod 600 /kek/kek
+          volumeMounts:
+            - { name: kek-secret, mountPath: /secret, readOnly: true }
+            - { name: kek, mountPath: /kek }
+        - name: wait-web
+          image: ghcr.io/yumaitau/blaksmith-api:sha-e8de6e1
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              until bun -e "fetch('http://smith:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; do sleep 3; done
+      containers:
+        - name: api
+          image: ghcr.io/yumaitau/blaksmith-api:sha-e8de6e1
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: blak-smith, key: database-url } }
+            - name: APP_DATABASE_URL
+              valueFrom: { secretKeyRef: { name: blak-smith, key: app-database-url } }
+            - { name: REDIS_URL, value: redis://smith-redis:6379 }
+            - { name: NODE_ENV, value: production }
+            - { name: AUTH_DISABLED, value: "false" }
+            - name: BETTER_AUTH_SECRET
+              valueFrom: { secretKeyRef: { name: blak-smith, key: better-auth-secret } }
+            - { name: BETTER_AUTH_URL, value: https://smith.workspace.example.com }
+            - { name: BETTER_AUTH_TRUSTED_ORIGINS, value: "https://smith.workspace.example.com,https://id.workspace.example.com" }
+            - { name: APP_URL, value: https://smith.workspace.example.com }
+            - { name: BLAKSMITH_SSO_PROVIDER_ID, value: blak-id }
+            - { name: BLAKSMITH_TENANT_SLUG, value: workspace }
+            - { name: BLAKSMITH_KEY_PROVIDER, value: file }
+            - { name: BLAKSMITH_KEK_FILE, value: /kek/kek }
+            - { name: API_PORT, value: "8080" }
+          readinessProbe:
+            httpGet: { path: /ready, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "2", memory: 2Gi }
+          volumeMounts:
+            - { name: kek, mountPath: /kek, readOnly: true }
+      volumes:
+        - name: kek-secret
+          secret:
+            secretName: blak-smith
+            defaultMode: 256
+            items: [{ key: kek, path: kek }]
+        - { name: kek, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smith-api
+  namespace: blak-micro
+spec:
+  selector: { app: smith-api }
+  ports: [{ name: http, port: 8080, targetPort: 8080 }]

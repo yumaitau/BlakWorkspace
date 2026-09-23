@@ -7,8 +7,8 @@ from pathlib import Path
 import re
 import yaml
 
-PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8448,'forms':8449,'crm':8450,'chat':8451,'hermes':8452,'vault':8453,'cloud':8454}
-UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080','vault':'vault:8080','cloud':'floci-ui:4500'}
+PORTS={'portal':443,'id':8444,'drive':8445,'docs':8446,'sites':8447,'projects':8448,'forms':8449,'crm':8450,'chat':8451,'hermes':8452,'vault':8453,'cloud':8454,'smith':8455,'eyes':8456}
+UPSTREAMS={'portal':'portal:3000','id':'authentik-server:9000','drive':'drive:9200','docs':'docs:9980','sites':'sites:3000','projects':'projects:5173','forms':'forms:9157','crm':'crm:3000','chat':'chat:3000','hermes':'hermes:8080','vault':'vault:8080','cloud':'floci-ui:4500','smith':'smith:3000','eyes':'eyes:8765'}
 
 
 def configure(root,host,address,crm_site=None):
@@ -67,8 +67,15 @@ def configure(root,host,address,crm_site=None):
                 changed = True
             if not doc or doc.get('kind')!='Deployment':continue
             spec=doc['spec']['template']['spec']
-            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault','blak-app-role-sync']:
+            if doc['metadata']['name'] in ['portal','opencloud','collabora','outline','chat','projects','forms','frappe-crm','hermes','vault','blak-app-role-sync','smith','smith-api','eyes']:
                 spec.setdefault('hostAliases',[]).append({'ip':address,'hostnames':[host]});changed=True
+            if doc['metadata']['name']=='eyes':
+                trusted=','.join([host+':'+str(PORTS['eyes']),'eyes','eyes:8765','eyes.workspace.example.com','localhost','127.0.0.1'])
+                for container in spec.get('containers',[]):
+                    for env in container.get('env',[]):
+                        if env.get('name')=='BLAKEYES_TRUSTED_HOSTS':
+                            env['value']=trusted
+                            changed=True
             if doc['metadata']['name']=='collabora':
                 for container in spec['containers']:
                     for env in container.get('env',[]):
