@@ -7,6 +7,7 @@ const { publicApps } = require('./public-urls');
 const APPS = publicApps(CATALOG_APPS);
 const flowEngine = require('./flow-engine');
 const outlineSites = require('./outline-sites');
+const fileGuard = require('./file-guard');
 const { INTEGRATIONS, allowedApps, launchURL, routeApp } = require('./integration');
 const { rolesFromClaims, can, requiredRole } = require('./app-roles');
 const { supportsAccessFilter, accessFilter } = require('./search-access');
@@ -29,6 +30,25 @@ const outline = outlineSites.createClient({
   token: process.env.OUTLINE_API_KEY || '',
   publicUrl: process.env.OUTLINE_PUBLIC_URL || (knowledge && knowledge.url) || '',
 });
+const FILE_GUARD_URL = process.env.FILE_GUARD_URL || '';
+const FILE_GUARD_TOKEN = process.env.FILE_GUARD_TOKEN || '';
+const SCAN_ROOT = process.env.SCAN_ROOT || '';
+const fileGuardRemote = FILE_GUARD_URL && FILE_GUARD_TOKEN ? fileGuard.createRemote(FILE_GUARD_URL, FILE_GUARD_TOKEN) : null;
+const fileGuardDir = process.env.FILE_GUARD_DIR || (FLOW_STORE ? path.join(path.dirname(FLOW_STORE), 'file-guard') : '');
+const fileGuardStore = !fileGuardRemote && fileGuardDir ? fileGuard.openStore(fileGuardDir) : null;
+if (fileGuardStore && SCAN_ROOT && process.env.CLAMAV_HOST && require.main === module) {
+  fileGuard.createLoop({
+    root: SCAN_ROOT,
+    store: fileGuardStore,
+    intervalMs: Number(process.env.SCAN_EVERY_MS || 300000),
+    scanFile: (filePath, size) => fileGuard.connectScan(process.env.CLAMAV_HOST, Number(process.env.CLAMAV_PORT || 3310), filePath, size),
+    version: () => fileGuard.clamdCommand(process.env.CLAMAV_HOST, Number(process.env.CLAMAV_PORT || 3310), 'VERSION'),
+  }).start();
+}
+async function heldRecords() {
+  if (fileGuardRemote) return fileGuardRemote.list();
+  return fileGuardStore ? fileGuardStore.list() : [];
+}
 const ownerConnectors = new Map();
 function connectorsFor(owner) {
   if (!ownerConnectors.has(owner)) ownerConnectors.set(owner, flowEngine.defaultConnectors());
@@ -226,6 +246,7 @@ ${wordmark()}
 </div><div class=shell><nav class=sidebar>
 <a class=nav-item href="/" ${active === 'home' ? 'data-active="true"' : ''} title="Blak Home"><span class=ric>⌂</span><span class=lbl>Blak Home</span><span class=swatch style="background:${ACCENT.workspace}"></span></a>
 <a class=nav-item href="/intranet" ${active === 'intranet' ? 'data-active="true"' : ''} title="Intranet"><span class=ric>☰</span><span class=lbl>Intranet</span></a>
+<a class=nav-item href="/held-files" ${active === 'held' ? 'data-active="true"' : ''} title="Files held back by the safety check"><span class=ric>!</span><span class=lbl>Held files</span></a>
 ${navGroups(active, user)}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
@@ -239,7 +260,7 @@ ${navGroups(active, user)}
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -326,6 +347,7 @@ ${flowTabs('activity', user)}${body}`);
 }
 async function homePage(user) {
   const live = allowedApps(APPS, user);
+  const held = fileGuard.visibleHeld(await heldRecords().catch(() => []), user);
   const cards = live.map((a) => `<div class=card data-app="${a.id}" data-name="${esc((a.name + ' ' + a.desc).toLowerCase())}">
 <div class=apphead>${appIcon(a, 'tile-ic')}<span class=dot data-dot="${a.id}"> </span></div>
 <h3>${esc(a.name)}</h3><p>${esc(a.desc)}</p><p class=be>${esc(a.backend)}</p>
@@ -333,6 +355,7 @@ async function homePage(user) {
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
+${fileGuard.homeFragment(held)}
 ${outlineSites.homeFragment(await outline.listCollections().catch(() => []), outline.publicUrl)}
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
 ${live.some(a=>a.id==='drive') ? `<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="/launch/drive">Open Blak Drive</a></p></div>` : ''}
@@ -852,6 +875,38 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
       const collections = await outline.listCollections().catch(() => []);
       res.writeHead(error.status || 400, { 'content-type': 'text/html; charset=utf-8' });
       res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml(collections, outline.publicUrl, error.message)));
+    }
+    return;
+  }
+  if (url.pathname === '/held-files' || url.pathname === '/held-files/') {
+    if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+    let records = [];
+    let message = '';
+    try { records = await heldRecords(); } catch (error) { message = error.message; }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(shell(user, 'held', 'Held files', fileGuard.pageHtml(user, records, message)));
+    return;
+  }
+  const heldAction = url.pathname.match(/^\/held-files\/([a-f0-9]+)\/(release|delete)$/);
+  if (heldAction && req.method === 'POST') {
+    if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+    if (!fileGuard.isAdmin(user)) {
+      res.writeHead(403, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'held', 'Held files', fileGuard.pageHtml(user, await heldRecords().catch(() => []), 'Ask a workspace admin to put this file back.')));
+      return;
+    }
+    try {
+      if (fileGuardRemote) {
+        if (heldAction[2] === 'release') await fileGuardRemote.release(heldAction[1]);
+        else await fileGuardRemote.remove(heldAction[1]);
+      } else if (heldAction[2] === 'release') fileGuard.releaseFile(fileGuardStore, heldAction[1], SCAN_ROOT);
+      else fileGuard.deleteHeld(fileGuardStore, heldAction[1]);
+      res.writeHead(302, { location: '/held-files' });
+      res.end();
+    } catch (error) {
+      const records = await heldRecords().catch(() => []);
+      res.writeHead(error.status || 400, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'held', 'Held files', fileGuard.pageHtml(user, records, error.message)));
     }
     return;
   }

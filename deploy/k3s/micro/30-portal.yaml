@@ -66,6 +66,8 @@ spec:
             - { name: OUTLINE_API_URL, value: http://sites:3000 }
             - { name: OUTLINE_PUBLIC_URL, value: https://sites.workspace.example.com }
             - { name: OUTLINE_API_KEY, valueFrom: { secretKeyRef: { name: blak-sites, key: api-key, optional: true } } }
+            - { name: FILE_GUARD_URL, value: http://drive:8092 }
+            - { name: FILE_GUARD_TOKEN, valueFrom: { secretKeyRef: { name: blak-file-guard, key: token, optional: true } } }
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           volumeMounts:
