@@ -18,6 +18,7 @@ COPY brand-home-logo.jpg brand.js welcome.js login-background.png ./
 COPY fonts.css ./
 COPY fonts/ ./fonts/
 COPY sync-health.js draw-store.js knowledge-export.js ./
+COPY access-catalog.js access-model.js access-guard.js access-pages.js blak-id-admin.js ./
 COPY --from=draw-build /draw/dist/ ./draw-dist/
 RUN node -e "require('./server')"
 ENV PORT=3000 NODE_ENV=production
