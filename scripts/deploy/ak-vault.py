@@ -7,9 +7,7 @@ from authentik.flows.models import Flow, FlowStageBinding
 from authentik.policies.expression.models import ExpressionPolicy
 from authentik.policies.models import PolicyBinding
 from authentik.providers.oauth2.models import ScopeMapping, RedirectURI, RedirectURIMatchingMode
-from authentik.stages.authenticator_totp.models import AuthenticatorTOTPStage
 from authentik.stages.authenticator_validate.models import AuthenticatorValidateStage
-from authentik.stages.authenticator_webauthn.models import AuthenticatorWebAuthnStage
 
 
 def copy_binding(binding, target, order):
@@ -23,8 +21,9 @@ def copy_binding(binding, target, order):
             defaults={field: getattr(policy, field) for field in fields})
 
 
-# Native password/identification stages are reused. MFA is enforced exactly once
-# by Vault's authorization flow, including when an existing Blak ID session is used.
+# Reuse the normal sign-in stages. An existing Blak ID session must open the
+# vault without a second authenticator enrollment. The vault master password
+# remains the lock on the contents.
 authentication, _ = Flow.objects.update_or_create(slug='blak-vault-authentication', defaults={
     'name': 'Blak Vault sign-in', 'title': 'Welcome to Blak ID', 'designation': 'authentication',
 })
@@ -32,25 +31,9 @@ for binding in FlowStageBinding.objects.filter(target__slug='default-authenticat
     if not isinstance(binding.stage, AuthenticatorValidateStage):
         copy_binding(binding, authentication, binding.order)
 
-flow, _ = Flow.objects.update_or_create(slug='blak-vault-authorization', defaults={
-    'name': 'Blak Vault verification', 'title': 'Verify your identity for Blak Vault',
-    'designation': 'authorization', 'authentication': 'require_authenticated',
-})
-totp, _ = AuthenticatorTOTPStage.objects.update_or_create(
-    name='blak-vault-totp-setup', defaults={'digits': 6, 'friendly_name': 'Authenticator app'})
-webauthn, _ = AuthenticatorWebAuthnStage.objects.update_or_create(
-    name='blak-vault-passkey-setup', defaults={'user_verification': 'required', 'friendly_name': 'Passkey'})
-mfa, _ = AuthenticatorValidateStage.objects.update_or_create(name='blak-vault-mfa', defaults={
-    'not_configured_action': 'configure', 'device_classes': ['totp', 'webauthn', 'static'],
-    'last_auth_threshold': 'minutes=15', 'webauthn_user_verification': 'required',
-})
-mfa.configuration_stages.set([totp, webauthn])
-FlowStageBinding.objects.update_or_create(target=flow, stage=mfa, defaults={'order': 0})
-standard = Flow.objects.get(slug='default-provider-authorization-implicit-consent')
-for binding in FlowStageBinding.objects.filter(target=standard):
-    copy_binding(binding, flow, binding.order + 100)
+consent = Flow.objects.get(slug='default-provider-authorization-implicit-consent')
 provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults={
-    'authorization_flow': flow,
+    'authorization_flow': consent,
     'invalidation_flow': Flow.objects.get(slug='default-provider-invalidation-flow'),
     'client_type': 'confidential', 'client_id': 'blak-vault',
     'client_secret': secrets.token_urlsafe(48),
@@ -59,7 +42,7 @@ provider, _ = reconcile_provider(slug='blak-vault', name='Blak Vault', defaults=
     'signing_key': CertificateKeyPair.objects.first(), 'sub_mode': 'user_uuid',
     'include_claims_in_id_token': True, 'issuer_mode': 'per_provider',
 })
-provider.authorization_flow = flow
+provider.authorization_flow = consent
 provider.authentication_flow = authentication
 provider.grant_types = ['authorization_code', 'refresh_token']
 provider.access_token_validity = 'minutes=10'

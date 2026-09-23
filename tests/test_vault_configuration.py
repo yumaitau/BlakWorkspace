@@ -67,9 +67,11 @@ class VaultConfigurationTests(unittest.TestCase):
         token = next(v for v in container['env'] if v['name'] == 'ADMIN_TOKEN')
         self.assertEqual(token['valueFrom']['secretKeyRef']['key'], 'admin-token-hash')
 
-    def test_vault_gateway_has_no_shared_script_and_blocks_operator_ui(self):
+    def test_vault_gateway_adds_home_and_blocks_operator_ui(self):
         gateway = (ROOT / 'services/workspace-shell/nginx.conf').read_text()
-        self.assertIn("vault.blak-micro.svc.cluster.local:8080 '';", gateway)
+        self.assertIn(
+            "vault.blak-micro.svc.cluster.local:8080 '<link rel=\"stylesheet\" href=\"/_blak/shell.css\"><script src=\"/_blak/shell.js\" defer></script>';",
+            gateway)
         self.assertIn('if ($blak_vault_admin) { return 404; }', gateway)
         dockerfile = (ROOT / 'services/vault/Dockerfile').read_text()
         self.assertIn('vaultwarden/server@sha256:', dockerfile)

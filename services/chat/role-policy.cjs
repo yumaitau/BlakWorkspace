@@ -38,11 +38,14 @@ const READ_ROUTES = new Set(`
   chat.getMessage chat.search chat.getThreadMessages chat.getThreadsList
   chat.getMentionedMessages chat.getPinnedMessages chat.getStarredMessages
   emoji-custom.list assets.all sounds.list users.customStatus
+  rooms.nameExists spotlight
+  rooms.autocomplete.channelAndPrivate rooms.autocomplete.channelAndPrivate.withPagination
+  rooms.autocomplete.availableForTeams teams.autocomplete
 `.trim().split(/\s+/));
 const WRITE_ROUTES = new Set(`
   chat.sendMessage chat.postMessage chat.update chat.delete chat.react chat.star
   chat.unStar chat.pinMessage chat.unPinMessage chat.followMessage chat.unfollowMessage
-  channels.create channels.join channels.leave groups.create groups.leave
+  channels.create channels.join channels.leave groups.create groups.leave teams.create
   im.create im.close im.open im.leave dm.create dm.close dm.open
   rooms.upload/:rid rooms.media/:rid rooms.mediaConfirm/:rid/:fileId
 `.trim().split(/\s+/));

@@ -61,7 +61,7 @@
   },
   {
     "id": "idp",
-    "name": "Blak Admin",
+    "name": "Blak ID",
     "url": "https://id.workspace.example.com/",
     "backend": "Powered by Authentik"
   },

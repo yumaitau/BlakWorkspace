@@ -2,8 +2,11 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
-const { APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps } = require('./catalog');
+const { APPS: CATALOG_APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps } = require('./catalog');
+const { publicApps } = require('./public-urls');
+const APPS = publicApps(CATALOG_APPS);
 const flowEngine = require('./flow-engine');
+const outlineSites = require('./outline-sites');
 const { INTEGRATIONS, allowedApps, launchURL, routeApp } = require('./integration');
 const { rolesFromClaims, can, requiredRole } = require('./app-roles');
 const { supportsAccessFilter, accessFilter } = require('./search-access');
@@ -20,6 +23,12 @@ const port = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const FLOW_STORE = process.env.FLOW_STORE || '';
 const flowStore = flowEngine.loadStore(FLOW_STORE);
+const knowledge = APPS.find((app) => app.id === 'sites');
+const outline = outlineSites.createClient({
+  url: process.env.OUTLINE_API_URL || 'http://sites:3000',
+  token: process.env.OUTLINE_API_KEY || '',
+  publicUrl: process.env.OUTLINE_PUBLIC_URL || (knowledge && knowledge.url) || '',
+});
 const ownerConnectors = new Map();
 function connectorsFor(owner) {
   if (!ownerConnectors.has(owner)) ownerConnectors.set(owner, flowEngine.defaultConnectors());
@@ -197,7 +206,7 @@ function navGroups(active, user) {
     const links = items.map((a) => {
       const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.svg" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || 'var(--text-muted)'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
       return a.url
-        ? `<a class=nav-item href="${launchURL(a)}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.name)}">${inner}</a>`
+        ? `<a class=nav-item href="${launchURL(a)}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.desc ? a.name + ': ' + a.desc : a.name)}">${inner}</a>`
         : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}</span>`;
     }).join('');
     return `<div class=nav-sec>${g}</div>${links}`;
@@ -213,9 +222,10 @@ function shell(user, active, title, main) {
 <button class=waffle id=wbtn aria-expanded="false" aria-controls="drawer" aria-label="App launcher" data-testid="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button>
 ${wordmark()}
 <div class=search><input id=q aria-label="Search workspace" type=search placeholder="Search apps and workspace…" autocomplete=off onkeydown="if(event.key==='Enter'){location='/search?q='+encodeURIComponent(this.value)}"></div>
-<div class=userchip data-testid="userchip"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button><span class=nm>${esc(user.name || user.sub)}</span><span class=avatar>${initial}</span><a href="/logout">Sign out</a></div>
+<div class=userchip data-testid="userchip"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button><span class=nm>${esc(user.name || user.sub)}</span><span class=avatar>${initial}</span>${allowedApps(APPS, user).some((a) => a.id === 'idp') ? '<a href="/launch/idp">Blak ID</a>' : '<a href="/account">Blak ID</a>'}<a href="/logout">Sign out</a></div>
 </div><div class=shell><nav class=sidebar>
 <a class=nav-item href="/" ${active === 'home' ? 'data-active="true"' : ''} title="Blak Home"><span class=ric>⌂</span><span class=lbl>Blak Home</span><span class=swatch style="background:${ACCENT.workspace}"></span></a>
+<a class=nav-item href="/intranet" ${active === 'intranet' ? 'data-active="true"' : ''} title="Intranet"><span class=ric>☰</span><span class=lbl>Intranet</span></a>
 ${navGroups(active, user)}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
@@ -314,7 +324,7 @@ function flowActivityPage(user, flowId) {
 <p class=gsub>Run history for your flows.</p>
 ${flowTabs('activity', user)}${body}`);
 }
-function homePage(user) {
+async function homePage(user) {
   const live = allowedApps(APPS, user);
   const cards = live.map((a) => `<div class=card data-app="${a.id}" data-name="${esc((a.name + ' ' + a.desc).toLowerCase())}">
 <div class=apphead>${appIcon(a, 'tile-ic')}<span class=dot data-dot="${a.id}"> </span></div>
@@ -323,6 +333,7 @@ function homePage(user) {
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
+${outlineSites.homeFragment(await outline.listCollections().catch(() => []), outline.publicUrl)}
 <h3 class=sec>Apps</h3><div class=grid id=tiles>${cards}</div>
 ${live.some(a=>a.id==='drive') ? `<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="/launch/drive">Open Blak Drive</a></p></div>` : ''}
 <h3 class=sec>Announcements</h3><div class=statusrow><span class=pill>Welcome to Blak Workspace — currently in early development.</span></div>
@@ -818,9 +829,35 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
     res.end('not found');
     return;
   }
+  if (url.pathname === '/intranet' || url.pathname === '/intranet/') {
+    if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+    let collections = [];
+    try { collections = await outline.listCollections(); } catch (error) {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml([], outline.publicUrl, error.message)));
+      return;
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml(collections, outline.publicUrl)));
+    return;
+  }
+  if (url.pathname === '/intranet/sites' && req.method === 'POST') {
+    if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+    const params = new URLSearchParams((await readBody(req)).toString('utf8'));
+    try {
+      const created = await outline.createSite(params.get('name'), params.get('description'));
+      res.writeHead(302, { location: created.href || '/intranet' });
+      res.end();
+    } catch (error) {
+      const collections = await outline.listCollections().catch(() => []);
+      res.writeHead(error.status || 400, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml(collections, outline.publicUrl, error.message)));
+    }
+    return;
+  }
   if (url.pathname === '/' || url.pathname === '/home') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(user ? homePage(user) : signinPage());
+    res.end(user ? await homePage(user) : signinPage());
     return;
   }
   res.writeHead(404, { 'content-type': 'application/json' });

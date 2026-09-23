@@ -3,7 +3,7 @@ const { createHash, timingSafeEqual } = require('node:crypto');
 const { disconnect } = require('./role-bridge.cjs');
 const ROLES = ['reader', 'writer', 'admin'];
 const READ_PERMISSIONS = ['view-c-room', 'view-d-room', 'view-p-room', 'view-joined-room', 'preview-c-room', 'view-outside-room'];
-const WRITE_PERMISSIONS = ['create-c', 'create-d', 'create-p', 'delete-own-message', 'leave-c', 'leave-p', 'mention-all', 'mention-here', 'start-discussion'];
+const WRITE_PERMISSIONS = ['create-c', 'create-d', 'create-p', 'create-team', 'create-team-channel', 'create-team-group', 'delete-own-message', 'leave-c', 'leave-p', 'mention-all', 'mention-here', 'start-discussion'];
 const ADMIN_PERMISSIONS = ['add-user-to-joined-room', 'archive-room', 'unarchive-room', 'delete-c', 'delete-p', 'edit-room', 'edit-room-avatar', 'edit-message', 'delete-message', 'mute-user', 'remove-user', 'set-moderator', 'set-owner', 'set-leader'];
 
 function requireController(request) {

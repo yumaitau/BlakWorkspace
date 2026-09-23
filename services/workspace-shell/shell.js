@@ -3,7 +3,7 @@
   'use strict';
   if (document.getElementById('blak-workspace-shell')) return;
   const [apps, tokens] = await Promise.all(['apps','tokens'].map(name => fetch('/_blak/' + name + '.json').then(r => { if (!r.ok) throw Error('Workspace assets unavailable'); return r.json(); })));
-  const app = location.hostname === 'docs.workspace.example.com' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).hostname === location.hostname);
+  const app = location.hostname === 'docs.workspace.example.com' ? apps.find(a=>a.id==='docs') : apps.find(a => new URL(a.url).host === location.host);
   if (!app) return;
   const portalURL=apps.find(a=>a.id==='portal').url;
   window.addEventListener('storage',event=>{
@@ -69,11 +69,11 @@
   if (window.top !== window.self) return; // WOPI editor keeps parent navigation.
   const host = document.createElement('aside'); host.id='blak-workspace-shell'; host.setAttribute('aria-label','Blak Workspace');
   const shadow = host.attachShadow({mode:'open'});
-  const style=document.createElement('style'); style.textContent=`:host{position:fixed;right:16px;bottom:16px;z-index:2147483000;font:14px/1.5 Inter,system-ui,sans-serif;color:var(--blak-text-primary)}*{box-sizing:border-box}button,a{font:inherit}button{cursor:pointer}button,a{border-radius:8px}button{border:1px solid var(--blak-border-strong);background:var(--blak-surface);color:inherit;padding:10px 14px;min-height:44px}button:hover,a:hover{background:var(--blak-surface-hover)}:focus-visible{outline:3px solid var(--blak-focus);outline-offset:3px}#open{font-weight:600;box-shadow:0 4px 16px #0003}#panel{width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;background:var(--blak-surface);border:1px solid var(--blak-border-strong);border-radius:12px;padding:16px;margin-bottom:8px;box-shadow:0 12px 40px #0004}#panel[hidden]{display:none}h2{font-size:16px;margin:0 0 12px}nav{display:grid;grid-template-columns:1fr 1fr;gap:4px}a{padding:10px;color:inherit;text-decoration:none;min-height:44px}a[aria-current]{background:var(--blak-surface-selected);font-weight:600}#theme{width:100%;margin-top:12px}.footer{font-size:12px;color:var(--blak-text-secondary);margin-top:12px}#home{display:block;border-bottom:1px solid var(--blak-border-subtle);margin-bottom:8px} @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}`;
+  const style=document.createElement('style'); style.textContent=`:host{position:fixed;right:16px;bottom:16px;z-index:2147483000;font:14px/1.5 Inter,system-ui,sans-serif;color:var(--blak-text-primary)}*{box-sizing:border-box}button,a{font:inherit}button{cursor:pointer}button,a{border-radius:8px}button{border:1px solid var(--blak-border-strong);background:var(--blak-surface);color:inherit;padding:10px 14px;min-height:44px}button:hover,a:hover{background:var(--blak-surface-hover)}:focus-visible{outline:3px solid var(--blak-focus);outline-offset:3px}#open{font-weight:600;box-shadow:0 4px 16px #0003}#panel{width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow:auto;background:var(--blak-surface);border:1px solid var(--blak-border-strong);border-radius:12px;padding:16px;margin-bottom:8px;box-shadow:0 12px 40px #0004}#panel[hidden]{display:none}h2{font-size:16px;margin:0 0 12px}nav{display:grid;grid-template-columns:1fr 1fr;gap:4px}a{padding:10px;color:inherit;text-decoration:none;min-height:44px}a[aria-current]{background:var(--blak-surface-selected);font-weight:600}#theme{width:100%;margin-top:12px}.footer{font-size:12px;color:var(--blak-text-secondary);margin-top:12px}#bar{display:flex;gap:8px;justify-content:flex-end}#home{display:inline-flex;align-items:center;padding:10px 14px;background:var(--blak-surface);border:1px solid var(--blak-border-strong);font-weight:600;box-shadow:0 4px 16px #0003;min-height:44px} @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}`;
   shadow.append(style);
   const panel=document.createElement('section'); panel.id='panel'; panel.hidden=true; panel.setAttribute('aria-label','Workspace apps');
-  const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; panel.append(heading);
-  const home=document.createElement('a');home.id='home';home.href=portalURL;home.textContent='Workspace home';panel.append(home);
+  const heading=document.createElement('h2'); heading.textContent='Blak Workspace'; heading.tabIndex=-1; panel.append(heading);
+  const home=document.createElement('a');home.id='home';home.href=portalURL;home.textContent='Home';home.title='Back to Blak Home';
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Switch app');
   let permittedIds=new Set();
   async function refreshNavigation() {
@@ -99,14 +99,15 @@
   const footer=document.createElement('div');footer.className='footer';footer.textContent=app.backend;panel.append(footer);
   const button=document.createElement('button');button.id='open';button.type='button';button.textContent='Blak Workspace';button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','panel');
   const close=()=>{panel.hidden=true;button.setAttribute('aria-expanded','false');button.focus();};
-  button.addEventListener('click',()=>{panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){home.focus();refreshNavigation();}});
+  button.addEventListener('click',()=>{panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){heading.focus();refreshNavigation();}});
   shadow.addEventListener('click',e=>e.stopPropagation());
   shadow.addEventListener('keydown',e=>e.stopPropagation());
   // Native mobile apps may move focus to their editor after navigation. Escape
   // still closes an open workspace panel and restores its trigger focus.
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){e.preventDefault();e.stopImmediatePropagation();close();}},true);
   document.addEventListener('pointerdown',e=>{if(!panel.hidden&&!e.composedPath().includes(host)){panel.hidden=true;button.setAttribute('aria-expanded','false');}});
-  shadow.append(panel,button);document.body.append(host);apply(mode);
+  const bar=document.createElement('div');bar.id='bar';bar.append(home,button);
+  shadow.append(panel,bar);document.body.append(host);apply(mode);
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
     if(app.id==='portal') return;
