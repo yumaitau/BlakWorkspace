@@ -97,6 +97,30 @@ class TeamRoleResolution(unittest.TestCase):
     def test_leaving_the_team_leaves_the_direct_role(self):
         self.assertEqual(self.resolve(['blak-drive-reader'])['drive'], 'reader')
 
+    def claims(self, groups, superuser=False, active=True):
+        # Build the real claim expression from ak-workspace-contract.py and run it.
+        import textwrap
+        from types import SimpleNamespace
+        source = read('scripts/deploy/ak-workspace-contract.py')
+        block = source[source.index("    groups = {a['id']"):source.index("    access, _ = ScopeMapping")]
+        apps = json.loads(subprocess.check_output(['node', '-e', "console.log(JSON.stringify(Object.entries(require('./apps/portal/integration').INTEGRATIONS).map(([id,v])=>({id,...v}))))"], cwd=str(ROOT), text=True))
+        scope = {'BLAK_APPS': apps, 'Group': SimpleNamespace(objects=SimpleNamespace(get_or_create=lambda **kw: None))}
+        exec(textwrap.dedent(block), scope)
+        namespace = {}
+        exec('def claim(user, ak_is_group_member):\n' + textwrap.indent(scope['expression'], '    '), namespace)
+        user = SimpleNamespace(is_superuser=superuser, is_active=active, uuid='u-1')
+        return namespace['claim'](user, lambda user, name: name in groups)
+
+    def test_claims_resolve_highest_and_make_administrators_admin_everywhere(self):
+        member = self.claims({'blak-drive-reader', 'blak-drive-writer'})
+        self.assertEqual(member['blak_roles'], {'drive': 'writer', 'docs': 'writer'})
+        admin = self.claims({'blak-drive-reader'}, superuser=True)
+        self.assertTrue(admin['blak_roles'] and set(admin['blak_roles'].values()) == {'admin'})
+        self.assertIn('idp', admin['blak_apps'])
+        self.assertIn('vault', admin['blak_apps'])
+        self.assertEqual(self.claims(set(), superuser=True, active=False)['blak_apps'], [])
+        self.assertIn("(request.user.is_superuser or any(ak_is_group_member", read('scripts/deploy/ak-workspace-contract.py'))
+
     def test_claim_expression_uses_inherited_membership(self):
         # ak_is_group_member follows User.all_groups(), which includes ancestors.
         text = read('scripts/deploy/ak-workspace-contract.py')

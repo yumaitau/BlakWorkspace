@@ -71,7 +71,8 @@ with transaction.atomic():
     expression += 'grants = [key for key, group in groups.items() if user.is_superuser or ak_is_group_member(user, name=group)]\n'
     role_groups = {a['id']: a['roleGroups'] for a in BLAK_APPS if a.get('roleGroups')}
     expression += 'role_groups = ' + repr(role_groups) + '\n'
-    expression += 'roles = {key: next((name.rsplit("-", 1)[-1] for name in reversed(names) if ak_is_group_member(user, name=name)), None) for key, names in role_groups.items()}\n'
+    # Workspace administrators (Blak ID superusers) are Admin in every app, as in Entra.
+    expression += 'roles = {key: "admin" if user.is_superuser else next((name.rsplit("-", 1)[-1] for name in reversed(names) if ak_is_group_member(user, name=name)), None) for key, names in role_groups.items()}\n'
     expression += 'roles = {key: role for key, role in roles.items() if role}\n'
     expression += 'grants += list(roles)\n'
     expression += 'if user.is_superuser:\n    grants.append("idp")\n'
@@ -109,7 +110,7 @@ with transaction.atomic():
             provider.save()
         if item.get('group'):
             if item.get('roleGroups'):
-                login_policy = 'return request.user.is_active and any(ak_is_group_member(request.user, name=name) for name in ' + repr(item['roleGroups']) + ')'
+                login_policy = 'return request.user.is_active and (request.user.is_superuser or any(ak_is_group_member(request.user, name=name) for name in ' + repr(item['roleGroups']) + '))'
             else:
                 login_policy = 'return request.user.is_active and (request.user.is_superuser or ak_is_group_member(request.user, name=' + repr(item['group']) + '))'
             policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: ' + slug, defaults={'expression': login_policy})

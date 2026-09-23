@@ -29,7 +29,8 @@ lets them do, and the group it came from. Workspace administrators also see:
 Every change shows its effect in plain words before you confirm, and success is
 only shown after Blak ID confirms it. Native apps pick the change up within about
 a minute (the `app-roles` reconciler); Draw, Flow, Cloud and Search within 30
-seconds. BlakSmith and BlakEyes take effect only after an operator runs the
+seconds. Workspace administrators show as "Admin: via Workspace administrators"
+everywhere and cannot be given a lower per-app role here. BlakSmith and BlakEyes take effect only after an operator runs the
 directory sync.
 
 **Team groups.** Giving a team group a role makes it a child group of the role
@@ -65,7 +66,10 @@ provisioning copies them onto each group's `description` attribute.
 
 Use `blak-<app>-reader`, `blak-<app>-writer`, and `blak-<app>-admin`. Resolve multiple
 memberships to the highest role for that app only: admin, writer, reader. No role
-means no access. App administration does not confer Blak ID administration or
+means no access. Workspace administrators (active Blak ID superusers) resolve to
+admin in every app, as in Entra: in the `blak_roles` claim, the native login
+policies and the `app-roles`/`hermes-sync` reconcilers. Their role cannot be lowered
+per app; remove them from `authentik Admins` instead. App administration does not confer Blak ID administration or
 administration of another app. Preserve the existing operator's access during
 migration; never silently turn ordinary existing users into administrators.
 

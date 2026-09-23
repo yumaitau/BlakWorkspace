@@ -158,7 +158,7 @@ const APP_ACCESS = {
 // Group-type taxonomy shown as badges in the portal and written to Blak ID.
 const GROUP_TYPES = Object.freeze({
   role: { label: 'App role group', description: 'Gives its members one role in one app. Manage it from People & access in Blak Home.' },
-  admins: { label: 'Workspace administrators', description: 'Members are Blak ID administrators and manage people and access. Change this group only in Blak ID.' },
+  admins: { label: 'Workspace administrators', description: 'Members are Blak ID administrators. They are Admin in every app and manage people and access. Change this group only in Blak ID.' },
   team: { label: 'Team group', description: 'A group of people, such as a team or a site. Give it an app role and every member gets that role.' },
   retired: { label: 'Retired: no effect', description: 'Old app access group. It no longer grants anything and is kept so history is not lost. Use the app role groups instead.' },
 });

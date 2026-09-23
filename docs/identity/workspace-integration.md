@@ -19,8 +19,8 @@ subject modes did not change. It is safe to repeat.
 Give people access from **People & access** in Blak Home (see "Where do I add
 someone to an app?" in `app-role-contract.md`). Access comes only from the
 `blak-<app>-reader|writer|admin` role groups. The `Blak … users` groups are retired
-and grant nothing. Workspace administrators (Blak ID superusers) get Blak ID and
-People & access; app roles are assigned to them like anyone else.
+and grant nothing. Workspace administrators (Blak ID superusers, members of
+`authentik Admins`) are Admin in every app and also get Blak ID and People & access.
 Drive and Docs share one grant.
 The portal checks claims again at most 30 seconds after the last check. Protected
 portal routes enforce the same grants as navigation. Native app OIDC authorization

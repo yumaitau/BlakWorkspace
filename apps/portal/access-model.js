@@ -5,6 +5,7 @@
 // member of a group is also a member of every ancestor group (User.all_groups
 // and ak_is_group_member follow `parents`), so a team group that is a child of
 // blak-drive-writer gives each member Drive writer. Highest role wins.
+// Workspace administrators (Blak ID superusers) are Admin in every app.
 const { ROLES, ROLE_LABEL, TIMING, APP_ACCESS, GROUP_TYPES, roleSets, setName } = require('./access-catalog');
 
 const LEVEL = Object.freeze({ reader: 1, writer: 2, admin: 3 });
@@ -78,6 +79,12 @@ function resolveAccess(user, index) {
       grants.get(found.set.id).grants.push({ role: found.role, via: pk === String(direct) ? 'direct' : 'team', group: group.name, groupPk: String(group.pk) });
     }
   }
+  if (user.is_superuser === true) {
+    for (const set of index.sets) {
+      if (!grants.has(set.id)) grants.set(set.id, { set, grants: [] });
+      grants.get(set.id).grants.unshift({ role: 'admin', via: 'admins', group: 'Workspace administrators', groupPk: null });
+    }
+  }
   const apps = [...grants.values()].map(item => ({ ...item, role: highest(item.grants.map(grant => grant.role)) }))
     .sort((a, b) => setName(a.set).localeCompare(setName(b.set)));
   return { active: user.is_active !== false, admin: Boolean(user.is_superuser), apps: user.is_active === false ? [] : apps };
@@ -113,8 +120,16 @@ function assertWritableGroup(group, index, allowed) {
 }
 
 // A person's direct role in one app. Their team roles are left alone.
+function assertNotAdministrator(user) {
+  if (user.is_superuser === true) {
+    const name = user.name || user.username;
+    throw new GuardError(`${name} is a workspace administrator, so ${name} is Admin in every app. That can't be lowered here. To change it, remove ${name} from Workspace administrators in Blak ID.`, 409);
+  }
+}
+
 function planPersonRole(user, setId, role, index) {
   assertPerson(user);
+  assertNotAdministrator(user);
   assertRole(role, true);
   const set = findSet(index, setId);
   const target = role ? index.byName.get(set.groups[role]) : null;
@@ -225,6 +240,6 @@ function describeMembership(user, plan, index) {
 
 module.exports = {
   LEVEL, GuardError, highest, indexGroups, classify, resolveAccess, roleFor,
-  planPersonRole, planTeamRole, planMembership, validateTeamName,
+  planPersonRole, planTeamRole, planMembership, validateTeamName, assertNotAdministrator,
   describePersonRole, describeTeamRole, describeMembership, assertPerson, assertWritableGroup,
 };

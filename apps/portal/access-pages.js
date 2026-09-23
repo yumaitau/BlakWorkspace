@@ -8,6 +8,7 @@ const { sameOrigin } = require('./access-guard');
 
 const ACTIONS = new Map([['person-role', "Change a person's role"], ['team-role', "Change a team group's role"], ['team-join', 'Add a person to a group'], ['team-leave', 'Remove a person from a group'], ['team-create', 'Create a team group']]);
 const PAGE_LIMIT_MESSAGE = 'Too many requests. Wait a minute and try again.';
+const ADMIN_NOTE = "Admin through Workspace administrators. It can't be lowered here.";
 
 function createAccess({ blakId, csrf, audit, origin, shell, esc, readBody, writeLimit, readLimit, sets = roleSets() }) {
   const badge = type => `<span class=badge data-type="${esc(type)}">${esc(GROUP_TYPES[type].label)}</span>`;
@@ -65,7 +66,7 @@ ${diagram()}
 <dt>The highest role wins</dt><dd>If you are a Reader directly and a Writer through a team group, you are a Writer. Roles in one app never change another app.</dd>
 <dt>No role means no access</dt><dd>Without a Reader, Writer or Admin role, the app is hidden and its sign-in is refused.</dd>
 <dt>App admin is not Blak ID admin</dt><dd>An Admin in one app manages that app only. They cannot change people, groups or roles in Blak ID, and they are not admin anywhere else.</dd>
-<dt>Workspace administrators</dt><dd>Members of the Blak ID administrators group can use Blak ID and manage everyone's access here. When app roles were introduced, existing administrators were made Admin in every app. A new administrator gets app roles the same way as anyone else.</dd>
+<dt>Workspace administrators are Admin everywhere</dt><dd>Members of the Blak ID administrators group are Admin in every app, can use Blak ID, and manage everyone's access here. Their role can't be lowered app by app. To change it, remove them from Workspace administrators in Blak ID.</dd>
 <dt>Team groups pass their role to every member</dt><dd>Give a team group a role once and every member has it, including people who join later. Leaving the team removes it, unless they have the role another way.</dd>
 <dt>Private items stay private</dt><dd>A role never opens someone else's private files, drawings, flows, notes or vault items, even for an Admin.</dd>
 <dt>Retired groups do nothing</dt><dd>Old groups named “Blak … users” no longer grant anything. They are marked retired.</dd>
@@ -81,6 +82,7 @@ ${ask}`);
   }
 
   function viaText(grant) {
+    if (grant.via === 'admins') return 'Admin: via Workspace administrators';
     return grant.via === 'direct' ? 'Given to you directly' : `Through the team group ${esc(grant.group)}`;
   }
 
@@ -138,11 +140,16 @@ ${ask}`);
     const index = await directory();
     const back = '/access/admin/apps/' + set.id;
     const sections = [];
+    // Every workspace administrator is Admin here; list them once under Admin.
+    const adminGroups = index.groups.filter(group => model.classify(group, index).type === 'admins');
+    const admins = [...new Map((await Promise.all(adminGroups.map(group => blakId.members(group.pk)))).flat()
+      .filter(person => person.is_superuser === true && person.is_active !== false).map(person => [person.pk, person])).values()];
     for (const role of ROLES) {
       const group = index.byName.get(set.groups[role]);
       const people = group ? await blakId.members(group.pk) : [];
       const teams = group ? index.children(group.pk) : [];
-      const personRows = people.map(person => `<tr><th scope=row><a href="/access/admin/people/${esc(person.pk)}">${esc(person.name || person.username)}</a><br><span class=muted>${esc(person.email || person.username)}</span></th><td>Directly</td><td>${roleChangeForm(user, { action: 'person-role', person: person.pk, app: set.id, return: back }, role, 'New role for ' + (person.name || person.username))}</td></tr>`);
+      const personRows = people.map(person => `<tr><th scope=row><a href="/access/admin/people/${esc(person.pk)}">${esc(person.name || person.username)}</a><br><span class=muted>${esc(person.email || person.username)}</span></th><td>Directly</td><td>${person.is_superuser === true ? `<span class=muted>${ADMIN_NOTE}</span>` : roleChangeForm(user, { action: 'person-role', person: person.pk, app: set.id, return: back }, role, 'New role for ' + (person.name || person.username))}</td></tr>`);
+      if (role === 'admin') personRows.push(...admins.map(person => `<tr><th scope=row><a href="/access/admin/people/${esc(person.pk)}">${esc(person.name || person.username)}</a><br><span class=muted>${esc(person.email || person.username)}</span></th><td>${badge('admins')}</td><td><span class=muted>Admin in every app. Change it in Blak ID.</span></td></tr>`));
       const teamRows = teams.map(team => `<tr><th scope=row><a href="/access/admin/groups/${esc(team.pk)}">${esc(team.name)}</a><br><span class=muted>${(team.users || []).length} member${(team.users || []).length === 1 ? '' : 's'}</span></th><td>${badge(model.classify(team, index).type)}</td><td>${roleChangeForm(user, { action: 'team-role', team: team.pk, app: set.id, return: back }, role, 'New role for team ' + team.name)}</td></tr>`);
       const rows = personRows.concat(teamRows).join('');
       sections.push(`<h2 class=acc-h2>${roleBadge(role)} <span class=muted>${esc(set.groups[role])}</span></h2>
@@ -228,8 +235,8 @@ ${q ? (rows ? `<div class=tablewrap><table class=flowtable><caption class=sr>Sea
     const rows = sets.map(set => {
       const found = access.apps.find(item => item.set.id === set.id);
       const directRole = ROLES.find(role => { const group = index.byName.get(set.groups[role]); return group && direct.has(String(group.pk)); }) || '';
-      const via = found ? `<ul class=via>${found.grants.map(grant => `<li>${grant.via === 'direct' ? 'Directly' : `Team group <a href="/access/admin/groups/${esc(grant.groupPk)}">${esc(grant.group)}</a>`} (${ROLE_LABEL[grant.role]})</li>`).join('')}</ul>` : '';
-      return `<tr><th scope=row>${esc(setName(set))}</th><td>${roleBadge(found?.role || null)}</td><td>${via}</td><td>${roleChangeForm(user, { action: 'person-role', person: person.pk, app: set.id, return: back }, directRole, 'Direct role in ' + setName(set), 'No direct role')}</td></tr>`;
+      const via = found ? `<ul class=via>${found.grants.map(grant => `<li>${grant.via === 'admins' ? 'Workspace administrators' : grant.via === 'direct' ? 'Directly' : `Team group <a href="/access/admin/groups/${esc(grant.groupPk)}">${esc(grant.group)}</a>`} (${ROLE_LABEL[grant.role]})</li>`).join('')}</ul>` : '';
+      return `<tr><th scope=row>${esc(setName(set))}</th><td>${roleBadge(found?.role || null)}</td><td>${via}</td><td>${person.is_superuser === true ? `<span class=muted>${ADMIN_NOTE}</span>` : roleChangeForm(user, { action: 'person-role', person: person.pk, app: set.id, return: back }, directRole, 'Direct role in ' + setName(set), 'No direct role')}</td></tr>`;
     }).join('');
     const teams = [...direct].map(id => index.byPk.get(id)).filter(group => group && model.classify(group, index).type === 'team');
     const joinable = index.groups.filter(group => { const kind = model.classify(group, index); return kind.type === 'team' && !kind.locked && !direct.has(String(group.pk)); });

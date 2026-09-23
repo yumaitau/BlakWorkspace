@@ -228,3 +228,31 @@ test('role sets merge apps that share role groups', () => {
   assert.deepEqual(drive.apps, ['drive', 'docs']);
   assert.deepEqual(drive.legacy, ['Blak Drive users']);
 });
+
+test('workspace administrators are Admin in every app and cannot be lowered per app', async () => {
+  const { run, directory } = harness();
+  const index = model.indexGroups(directory.groupsList);
+  const ada = await directory.user(1);
+  assert.equal(ada.is_superuser, true);
+  const access = model.resolveAccess(ada, index);
+  assert.equal(access.apps.length, roleSets().length);
+  for (const item of access.apps) {
+    assert.equal(item.role, 'admin', item.set.id);
+    assert.ok(item.grants.some(grant => grant.via === 'admins'));
+  }
+  assert.deepEqual(model.resolveAccess({ ...ada, is_active: false }, index).apps, []);
+  assert.throws(() => model.planPersonRole(ada, 'drive', 'reader', index), /workspace administrator.*can't be lowered here/);
+
+  const refused = await run({ method: 'POST', path: '/access/admin/apply', user: fx.ADMIN, headers: ORIGIN, form: { csrf: csrf(fx.ADMIN), action: 'person-role', person: '1', app: 'drive', role: 'reader' } });
+  assert.equal(refused.status, 409);
+  assert.match(refused.body, /Remove Ada Example from Workspace administrators in Blak ID|remove Ada Example from Workspace administrators/);
+  assert.deepEqual(directory.calls, []);
+
+  const person = (await run({ path: '/access/admin/people/1', user: fx.ADMIN })).body;
+  assert.match(person, /Admin through Workspace administrators. It can(&#39;|')t be lowered here./);
+  assert.doesNotMatch(person, /name=action value="person-role"|value="person-role"/);
+  const app = (await run({ path: '/access/admin/apps/flow', user: fx.ADMIN })).body;
+  assert.match(app, /Ada Example[\s\S]*data-type="admins"[\s\S]*Admin in every app/);
+  const mine = (await run({ path: '/access/me', user: fx.ADMIN })).body;
+  assert.match(mine, /Admin: via Workspace administrators/);
+});
