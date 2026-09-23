@@ -1,0 +1,61 @@
+# ClamAV keeps its own signatures updated. The Drive sidecar in 50-opencloud.yaml
+# asks it to scan named Drive files on a loop. Do not apply 50-opencloud.yaml
+# onto a live tailnet deploy; patch the sidecar on instead.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: file-guard-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 5Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: clamav-data
+  namespace: blak-micro
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 2Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clamav
+  namespace: blak-micro
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: clamav } }
+  template:
+    metadata: { labels: { app: clamav } }
+    spec:
+      containers:
+        - name: clamav
+          image: clamav/clamav:1.4
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: clamd, containerPort: 3310 }]
+          env:
+            - { name: CLAMAV_NO_FRESHCLAMD, value: "false" }
+            - { name: CLAMD_STARTUP_TIMEOUT, value: "600" }
+          readinessProbe:
+            tcpSocket: { port: 3310 }
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 20
+          resources:
+            requests: { cpu: 100m, memory: 1Gi }
+            limits: { cpu: "1", memory: 2Gi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/clamav }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: clamav-data } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clamav
+  namespace: blak-micro
+spec:
+  selector: { app: clamav }
+  ports: [{ name: clamd, port: 3310, targetPort: 3310 }]
