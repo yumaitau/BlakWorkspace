@@ -40,12 +40,22 @@ which also follow `parents`. The highest role still wins.
 
 **Guardrails.** The portal uses the `blak-portal-access` service account
 (`scripts/deploy/provision-access-admin.py`, secret `blak-portal-access`,
-key `api-token`). It holds only `view_user`, `view_group`, `add_user_to_group`,
-`remove_user_from_group`, `add_group` and `change_group`. It never gets
-`enable_group_superuser` or `change_role`, so Authentik itself refuses superuser
-groups, superuser parents and permission grants. The portal also refuses any group
-with a superuser or permission-carrying ancestor, retired and built-in groups,
-service accounts, and every change to users themselves. Admin status is re-checked
+key `api-token`). Its only global permissions are `view_user`, `view_group` and
+`add_group`. `add_user_to_group` and `remove_user_from_group` are object
+permissions on each `blak-*-reader|writer|admin` role group. Team groups
+(attribute `blak_team: true`) also get `change_group`, so a team can be given a
+role by setting its parents. Groups the token creates get these at once through
+Authentik InitialPermissions, and every provisioning run re-grants them and
+revokes them everywhere else. The run fails if the token holds any global
+membership or change permission, or can change a protected group. So the token
+cannot add to, remove from, rename or re-parent `authentik Admins`, a role group's
+name or parents, or any group outside that set, even if it leaks. Authentik also
+refuses superuser groups and parents without `enable_group_superuser`. Groups made
+outside Blak Home show as team groups but stay read-only here until an operator
+sets `blak_team: true` and re-runs provisioning. Re-run it too after a new app
+adds role groups. The portal also refuses any group with a superuser or
+permission-carrying ancestor, retired and built-in groups, service accounts, and
+every change to users themselves. Admin status is re-checked
 against Blak ID on every admin request. Posts need the same origin and a
 per-session CSRF token, and writes are limited to 20 a minute per administrator.
 The plain-language role texts live in `apps/portal/access-catalog.js`; identity

@@ -18,8 +18,9 @@ function fakeDirectory({ fail = {} } = {}) {
     for (const legacy of set.legacy) if (!groups.some(group => group.name === legacy)) add(legacy);
   }
   const byName = name => groups.find(group => group.name === name);
-  const rangers = add('Rangers', { attributes: { blak_type: 'team', description: 'Ranger team on Country' }, parents: [byName('blak-drive-writer').pk, byName('blak-knowledge-reader').pk] });
-  add('Finance', { attributes: { blak_type: 'team', description: 'Finance and grants' } });
+  const rangers = add('Rangers', { attributes: { blak_type: 'team', blak_team: true, description: 'Ranger team on Country' }, parents: [byName('blak-drive-writer').pk, byName('blak-knowledge-reader').pk] });
+  add('Finance', { attributes: { blak_type: 'team', blak_team: true, description: 'Finance and grants' } });
+  add('Old custom group');
   add('Blak ID operators', { roles: ['rbac-role'] });
   const users = [
     { pk: 1, uuid: ADMIN_UUID, username: 'ada', name: 'Ada Example', email: 'ada@example.test', is_active: true, type: 'internal', groups: [admins.pk, byName('blak-drive-reader').pk, rangers.pk, byName('blak-chat-admin').pk] },
@@ -37,6 +38,9 @@ function fakeDirectory({ fail = {} } = {}) {
   const snapshot = group => ({ ...group, parents: [...group.parents], users: users.filter(user => user.groups.includes(group.pk)).map(user => user.pk) });
   const need = (value, what) => { if (!value) throw Object.assign(new Error('Not found in Blak ID'), { status: 404 }); return value; };
   const guard = name => { if (fail[name]) throw Object.assign(new Error('Blak ID refused this change'), { status: 502 }); };
+  // Mirrors the token's object permissions: role groups and blak_team groups only.
+  const roleNames = new Set(roleSets().flatMap(set => ROLES.map(role => set.groups[role])));
+  const permitted = pk => { const group = need(groups.find(item => item.pk === pk)); if (group.is_superuser || !(roleNames.has(group.name) || group.attributes.blak_team === true)) throw Object.assign(new Error('Blak ID refused this change'), { status: 502 }); return group; };
   const api = {
     configured: true, calls, groupsList: groups, usersList: users,
     async isWorkspaceAdmin(identity) { guard('isWorkspaceAdmin'); const user = users.find(item => item.uuid === identity); return Boolean(user && user.is_active && view(user).is_superuser); },
@@ -47,15 +51,13 @@ function fakeDirectory({ fail = {} } = {}) {
     async searchUsers(q) { q = q.toLowerCase(); return users.filter(user => ['internal', 'external'].includes(user.type) && (user.username + ' ' + user.name + ' ' + user.email).toLowerCase().includes(q)).map(view); },
     async members(pk) { return users.filter(user => user.groups.includes(pk)).map(view); },
     async addMember(pk, userPk) {
-      calls.push(['addMember', pk, userPk]); guard('addMember');
-      const group = need(groups.find(item => item.pk === pk));
-      if (group.is_superuser) throw Object.assign(new Error('Blak ID refused this change'), { status: 502 });
+      calls.push(['addMember', pk, userPk]); guard('addMember'); permitted(pk);
       const user = need(users.find(item => item.pk === userPk));
       if (!user.groups.includes(pk)) user.groups.push(pk);
     },
-    async removeMember(pk, userPk) { calls.push(['removeMember', pk, userPk]); guard('removeMember'); const user = need(users.find(item => item.pk === userPk)); user.groups = user.groups.filter(item => item !== pk); },
-    async setParents(pk, parents) { calls.push(['setParents', pk, parents]); guard('setParents'); need(groups.find(item => item.pk === pk)).parents = [...parents]; },
-    async createTeam(name, description) { calls.push(['createTeam', name]); guard('createTeam'); return snapshot(add(name, { attributes: { blak_type: 'team', description } })); },
+    async removeMember(pk, userPk) { calls.push(['removeMember', pk, userPk]); guard('removeMember'); permitted(pk); const user = need(users.find(item => item.pk === userPk)); user.groups = user.groups.filter(item => item !== pk); },
+    async setParents(pk, parents) { calls.push(['setParents', pk, parents]); guard('setParents'); permitted(pk).parents = [...parents]; },
+    async createTeam(name, description) { calls.push(['createTeam', name]); guard('createTeam'); return snapshot(add(name, { attributes: { blak_type: 'team', blak_team: true, description } })); },
   };
   return api;
 }

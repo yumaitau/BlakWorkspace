@@ -74,6 +74,11 @@ test('guardrails refuse admin groups, permission groups, retired groups and serv
   const loop = model.indexGroups(directory.groupsList.map(group => group.name === 'blak-flow-reader' ? { ...group, parents: [byName(directory, 'Finance').pk] } : group));
   assert.throws(() => model.planTeamRole(byName(directory, 'Finance'), 'flow', 'reader', loop), /nested|own parent/);
   for (const name of ['blak-drive-admin', 'authentik Admins', 'Blak Drive users', 'x', 'Rangers']) assert.throws(() => model.validateTeamName(name, index));
+  // Custom groups not created in Blak Home are shown, but the token has no rights on them.
+  const custom = byName(directory, 'Old custom group');
+  assert.deepEqual([model.classify(custom, index).type, model.classify(custom, index).locked], ['team', true]);
+  assert.throws(() => model.planMembership(jo, custom, true, index), /not created in Blak Home/);
+  assert.equal(model.classify(byName(directory, 'Rangers'), index).locked, false);
   assert.equal(model.validateTeamName('  Sea   rangers ', index), 'Sea rangers');
   assert.ok(ada && sam);
 });
@@ -163,6 +168,7 @@ test('team groups are created and given roles as child groups of the role group'
   assert.equal((await post({ action: 'team-create', name: 'Sea rangers', description: 'Sea country team' })).status, 200);
   const team = byName(directory, 'Sea rangers');
   assert.equal(team.attributes.blak_type, 'team');
+  assert.equal(team.attributes.blak_team, true, 'provisioning re-grants object permissions from this marker');
   assert.equal((await post({ action: 'team-role', team: team.pk, app: 'chat', role: 'reader' })).status, 200);
   assert.deepEqual(team.parents, [byName(directory, 'blak-chat-reader').pk]);
   assert.equal((await post({ action: 'team-join', team: team.pk, person: '3' })).status, 200);
@@ -207,6 +213,11 @@ test('Blak ID client uses the service token and the documented endpoints', async
     await client.setParents(rangers.pk, []);
     assert.deepEqual((await client.group(rangers.pk)).parents, []);
     await assert.rejects(client.addMember('not-a-uuid', 3), /Invalid identifier/);
+    // Object permissions: even a direct token call cannot touch other groups.
+    await assert.rejects(client.addMember(byName(directory, 'authentik Admins').pk, 3), /Blak ID returned an error/);
+    await assert.rejects(client.removeMember(byName(directory, 'authentik Admins').pk, 1), /Blak ID returned an error/);
+    await assert.rejects(client.setParents(byName(directory, 'Old custom group').pk, []), /Blak ID returned an error/);
+    assert.equal((await client.createTeam('Created team', '')).attributes.blak_team, true);
     await assert.rejects(createBlakIdAdmin({ baseUrl, token: 'wrong' }).groups(), /refused/);
     assert.equal(createBlakIdAdmin({ baseUrl, token: '' }).configured, false);
   } finally { server.close(); }

@@ -1,9 +1,10 @@
 'use strict';
 // Server-side Blak ID (Authentik) API client for People & access. The token
-// belongs to the dedicated blak-portal-access service account, which only has
-// view user/group, add/remove group members, and add/change group permissions.
-// Authentik itself refuses superuser groups and role grants without
-// enable_group_superuser / change_role; the portal guardrails refuse them first.
+// belongs to the dedicated blak-portal-access service account. Globally it can
+// only view users and groups and add groups. Membership and group changes are
+// object permissions on the app role groups and blak_team groups only
+// (scripts/deploy/ak-access-admin.py), so Authentik itself refuses any other
+// group. The portal guardrails refuse them first.
 const { textRequest } = require('./http-client');
 
 class BlakIdError extends Error {
@@ -78,7 +79,7 @@ function createBlakIdAdmin({ baseUrl, token, request = textRequest }) {
     async removeMember(group, pk) { return api('POST', '/core/groups/' + uuid(group) + '/remove_user/', { pk: userPk(pk) }); },
     async setParents(group, parents) { return api('PATCH', '/core/groups/' + uuid(group) + '/', { parents: parents.map(uuid) }); },
     async createTeam(name, description) {
-      return api('POST', '/core/groups/', { name, is_superuser: false, parents: [], attributes: { blak_type: 'team', description } });
+      return api('POST', '/core/groups/', { name, is_superuser: false, parents: [], attributes: { blak_type: 'team', blak_team: true, description } });
     },
   };
 }

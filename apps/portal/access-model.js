@@ -60,6 +60,7 @@ function classify(group, index) {
   else if (rbac) lock = 'This group carries Blak ID permissions. Change it only in Blak ID.';
   else if (/^authentik /i.test(group.name)) lock = 'This is a built-in Blak ID group. Change it only in Blak ID.';
   else if (type === 'retired') lock = 'This group is retired and has no effect. Use an app role instead.';
+  else if (type === 'team' && group.attributes?.blak_team !== true) lock = 'This group was not created in Blak Home, so Blak Home cannot change it. An operator can mark it as a team group in Blak ID (attribute blak_team: true) and re-run access provisioning.';
   else if (type === 'role' && lineage.length > 1) lock = 'This app role group has been nested under another group in Blak ID. Fix that in Blak ID first.';
   return { type, label: GROUP_TYPES[type].label, set: role?.set || index.legacy.get(group.name) || null, role: role?.role || null, locked: Boolean(lock), lock };
 }

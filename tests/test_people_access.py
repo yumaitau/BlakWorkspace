@@ -104,13 +104,38 @@ class TeamRoleResolution(unittest.TestCase):
 
 
 class DeployGuardrails(unittest.TestCase):
-    def test_service_account_has_exactly_membership_permissions(self):
+    def test_service_account_changes_groups_only_through_object_permissions(self):
         text = read('scripts/deploy/ak-access-admin.py')
-        self.assertIn("PERMISSIONS = ['view_user', 'view_group', 'add_user_to_group', 'remove_user_from_group', 'add_group', 'change_group']", text)
-        for forbidden in ('enable_group_superuser', 'delete_user', 'delete_group', 'change_user', 'change_role', 'is_superuser = True'):
-            self.assertNotIn(forbidden + "'", text.replace('"', "'"))
+        self.assertIn("GLOBAL = ['view_user', 'view_group', 'add_group']", text)
+        self.assertIn("MEMBERSHIP = ['add_user_to_group', 'remove_user_from_group']", text)
+        self.assertIn("OBJECT = MEMBERSHIP + ['change_group']", text)
+        # Global grant is exactly GLOBAL; wider global grants from older runs are removed.
+        self.assertIn('RoleModelPermission.objects.filter(role=role).exclude(permission__in=global_perms).delete()', text)
+        self.assertIn('set(user.get_all_permissions()) != allowed', text)
+        # The provision run fails if the token can change membership of every group.
+        self.assertIn("if user.has_perm('authentik_core.' + name):", text)
+        self.assertIn('can_change and (unsafe(group) or str(group.pk) not in grants)', text)
+        self.assertIn("can rename or re-parent an app role group", text)
+        # Membership on role groups; membership and change (parents) on blak_team groups only.
+        self.assertIn('Group.objects.filter(name__in=BLAK_ROLE_GROUPS)', text)
+        self.assertIn('Group.objects.filter(attributes__blak_team=True)', text)
+        self.assertIn('Q(is_superuser=True) | Q(roles__isnull=False)', text)
+        self.assertIn("grants = {str(group.pk): membership_perms for group in role_groups}", text)
+        self.assertIn("grants.update({str(group.pk): object_perms for group in teams})", text)
+        self.assertIn("permission__codename='change_group'", text)
+        self.assertIn('RoleObjectPermission.objects.filter(role=role).exclude(', text)
+        # Groups the token creates get object permissions at once.
+        self.assertIn("InitialPermissions.objects.update_or_create(name='Blak Home team groups'", text)
+        self.assertIn('initial.permissions.set(object_perms)', text)
+        for forbidden in ('enable_group_superuser', 'delete_user', 'delete_group', 'change_user', 'change_role'):
+            self.assertNotIn(forbidden, text.split('"""', 2)[2])
         self.assertIn("'type': 'service_account'", text)
-        self.assertIn('get_all_permissions()) != allowed', text)
+        self.assertIn("blak_team: true", read('apps/portal/blak-id-admin.js'))
+
+    def test_provisioning_passes_the_role_group_contract(self):
+        text = read('scripts/deploy/provision-access-admin.py')
+        self.assertIn("prelude='BLAK_ROLE_GROUPS='", text)
+        self.assertIn("require('./apps/portal/integration')", text)
 
     def test_token_goes_to_a_secret_that_is_never_printed_or_replaced(self):
         text = read('scripts/deploy/provision-access-admin.py')
