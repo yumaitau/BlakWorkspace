@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stand up BlakSmith and BlakEyes in blak-micro and publish them on the shell.
-# Product images are pulled from GHCR with secret ghcr-pull.
+# Product images are pulled from public GHCR packages.
 # This rebuilds the portal and the shell from this checkout so the catalog,
 # icons and sign-out adapters are in the images. It does not apply the rest
 # of deploy/k3s/micro.
@@ -8,10 +8,6 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 NS="${NS:-blak-micro}"
 NS="$NS" scripts/deploy/ensure-secrets.sh
-if ! kubectl -n "$NS" get secret ghcr-pull >/dev/null 2>&1; then
-  echo "Secret ghcr-pull is missing. See docs/runbooks/smith-and-eyes.md (Images)." >&2
-  exit 1
-fi
 python3 scripts/deploy/provision-smith.py
 python3 scripts/deploy/provision-eyes.py
 python3 scripts/deploy/provision-id.py

@@ -25,18 +25,9 @@ publishes `sha-<short>`, `main` and `latest`. To move a pin, change the tag in
 image does not install torch. Review and classification still run; local model
 training needs an image built with the `ml` extra.
 
-The packages are private. Each pod pulls with secret `ghcr-pull`, a
-`docker-registry` secret holding a classic GitHub token with only
-`read:packages`:
-
-```sh
-kubectl -n blak-micro create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github user> \
-  --docker-password="$(cat ~/.config/ghcr-pull-token)"
-```
-
-`deploy-smith-eyes.sh` stops if the secret is missing. Rotate the token before it
-expires and replace the secret the same way.
+The packages are public, so the node pulls them without credentials. A new
+package on GHCR starts private. Set it public once under the package's
+settings (Danger Zone, Change visibility); GitHub has no API for that.
 
 ## Deploy
 

@@ -21,7 +21,6 @@ spec:
   template:
     metadata: { labels: { app: eyes } }
     spec:
-      imagePullSecrets: [{ name: ghcr-pull }]
       initContainers:
         - name: tls
           image: ghcr.io/yumaitau/blakeyes:sha-65e0dd4

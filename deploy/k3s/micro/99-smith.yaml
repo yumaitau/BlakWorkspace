@@ -32,7 +32,6 @@ spec:
   template:
     metadata: { labels: { app: smith-postgres } }
     spec:
-      imagePullSecrets: [{ name: ghcr-pull }]
       containers:
         - name: postgres
           image: ghcr.io/yumaitau/blaksmith-postgres:sha-e8de6e1
@@ -109,7 +108,6 @@ spec:
   template:
     metadata: { labels: { app: smith } }
     spec:
-      imagePullSecrets: [{ name: ghcr-pull }]
       initContainers:
         - name: app-role
           image: postgres:16-alpine
@@ -235,7 +233,6 @@ spec:
   template:
     metadata: { labels: { app: smith-api } }
     spec:
-      imagePullSecrets: [{ name: ghcr-pull }]
       initContainers:
         - name: kek
           image: postgres:16-alpine
