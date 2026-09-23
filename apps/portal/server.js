@@ -571,7 +571,7 @@ async function handleRequest(req, res) {
     if (!app) { res.writeHead(404); res.end(); return; }
     if (!user) { res.writeHead(302, { location: '/login?app=' + encodeURIComponent(app.id) }); res.end(); return; }
     if (!allowedApps(APPS, user).includes(app)) { res.writeHead(403); res.end('Application access not granted'); return; }
-    const integration = INTEGRATIONS[app.id];
+    const integration = INTEGRATIONS[app.id] || {};
     const target = new URL(integration.login || app.url, new URL(app.url, REDIRECT_URI));
     // HeyForm accepts a device identifier, then creates and verifies its own
     // OAuth state, nonce and PKCE transaction in the native server.

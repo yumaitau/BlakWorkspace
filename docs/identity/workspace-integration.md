@@ -1,7 +1,10 @@
 # Blak Workspace integration contract
 
 The portal catalog owns application names and URLs. `apps/portal/integration.js`
-owns native entry points and access groups. Blak ID remains the identity provider;
+owns native entry points and access groups. When a live portal mounts a newer
+`catalog.js` from a ConfigMap, mount `integration.js` beside it. Without an entry,
+`/launch/<id>` falls back to the catalog URL and skips the native login path.
+Blak ID remains the identity provider;
 each application establishes its own native OIDC session.
 Forms initializes HeyForm's native browser device binding before starting its
 server-generated OAuth state/PKCE transaction. CRM uses Frappe's generated login
