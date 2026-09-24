@@ -59,9 +59,20 @@ function updateIdentity(key,{rename=false,grants,roles,active}={}) {
   shell('import json\nfrom authentik.core.models import User, Group\ndata=json.loads('+JSON.stringify(JSON.stringify(data))+')\nuser=User.objects.get(uuid=data["uuid"],username__startswith='+JSON.stringify('e2e-'+run+'-')+')\nuser.username=data["username"]\nif "active" in data: user.is_active=data["active"]\nuser.save()\nif "groups" in data: user.groups.set(Group.objects.filter(name__in=data["groups"]))');
   account.username=data.username;sessions.delete(key);
 }
+// Throwaway workspace administrator for People & access tests. The account is
+// e2e-prefixed and deleted with the others when the run exits.
+function workspaceAdmin(key) {
+  const account=accounts.get(key);if(!account) throw Error('Unknown test identity');
+  shell('from authentik.core.models import User, Group\nuser=User.objects.get(uuid='+JSON.stringify(account.uuid)+',username__startswith='+JSON.stringify('e2e-'+run+'-')+')\nuser.groups.add(Group.objects.get(name="authentik Admins"))');
+}
+function account(key) {
+  const value=accounts.get(key);if(!value) throw Error('Unknown test identity');
+  return {username:value.username,uuid:value.uuid};
+}
+function teamName(suffix) { return 'e2e-'+run+'-'+suffix; }
 process.once('exit',()=>{
   if(!accounts.size) return;
   const ids=[...accounts.values()].map(a=>a.uuid);
-  try {shell('import json\nfrom authentik.core.models import User\nUser.objects.filter(uuid__in=json.loads('+JSON.stringify(JSON.stringify(ids))+'),username__startswith='+JSON.stringify('e2e-'+run+'-')+').delete()');} catch {}
+  try {shell('import json\nfrom authentik.core.models import User, Group\nUser.objects.filter(uuid__in=json.loads('+JSON.stringify(JSON.stringify(ids))+'),username__startswith='+JSON.stringify('e2e-'+run+'-')+').delete()\nGroup.objects.filter(name__startswith='+JSON.stringify('e2e-'+run+'-')+',is_superuser=False).delete()');} catch {}
 });
-module.exports={session,identityCookies,updateIdentity};
+module.exports={session,identityCookies,updateIdentity,workspaceAdmin,account,teamName};

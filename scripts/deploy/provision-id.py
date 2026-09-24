@@ -11,12 +11,16 @@ def main():
     contract = json.loads(subprocess.check_output([
         'node', '-e', "console.log(JSON.stringify(Object.entries(require('./apps/portal/integration').INTEGRATIONS).map(([id,value])=>({id,...value}))))",
     ], cwd=ROOT))
+    notes = json.loads(subprocess.check_output([
+        'node', '-e', "const c=require('./apps/portal/access-catalog');console.log(JSON.stringify({notes:c.groupNotes(),admin:c.GROUP_TYPES.admins.label+'. '+c.GROUP_TYPES.admins.description}))",
+    ], cwd=ROOT))
     metadata = ROOT / '.deployment.json'
     portal = 'https://portal.workspace.example.com'
     if metadata.exists():
         deployment = json.loads(metadata.read_text())
         portal = deployment.get('tailnet', {}).get('origins', {}).get('portal', portal)
     source = 'BLAK_APPS=' + repr(contract) + '\nBLAK_PORTAL_URL=' + repr(portal) + '\n'
+    source += 'BLAK_GROUP_NOTES=' + repr(notes['notes']) + '\nBLAK_ADMIN_NOTE=' + repr(notes['admin']) + '\n'
     source += 'from authentik.providers.oauth2.models import OAuth2Provider\n'
     source += 'before=list(OAuth2Provider.objects.order_by("pk").values_list("pk","client_id","client_secret","sub_mode"))\n'
     source += Path(__file__).with_name('ak-workspace-contract.py').read_text()

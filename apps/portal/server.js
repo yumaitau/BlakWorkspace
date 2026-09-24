@@ -93,6 +93,16 @@ async function sessionUser(req) {
 const pending = new Map(); // state -> {nonce, ts}
 
 const { sign, verifySession, COOKIE, SESSION_TTL_MS, LOGIN_TTL_MS, loginCookie, readCookie } = require('./session');
+const accessGuard = require('./access-guard');
+const access = require('./access-pages').createAccess({
+  blakId: require('./blak-id-admin').createBlakIdAdmin({ baseUrl: process.env.BLAK_ID_API_URL || 'http://authentik-server:9000', token: process.env.BLAK_ID_API_TOKEN || '' }),
+  csrf: accessGuard.createCsrf(process.env.SESSION_SECRET || 'dev-only-change-me'),
+  audit: accessGuard.createAudit(process.env.ACCESS_AUDIT_FILE || (FLOW_STORE ? path.join(path.dirname(FLOW_STORE), 'access-audit.jsonl') : '')),
+  origin: new URL(REDIRECT_URI).origin,
+  shell: (...args) => shell(...args), esc, readBody,
+  writeLimit: accessGuard.createLimiter(20, 60000),
+  readLimit: accessGuard.createLimiter(120, 60000),
+});
 const MEILI_KEY = process.env.MEILI_MASTER_KEY || '';
 const FLOCI_HOST = process.env.FLOCI_HOST || 'floci';
 const FLOCI_PORT = parseInt(process.env.FLOCI_PORT || '4566', 10);
@@ -242,11 +252,12 @@ function shell(user, active, title, main) {
 <button class=waffle id=wbtn aria-expanded="false" aria-controls="drawer" aria-label="App launcher" data-testid="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button>
 ${wordmark()}
 <div class=search><input id=q aria-label="Search workspace" type=search placeholder="Search apps and workspace…" autocomplete=off onkeydown="if(event.key==='Enter'){location='/search?q='+encodeURIComponent(this.value)}"></div>
-<div class=userchip data-testid="userchip"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button><span class=nm>${esc(user.name || user.sub)}</span><span class=avatar>${initial}</span>${allowedApps(APPS, user).some((a) => a.id === 'idp') ? '<a href="/launch/idp">Blak ID</a>' : '<a href="/account">Blak ID</a>'}<a href="/logout">Sign out</a></div>
+<div class=userchip data-testid="userchip"><button class=iconbtn id=themebtn aria-label="Switch to light theme">☀</button><span class=nm>${esc(user.name || user.sub)}</span><span class=avatar>${initial}</span><a href="/access/me">My access</a>${allowedApps(APPS, user).some((a) => a.id === 'idp') ? '<a href="/launch/idp">Blak ID</a>' : '<a href="/account">Blak ID</a>'}<a href="/logout">Sign out</a></div>
 </div><div class=shell><nav class=sidebar>
 <a class=nav-item href="/" ${active === 'home' ? 'data-active="true"' : ''} title="Blak Home"><span class=ric>⌂</span><span class=lbl>Blak Home</span><span class=swatch style="background:${ACCENT.workspace}"></span></a>
 <a class=nav-item href="/intranet" ${active === 'intranet' ? 'data-active="true"' : ''} title="Intranet"><span class=ric>☰</span><span class=lbl>Intranet</span></a>
 <a class=nav-item href="/held-files" ${active === 'held' ? 'data-active="true"' : ''} title="Files held back by the safety check"><span class=ric>!</span><span class=lbl>Held files</span></a>
+<a class=nav-item href="/access" ${active === 'access' ? 'data-active="true" aria-current="page"' : ''} title="People and access: who can use each app"><span class=ric>⚿</span><span class=lbl>People &amp; access</span></a>
 ${navGroups(active, user)}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
@@ -260,7 +271,7 @@ ${navGroups(active, user)}
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'People & access', d: 'What roles do and who has them', u: '/access' }, { t: 'My access', d: 'Your apps, roles and where they come from', u: '/access/me' }, { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -487,6 +498,7 @@ async function handleRequest(req, res) {
     } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
     return;
   }
+  if (await access.handle(req, res, url, user)) return;
   if (url.pathname === '/account') {
     res.writeHead(302, { location: user ? new URL('/if/user/#/settings', OIDC_BASE).href : '/login' }); res.end(); return;
   }

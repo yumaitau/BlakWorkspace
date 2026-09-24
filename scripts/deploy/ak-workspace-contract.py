@@ -52,6 +52,18 @@ with transaction.atomic():
                 member.groups.add(writer)
         legacy_group.attributes['blak_role_migration_completed'] = True
         legacy_group.save(update_fields=['attributes'])
+    # Plain-language descriptions from apps/portal/access-catalog.js, so the raw
+    # Blak ID admin UI explains each group too. Authentik 2026.8 groups have no
+    # native description field, so they live in attributes. Merge only; delete nothing.
+    notes = dict(globals().get('BLAK_GROUP_NOTES', {}))
+    admin_note = globals().get('BLAK_ADMIN_NOTE')
+    for group in Group.objects.filter(is_superuser=True) if admin_note else []:
+        notes.setdefault(group.name, {'blak_type': 'admins', 'description': admin_note})
+    for group_name, note in notes.items():
+        group = Group.objects.filter(name=group_name).first()
+        if group and note and any(group.attributes.get(key) != value for key, value in note.items()):
+            group.attributes.update(note)
+            group.save(update_fields=['attributes'])
     groups = {a['id']: a['group'] for a in BLAK_APPS if a.get('group') and not a.get('roleGroups')}
     for group in set(groups.values()):
         Group.objects.get_or_create(name=group)
@@ -59,7 +71,8 @@ with transaction.atomic():
     expression += 'grants = [key for key, group in groups.items() if user.is_superuser or ak_is_group_member(user, name=group)]\n'
     role_groups = {a['id']: a['roleGroups'] for a in BLAK_APPS if a.get('roleGroups')}
     expression += 'role_groups = ' + repr(role_groups) + '\n'
-    expression += 'roles = {key: next((name.rsplit("-", 1)[-1] for name in reversed(names) if ak_is_group_member(user, name=name)), None) for key, names in role_groups.items()}\n'
+    # Workspace administrators (Blak ID superusers) are Admin in every app, as in Entra.
+    expression += 'roles = {key: "admin" if user.is_superuser else next((name.rsplit("-", 1)[-1] for name in reversed(names) if ak_is_group_member(user, name=name)), None) for key, names in role_groups.items()}\n'
     expression += 'roles = {key: role for key, role in roles.items() if role}\n'
     expression += 'grants += list(roles)\n'
     expression += 'if user.is_superuser:\n    grants.append("idp")\n'
@@ -97,7 +110,7 @@ with transaction.atomic():
             provider.save()
         if item.get('group'):
             if item.get('roleGroups'):
-                login_policy = 'return request.user.is_active and any(ak_is_group_member(request.user, name=name) for name in ' + repr(item['roleGroups']) + ')'
+                login_policy = 'return request.user.is_active and (request.user.is_superuser or any(ak_is_group_member(request.user, name=name) for name in ' + repr(item['roleGroups']) + '))'
             else:
                 login_policy = 'return request.user.is_active and (request.user.is_superuser or ak_is_group_member(request.user, name=' + repr(item['group']) + '))'
             policy, _ = ExpressionPolicy.objects.update_or_create(name='Blak access: ' + slug, defaults={'expression': login_policy})

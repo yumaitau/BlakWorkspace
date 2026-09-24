@@ -59,7 +59,8 @@ def snapshot(api, aliases):
         if member['is_active']:
             for app, contract in CONTRACT.items():
                 if contract.get('roleGroups'):
-                    role = next((name.rsplit('-', 1)[-1] for name in reversed(contract['roleGroups']) if name in groups), None)
+                    # Workspace administrators (Blak ID superusers) are Admin in every app.
+                    role = 'admin' if member['is_superuser'] is True else next((name.rsplit('-', 1)[-1] for name in reversed(contract['roleGroups']) if name in groups), None)
                     if role:
                         roles[app] = role
                         apps.append(app)

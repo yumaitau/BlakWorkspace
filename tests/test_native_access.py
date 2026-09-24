@@ -27,13 +27,18 @@ class NativeAccessTests(unittest.TestCase):
         self.assertEqual(result['identity'], self.identity)
         self.assertEqual(result['roles'], {'draw': 'reader'})
         self.assertEqual(result['apps'], ['draw'])
-    def test_superuser_cannot_bypass_managed_role_removal(self):
-        self.user.update(is_superuser=True, groups=[])
+    def test_workspace_administrator_is_admin_in_every_app(self):
+        # Blak ID superusers (authentik Admins) are Admin everywhere, even with a lower group role.
+        self.user.update(is_superuser=True, groups=['Team'])
         result = self.snapshot()[self.identity]
-        self.assertNotIn('draw', result['apps'])
-        self.assertNotIn('hermes', result['apps'])
-        self.assertNotIn('drive', result['apps'])
-        self.assertNotIn('docs', result['apps'])
+        role_apps = [app for app, contract in access.CONTRACT.items() if contract.get('roleGroups')]
+        self.assertEqual(result['roles'], {app: 'admin' for app in role_apps})
+        self.assertEqual(sorted(result['apps']), sorted(role_apps))
+    def test_disabled_or_unconfirmed_administrator_gets_nothing_extra(self):
+        self.user.update(is_superuser=True, is_active=False, groups=[])
+        self.assertEqual(self.snapshot()[self.identity]['apps'], [])
+        self.user.update(is_superuser='true', is_active=True)  # only a real boolean True counts
+        self.assertEqual(self.snapshot()[self.identity]['roles'], {})
     def test_disabled_user_has_no_grants(self):
         self.user['is_active'] = False
         self.assertEqual(self.snapshot()[self.identity]['apps'], [])

@@ -69,6 +69,10 @@ spec:
             - { name: FILE_GUARD_URL, value: http://drive:8092 }
             - { name: FILE_GUARD_TOKEN, valueFrom: { secretKeyRef: { name: blak-file-guard, key: token, optional: true } } }
             - { name: SESSION_SECRET, valueFrom: { secretKeyRef: { name: blak-portal, key: session-secret } } }
+            # People & access: least-privilege Blak ID token from
+            # scripts/deploy/provision-access-admin.py. Without it, admin pages say "not set up".
+            - { name: BLAK_ID_API_URL, value: http://authentik-server:9000 }
+            - { name: BLAK_ID_API_TOKEN, valueFrom: { secretKeyRef: { name: blak-portal-access, key: api-token, optional: true } } }
             - { name: NODE_EXTRA_CA_CERTS, value: /certs/rootCA.pem }
           volumeMounts:
             - { name: sync-health, mountPath: /sync-health, readOnly: true }

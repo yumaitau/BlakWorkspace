@@ -10,11 +10,66 @@ Blak ID is the authority for membership. Every app must enforce its native data
 permissions as well as the login grant. A hidden launcher, proxy login gate, or
 unsigned browser value is not authorization.
 
+## Where do I add someone to an app?
+
+Use **People & access** in Blak Home (sidebar, or **My access** in the top bar).
+Everyone sees *How access works* and *My access*: their apps, role, what the role
+lets them do, and the group it came from. Workspace administrators also see:
+
+- **Apps**: pick an app, read what Reader, Writer and Admin can and can't do,
+  see who has each role (directly or through a team group), then add, change or
+  remove an assignment.
+- **Groups**: every Blak ID group with a type badge (App role group, Workspace
+  administrators, Team group, Retired: no effect). Create team groups and add or
+  remove members.
+- **People**: search a person, see their effective access table and change it.
+- **Recent changes**: the portal audit journal (`access-audit.jsonl` beside the
+  Flow store on the portal volume). Authentik also logs each group change.
+
+Every change shows its effect in plain words before you confirm, and success is
+only shown after Blak ID confirms it. Native apps pick the change up within about
+a minute (the `app-roles` reconciler); Draw, Flow, Cloud and Search within 30
+seconds. Workspace administrators show as "Admin: via Workspace administrators"
+everywhere and cannot be given a lower per-app role here. BlakSmith and BlakEyes take effect only after an operator runs
+`scripts/deploy/sync-directory.py --from-cluster --push`.
+
+**Team groups.** Giving a team group a role makes it a child group of the role
+group. Authentik 2026.8 groups can have several parents, and a member of a group
+is a member of all its ancestors (`User.all_groups()`, `ak_is_group_member`), so
+every team member gets the role in the OIDC claims and in the native reconcilers,
+which also follow `parents`. The highest role still wins.
+
+**Guardrails.** The portal uses the `blak-portal-access` service account
+(`scripts/deploy/provision-access-admin.py`, secret `blak-portal-access`,
+key `api-token`). Its only global permissions are `view_user`, `view_group` and
+`add_group`. `add_user_to_group` and `remove_user_from_group` are object
+permissions on each `blak-*-reader|writer|admin` role group. Team groups
+(attribute `blak_team: true`) also get `change_group`, so a team can be given a
+role by setting its parents. Groups the token creates get these at once through
+Authentik InitialPermissions, and every provisioning run re-grants them and
+revokes them everywhere else. The run fails if the token holds any global
+membership or change permission, or can change a protected group. So the token
+cannot add to, remove from, rename or re-parent `authentik Admins`, a role group's
+name or parents, or any group outside that set, even if it leaks. Authentik also
+refuses superuser groups and parents without `enable_group_superuser`. Groups made
+outside Blak Home show as team groups but stay read-only here until an operator
+sets `blak_team: true` and re-runs provisioning. Re-run it too after a new app
+adds role groups. The portal also refuses any group with a superuser or
+permission-carrying ancestor, retired and built-in groups, service accounts, and
+every change to users themselves. Admin status is re-checked
+against Blak ID on every admin request. Posts need the same origin and a
+per-session CSRF token, and writes are limited to 20 a minute per administrator.
+The plain-language role texts live in `apps/portal/access-catalog.js`; identity
+provisioning copies them onto each group's `description` attribute.
+
 ## Group contract
 
 Use `blak-<app>-reader`, `blak-<app>-writer`, and `blak-<app>-admin`. Resolve multiple
 memberships to the highest role for that app only: admin, writer, reader. No role
-means no access. App administration does not confer Blak ID administration or
+means no access. Workspace administrators (active Blak ID superusers) resolve to
+admin in every app, as in Entra: in the `blak_roles` claim, the native login
+policies and the `app-roles`/`hermes-sync` reconcilers. Their role cannot be lowered
+per app; remove them from `authentik Admins` instead. App administration does not confer Blak ID administration or
 administration of another app. Preserve the existing operator's access during
 migration; never silently turn ordinary existing users into administrators.
 
