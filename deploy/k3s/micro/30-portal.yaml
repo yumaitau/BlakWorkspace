@@ -24,6 +24,7 @@ spec:
   template:
     metadata: { labels: { app: portal } }
     spec:
+      serviceAccountName: portal-monitor
       hostAliases:
         - ip: 10.43.169.184
           hostnames: [id.workspace.example.com]
