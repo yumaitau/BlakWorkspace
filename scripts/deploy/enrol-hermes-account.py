@@ -11,7 +11,7 @@ mapping=json.loads(args.file.read_text())
 for key in ('name','owner_id','portal_owner','hermes','sources'):
     if not mapping.get(key): parser.error('Missing '+key)
 if not isinstance(mapping['sources'],dict): parser.error('sources must be an object')
-allowed={'drive','outline','chat','projects','forms','draw','flow','crm','storage'}
+allowed={'drive','outline','chat','projects','draw','flow','crm','storage'}
 if not set(mapping['sources']) <= allowed: parser.error('Unknown source')
 # Verify live Hermes identity before changing the mapping. Host resolves cluster service.
 import urllib.request
