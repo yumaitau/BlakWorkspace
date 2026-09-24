@@ -19,9 +19,10 @@ async function audit(page) {
 for (const theme of ['dark', 'light']) {
   test(`Eyes readable in ${theme} workspace on desktop and mobile`, async ({ page, context }) => {
     test.setTimeout(180000);
+    page.setDefaultTimeout(15000);
     process.env.BLAK_E2E_IDP_URL ||= `https://${host}:8444`;
     if (!process.env.BLAK_E2E_USER || !process.env.BLAK_E2E_PASSWORD) {
-      const secret = JSON.parse(execFileSync('kubectl', ['--kubeconfig', process.env.KUBECONFIG || `${process.env.HOME}/.kube/blak-homelab-ts.yaml`, '-n', 'blak-micro', 'get', 'secret', 'blak-idp', '-o', 'json'], { encoding: 'utf8' }));
+      const secret = JSON.parse(execFileSync('kubectl', ['--request-timeout=15s', '--kubeconfig', process.env.KUBECONFIG || `${process.env.HOME}/.kube/blak-homelab-ts.yaml`, '-n', 'blak-micro', 'get', 'secret', 'blak-idp', '-o', 'json'], { encoding: 'utf8', timeout: 20000 }));
       process.env.BLAK_E2E_USER = 'akadmin';
       process.env.BLAK_E2E_PASSWORD = Buffer.from(secret.data['bootstrap-password'], 'base64').toString();
     }
@@ -53,7 +54,7 @@ for (const theme of ['dark', 'light']) {
     await audit(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: test.info().outputPath(`eyes-${theme}-mobile.png`), fullPage: true });
-    const menu = page.getByRole('button', { name: /menu/i });
+    const menu = page.getByRole('button', { name: 'Toggle navigation', exact: true });
     await menu.focus();
     await page.keyboard.press('Enter');
     await expect(tools).toBeVisible();
