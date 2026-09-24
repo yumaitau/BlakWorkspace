@@ -41,7 +41,7 @@ replace native SSO with a proxy login or modify licence gates.
 - [n8n OIDC availability](https://docs.n8n.io/administer/manage-users-and-access/verify-user-identity/use-oidc)
 - [n8n licence FAQ](https://docs.n8n.io/n8n-community-license/community-license/license-faq)
 - [Activepieces SSO](https://www.activepieces.com/docs/admin-guide/guides/sso)
-- [Windmill editions](https://www.windmill.dev/docs/misc/community_vs_enterprise)
+- [Windmill editions](https://www.windmill.dev/pricing)
 - [Node-RED editor authentication](https://nodered.org/docs/user-guide/runtime/securing-node-red)
 
 These feature and licence statements describe the vendor documentation at the
