@@ -33,7 +33,9 @@ test('Drive opens, edits and saves a real document in Collabora',async({page,pla
   await editor.locator('iframe[title="Welcome Dialogue"]').waitFor({timeout:5000}).catch(()=>{});
   if(await editor.locator('iframe[title="Welcome Dialogue"]').isVisible())await welcome.getByRole('button',{name:'Close',exact:true}).click();
   const edited='Saved by Blak Docs '+crypto.randomBytes(4).toString('hex');
-  await editor.locator('#document-container').click();await page.keyboard.press('Control+End');await page.keyboard.press('Enter');await page.keyboard.type(edited);await page.keyboard.press('Control+s');
+  await editor.locator('#document-container').click();
+  const input=editor.locator('#clipboard-area');
+  await input.press('End');await input.press('Enter');await input.pressSequentially(edited);await input.press('ControlOrMeta+s');
   await expect.poll(async()=>{const data=await (await drive.get(path)).body();return require('node:child_process').execFileSync('python3',['-c',"import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],{input:data}).toString();},{timeout:45000}).toContain(edited);
   await page.screenshot({path:test.info().outputPath('docs-editor.png'),fullPage:true});
  } catch(error) {
