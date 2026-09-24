@@ -17,6 +17,7 @@ module.exports = defineConfig({
     ...require('./helpers/network').publicNetworkOptions,
     ...(process.env.PLAYWRIGHT_WS_ENDPOINT ? {connectOptions:{wsEndpoint:process.env.PLAYWRIGHT_WS_ENDPOINT,exposeNetwork:process.env.PLAYWRIGHT_EXPOSE_NETWORK}} : {}),
     ignoreHTTPSErrors: true,
+    ...(process.env.BLAK_E2E_LOCAL_ONLY === '1' ? { ignoreHTTPSErrors: false, serviceWorkers: 'block' } : {}),
     trace: 'retain-on-failure',
     screenshot: 'on',
     video: 'retain-on-failure',

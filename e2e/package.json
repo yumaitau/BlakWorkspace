@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:local-only": "node run-local-only.cjs",
     "test:twice": "playwright test && playwright test",
     "test:portal": "playwright test portal.spec.js flow.spec.js cloud.spec.js"
   },

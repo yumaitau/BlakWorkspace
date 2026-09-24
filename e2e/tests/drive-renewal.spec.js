@@ -1,6 +1,6 @@
 'use strict';
 const { execFileSync } = require('node:child_process');
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../helpers/offline-test');
 const { authentikLogin } = require('../helpers/auth');
 
 // Operator-run against the tailnet. Never persist tokens or authentication traces.

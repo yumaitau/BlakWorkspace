@@ -57,6 +57,12 @@ The Flow entry visible in the portal still opens the existing prototype. The sel
 
 ## Scope
 
+The accepted [offline community delivery order](docs/offline-community-roadmap.md)
+starts with offline readiness and community authority, then field capture/registers,
+mail/calendar/bookings, and meetings/reporting. The
+[acceptance runbook](docs/runbooks/offline-readiness.md) separates browser dependency
+checks from LAN outages and fully disconnected devices.
+
 **In scope**
 - Branding and theming overlays
 - Helmfile/Kubernetes configuration profiles (eval / staging / prod intent)
