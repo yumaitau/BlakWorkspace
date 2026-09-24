@@ -20,7 +20,7 @@ if (!env.BLAK_E2E_USER || !env.BLAK_E2E_PASSWORD) {
   env.BLAK_E2E_PASSWORD = Buffer.from(secret.data['bootstrap-password'], 'base64').toString();
 }
 const result = spawnSync(process.execPath, [require.resolve('@playwright/test/cli'), 'test',
-  'offline-core.spec.js', 'drive-renewal.spec.js', 'docs.spec.js', '--workers=1', ...process.argv.slice(2)], {
+  'offline-core.spec.js', 'drive-renewal.spec.js', 'docs.spec.js', 'smith-field-guard.spec.js', '--workers=1', ...process.argv.slice(2)], {
   cwd: __dirname, env, stdio: 'inherit',
 });
 if (result.error) throw result.error;

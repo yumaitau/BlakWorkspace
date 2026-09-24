@@ -138,7 +138,7 @@ spec:
             - { name: kek, mountPath: /kek }
       containers:
         - name: web
-          image: ghcr.io/yumaitau/blaksmith:sha-e8de6e1
+          image: ghcr.io/yumaitau/blaksmith:sha-8680f30
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 3000 }]
           env:
@@ -248,7 +248,7 @@ spec:
             - { name: kek-secret, mountPath: /secret, readOnly: true }
             - { name: kek, mountPath: /kek }
         - name: wait-web
-          image: ghcr.io/yumaitau/blaksmith-api:sha-e8de6e1
+          image: ghcr.io/yumaitau/blaksmith-api:sha-8680f30
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c"]
           args:
@@ -256,7 +256,7 @@ spec:
               until bun -e "fetch('http://smith:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; do sleep 3; done
       containers:
         - name: api
-          image: ghcr.io/yumaitau/blaksmith-api:sha-e8de6e1
+          image: ghcr.io/yumaitau/blaksmith-api:sha-8680f30
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8080 }]
           env:

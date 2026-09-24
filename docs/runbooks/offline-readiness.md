@@ -22,7 +22,7 @@ export KUBECONFIG=/path/to/the/intended-cluster.yaml
 export BLAK_E2E_BASE_URL=https://portal.community.example
 export BLAK_E2E_IDP_URL=https://id.community.example
 export BLAK_E2E_DRIVE_URL=https://drive.community.example
-export BLAK_E2E_LOCAL_ORIGINS='["https://portal.community.example","https://id.community.example","https://drive.community.example","https://docs.community.example","https://knowledge.community.example","https://chat.community.example","https://eyes.community.example"]'
+export BLAK_E2E_LOCAL_ORIGINS='["https://portal.community.example","https://id.community.example","https://drive.community.example","https://docs.community.example","https://knowledge.community.example","https://chat.community.example","https://smith.community.example","https://eyes.community.example"]'
 export BLAK_E2E_SERVICE_ORIGINS='{"drive":"https://drive.community.example"}'
 # Supply BLAK_E2E_USER and BLAK_E2E_PASSWORD through the operator's secret workflow.
 # On the homelab only, BLAK_E2E_BOOTSTRAP=1 explicitly opts into in-memory retrieval.
@@ -30,13 +30,14 @@ npm run test:local-only
 ```
 
 The test identity needs the seeded Knowledge Policies page and access to Drive,
-Chat and Eyes. The document fixture uses the existing private Hermes-sync Drive
+Chat, Smith and Eyes. The document fixture uses the existing private Hermes-sync Drive
 account: the browser identity must be that same account. No new source grant is
 created. `BLAK_SYNC_ACCOUNT` selects its configured mapping when needed.
 
 Assertions cover cold sign-in, the single Drive entry, expiry/renewal without
 another login, real ODT editing and saved-content readback, a Knowledge page,
-native Chat sign-in, and the Eyes locally bundled map. Reports list blocked origins
+native Chat sign-in, the Eyes locally bundled map, and Smith's rejection of malformed
+field imports through its signed-in API. Reports list blocked origins
 and attempt counts only, never URL paths/query strings or credential values.
 Blocked optional update checks are evidence to review, not an automatic failure;
 the required application operations must still pass.

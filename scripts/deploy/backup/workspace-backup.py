@@ -17,6 +17,24 @@ def cleanup_restore():
 def secret_text(resources,name,key):
     resource=next(r for r in resources if r['kind']=='Secret' and r['metadata']['name']==name)
     return base64.b64decode(resource['data'][key]).decode()
+def restore_database_plan(resources,volumes):
+    plan=[('postgres','postgres-data','/var/lib/postgresql/data'),('frappe-db','frappe-db-data','/var/lib/mysql'),('mongo','mongo-data','/data/db')]
+    smith=any(r['kind']=='Deployment' and r['metadata']['name']=='smith-postgres' for r in resources)
+    if smith != ('smith-pgdata' in volumes):raise RuntimeError('Smith database inventory is incomplete')
+    if smith:
+        try:key=secret_text(resources,'blak-smith','kek')
+        except (StopIteration,KeyError,ValueError):raise RuntimeError('Smith recovery key is missing') from None
+        if not key:raise RuntimeError('Smith recovery key is missing')
+        plan.append(('smith-postgres','smith-pgdata','/var/lib/postgresql'))
+    return plan
+def check_eyes_database(data,volumes):
+    if 'eyes-data' not in volumes:return None
+    db=data/'volumes/eyes-data/blakeyes.sqlite3'
+    if not db.is_file():raise RuntimeError('Eyes database missing from restore')
+    with sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True) as con:
+        if con.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise RuntimeError('Eyes SQLite corruption')
+        if con.execute('PRAGMA foreign_key_check').fetchone():raise RuntimeError('Eyes foreign key corruption')
+    return 'integrity_check and foreign_key_check ok'
 def recover_after_snapshot(root,error):
     try:recover(root)
     except Exception as recovery_error:
@@ -35,7 +53,7 @@ def recover(root):
     if not journal.exists():return
     state=json.loads(journal.read_text())
     # Start storage before clients. All original replica counts are restored.
-    priority=['postgres','mongo','frappe-db','frappe-cache','forms-cache','valkey','hermes-sessions','crm-db','crm-cache']
+    priority=['postgres','mongo','frappe-db','frappe-cache','forms-cache','valkey','hermes-sessions','crm-db','crm-cache','smith-postgres','smith-redis']
     for storage in (True,False):
         group={name:count for name,count in state['replicas'].items() if (name in priority)==storage}
         for name,count in group.items():kube('scale','deploy/'+name,'--replicas='+str(count))
@@ -105,7 +123,7 @@ def restore_drill(root,key,archive):
         resources=json.loads((data/'resources.json').read_text())['items']
         evidence={'files_verified':len(manifest['sha256']),'volumes_verified':len(manifest['volumes']),'database_checks':{}}
         try:
-            for deployment,volume,mount in [('postgres','postgres-data','/var/lib/postgresql/data'),('frappe-db','frappe-db-data','/var/lib/mysql'),('mongo','mongo-data','/data/db')]:
+            for deployment,volume,mount in restore_database_plan(resources,manifest['volumes']):
                 d=next(r for r in resources if r['kind']=='Deployment' and r['metadata']['name']==deployment)
                 c=d['spec']['template']['spec']['containers'][0];name='blak-restore-'+deployment+'-'+secrets.token_hex(4);containers.append(name)
                 # No network, no ports, copied volumes only. Never run application workers.
@@ -117,6 +135,8 @@ def restore_drill(root,key,archive):
                 if deployment=='postgres':
                     user=secret_text(resources,'blak-core','postgres-user')
                     command=['psql','-U',user,'-d','portal','-Atc',"SELECT count(*) FROM pg_database WHERE NOT datistemplate;"]
+                elif deployment=='smith-postgres':
+                    command=['psql','-U','blaksmith','-d','blaksmith','-Atc',"SELECT count(*) FROM public.nodes;"]
                 elif deployment=='frappe-db':
                     # Password through stdin, never command line or logs.
                     command=['sh','-c','read -r MYSQL_PWD; export MYSQL_PWD; mariadb -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE TABLE_SCHEMA NOT IN (\'mysql\',\'information_schema\',\'performance_schema\',\'sys\');"']
@@ -127,7 +147,7 @@ def restore_drill(root,key,archive):
                         password=secret_text(resources,'blak-frappe','database-password') if deployment=='frappe-db' else None
                         args=['docker','exec']+(['-i'] if deployment=='frappe-db' else [])+[name,*command]
                         value=run(*args,input=(password+'\n').encode() if deployment=='frappe-db' and password else None).decode().strip()
-                        if not value.isdigit() or int(value)<1:raise RuntimeError('Restored database empty')
+                        if not value.isdigit() or (deployment!='smith-postgres' and int(value)<1):raise RuntimeError('Restored database empty')
                         evidence['database_checks'][deployment]=int(value);break
                     except (subprocess.CalledProcessError,RuntimeError):
                         if run('docker','inspect','--format','{{.State.Running}}',name).strip()!=b'true':raise RuntimeError('Restored database stopped: '+deployment)
@@ -137,6 +157,8 @@ def restore_drill(root,key,archive):
             with sqlite3.connect(db) as con:
                 if con.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise RuntimeError('Hermes SQLite corruption')
                 evidence['database_checks']['hermes']='integrity_check ok'
+            eyes=check_eyes_database(data,manifest['volumes'])
+            if eyes:evidence['database_checks']['eyes']=eyes
             if 'vault-data' in manifest['volumes']:
                 vault=data/'volumes/vault-data'
                 if not (vault/'db.sqlite3').is_file():raise RuntimeError('Vault database missing from restore')

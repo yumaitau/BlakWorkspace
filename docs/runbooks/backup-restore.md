@@ -2,6 +2,36 @@
 
 Do not claim tested DR until a rehearsal actually runs (BW-045 on eval). Do not delete production to test.
 
+## Homelab recovery checks
+
+The running `blak-micro` suite uses
+`scripts/deploy/backup/workspace-backup.py`, not the openDesk seed inventory below.
+It discovers namespace PVCs and archives their bytes plus Kubernetes configuration
+and secrets in an encrypted snapshot. Snapshot creation briefly stops application
+workloads; the restore drill uses copied data and isolated Docker containers with
+no network or published ports. It does not stop production services.
+
+The database drill checks the shared PostgreSQL database, Frappe MariaDB,
+Rocket.Chat MongoDB, Smith PostgreSQL 18, Hermes SQLite, Eyes SQLite and Vault
+SQLite when those optional volumes exist. Smith's deployment and volume must both
+be present, along with its recovery key; an incomplete inventory fails the drill.
+An empty Smith graph is valid, but its `public.nodes` table must be readable. Eyes
+requires its database file plus SQLite integrity and foreign-key checks.
+
+Key presence is not proof that every culturally governed record can be decrypted.
+The drill also does not prove fresh sign-in, office editing, full application
+recovery, or offline image availability. Rehearse those separately under the
+[offline readiness gates](offline-readiness.md). Ollama model weights are excluded
+from the current snapshot: retain a separate verified offline copy before a remote
+deployment; re-downloading them is not an offline recovery plan.
+
+Read `/var/backups/blak-workspace/last-backup.json` and
+`last-restore-drill.json` on the node for actual timestamps and coverage. Keep
+archives, recovery keys and private resource inventories out of git. A successful
+older drill does not prove recovery of applications added afterward.
+
+## openDesk seed rehearsal plan
+
 ## Stores to back up
 
 From [docs/architecture/storage.md](../architecture/storage.md):
