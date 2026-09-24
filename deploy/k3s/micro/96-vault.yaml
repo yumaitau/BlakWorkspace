@@ -121,6 +121,7 @@ spec:
   - from:
     - podSelector: {matchLabels: {app: workspace-shell}}
     - podSelector: {matchLabels: {app: blak-role-sync}}
+    - podSelector: {matchLabels: {app: portal}}
     ports:
     - {protocol: TCP, port: 8080}
   egress:

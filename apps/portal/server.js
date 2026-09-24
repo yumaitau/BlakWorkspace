@@ -259,6 +259,7 @@ ${wordmark()}
 <a class=nav-item href="/held-files" ${active === 'held' ? 'data-active="true"' : ''} title="Files held back by the safety check"><span class=ric>!</span><span class=lbl>Held files</span></a>
 <a class=nav-item href="/access" ${active === 'access' ? 'data-active="true" aria-current="page"' : ''} title="People and access: who can use each app"><span class=ric>⚿</span><span class=lbl>People &amp; access</span></a>
 ${navGroups(active, user)}
+${fileGuard.isAdmin(user) ? `<a class=nav-item href="/monitoring" ${active === 'monitoring' ? 'data-active="true"' : ''} title="Host monitoring"><span class=ric>▥</span><span class=lbl>Monitoring</span></a>` : ''}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
 <main>${main}</main></div>
@@ -271,7 +272,7 @@ ${navGroups(active, user)}
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'People & access', d: 'What roles do and who has them', u: '/access' }, { t: 'My access', d: 'Your apps, roles and where they come from', u: '/access/me' }, { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'People & access', d: 'What roles do and who has them', u: '/access' }, { t: 'My access', d: 'Your apps, roles and where they come from', u: '/access/me' }, ...(fileGuard.isAdmin(user) ? [{ t: 'Monitoring', d: 'Host CPU and memory', u: '/monitoring' }] : []), { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -372,6 +373,7 @@ ${outlineSites.homeFragment(await outline.listCollections().catch(() => []), out
 ${live.some(a=>a.id==='drive') ? `<h3 class=sec>Recent documents</h3><div class=empty><svg width="120" height="60" viewBox="0 0 120 60" aria-hidden="true">${dotSun(60, 30, 26, '#21818A', '.55')}</svg><p><b>Nothing here yet.</b></p><p>Open Blak Drive to start working — recent files will appear here.</p><p><a class=btn href="/launch/drive">Open Blak Drive</a></p></div>` : ''}
 <h3 class=sec>Announcements</h3><div class=statusrow><span class=pill>Welcome to Blak Workspace — currently in early development.</span></div>
 <h3 class=sec>System status</h3><div class=statusrow id=pills><span class=pill>checking…</span></div>
+${fileGuard.isAdmin(user) ? '<p><a href="/monitoring">View host CPU and memory</a></p>' : ''}
 <script>
 const hr=new Date().getHours();
 document.getElementById('greet').textContent=(hr<12?'Good morning':hr<18?'Good afternoon':'Good evening')+', '+${scriptJson(user.name || user.sub)};
@@ -506,6 +508,42 @@ async function handleRequest(req, res) {
     if (!user) {res.writeHead(302,{location:'/login'});res.end();return;}
     res.setHeader('content-type','text/html; charset=utf-8');
     res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(allowedApps(APPS, user).map(a => ({ ...a, url: launchURL(a) })))));return;
+  }
+  if (url.pathname === '/monitoring' || url.pathname === '/api/monitoring') {
+    if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
+    if (!fileGuard.isAdmin(user)) { res.writeHead(403); res.end('Workspace admin required'); return; }
+    if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+    if (url.pathname === '/api/monitoring') {
+      try {
+        const hosts = await require('./host-monitor').listHosts();
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ hosts }));
+      } catch {
+        res.writeHead(503, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Host metrics unavailable' }));
+      }
+      return;
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(shell(user, 'monitoring', 'Monitoring', `<h1>Monitoring</h1>
+<p class=gsub>CPU and memory on every Kubernetes host running this workspace. Updates every 15 seconds.</p>
+<p id=monitor-message role=status>Loading host metrics…</p><div class=grid id=hosts></div>
+<script>
+async function refreshHosts(){const message=document.getElementById('monitor-message'),grid=document.getElementById('hosts');
+try{const response=await fetch('/api/monitoring');if(!response.ok)throw Error('Unavailable');const data=await response.json();
+grid.replaceChildren();message.textContent=data.hosts.length?'Host readings updated.':'No Kubernetes hosts found.';
+for(const host of data.hosts){const card=document.createElement('section');card.className='card';const heading=document.createElement('h2');heading.textContent=host.name;card.append(heading);
+const state=document.createElement('p');state.textContent=host.ready?'Ready':'Not ready';card.append(state);
+for(const [label,reading,unit] of [['CPU',host.cpu,'cores'],['Memory',host.memory,'GiB']]){const p=document.createElement('p');
+if(!reading){p.textContent=label+': reading unavailable';}else{const scale=unit==='GiB'?1073741824:1;
+p.textContent=label+': '+(reading.used/scale).toFixed(2)+' / '+(reading.capacity/scale).toFixed(2)+' '+unit+' ('+(100*reading.used/reading.capacity).toFixed(1)+'%)';
+const bar=document.createElement('progress');bar.max=reading.capacity;bar.value=Math.min(reading.used,reading.capacity);bar.setAttribute('aria-label',host.name+' '+label+' usage');p.append(document.createElement('br'),bar);}
+card.append(p);}
+if(host.measuredAt){const at=document.createElement('small');at.textContent='Measured '+new Date(host.measuredAt).toLocaleString();card.append(at);}grid.append(card);}
+}catch{message.textContent='Host metrics unavailable. Try again soon.';grid.replaceChildren();}}
+refreshHosts();setInterval(refreshHosts,15000);
+</script>`));
+    return;
   }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');
