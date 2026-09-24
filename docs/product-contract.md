@@ -49,4 +49,8 @@ Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to matc
 
 ## Decisions
 
+The [offline community roadmap](offline-community-roadmap.md) records the accepted
+delivery order for expanding the suite. Its gates must pass before offline or
+community-governance claims are promoted; a selected tool is not a deployed feature.
+
 Foundational decisions live in [docs/adr/](adr/README.md) (ADR-001 through ADR-009, extended to ADR-014). Working defaults live in [docs/assumptions.md](assumptions.md). The upstream pin lives in [docs/upstream-baseline.md](upstream-baseline.md). Pivot: [docs/architecture/platform-overview.md](architecture/platform-overview.md), [docs/architecture/adapters.md](architecture/adapters.md), [docs/architecture/profiles.md](architecture/profiles.md).

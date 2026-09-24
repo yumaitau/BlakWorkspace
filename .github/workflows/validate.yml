@@ -26,6 +26,12 @@ jobs:
         run: npm ci --prefix apps/portal --ignore-scripts
       - name: Portal regression tests
         run: node --test apps/portal/test/*.test.js
+      - name: Verify the offline browser network gate
+        working-directory: e2e
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+          npx playwright test local-network-guard.spec.js --reporter=list
       - name: Build Draw frontend
         working-directory: apps/portal/draw
         run: |

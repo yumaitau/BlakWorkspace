@@ -1,6 +1,6 @@
 'use strict';
 const crypto=require('node:crypto');
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('../helpers/offline-test');
 const {authentikLogin}=require('../helpers/auth');
 const {syncAccount,serviceURL,ownedPersonalDrive}=require('../helpers/sync');
 
@@ -36,7 +36,16 @@ test('Drive opens, edits and saves a real document in Collabora',async({page,pla
   await editor.locator('#document-container').click();
   const input=editor.locator('#clipboard-area');
   await input.press('End');await input.press('Enter');await input.pressSequentially(edited);await input.press('ControlOrMeta+s');
-  await expect.poll(async()=>{const data=await (await drive.get(path)).body();return require('node:child_process').execFileSync('python3',['-c',"import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],{input:data}).toString();},{timeout:45000}).toContain(edited);
+  await expect.poll(async()=>{
+   const response=await drive.get(path);
+   // A save can briefly hold the DAV resource. Retry only the transient lock.
+   if(response.status()===423)return false;
+   if(!response.ok())throw Error(`Saved document read failed: HTTP ${response.status()}`);
+   const data=await response.body();
+   if(data[0]!==0x50||data[1]!==0x4b)throw Error(`Saved document is not ODT: HTTP ${response.status()}, ${response.headers()['content-type']||'unknown type'}`);
+   const content=require('node:child_process').execFileSync('python3',['-c',"import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],{input:data}).toString();
+   return content.includes(edited);
+  },{timeout:45000}).toBe(true);
   await page.screenshot({path:test.info().outputPath('docs-editor.png'),fullPage:true});
  } catch(error) {
   failure=error;throw error;

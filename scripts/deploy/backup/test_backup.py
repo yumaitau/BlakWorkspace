@@ -2,6 +2,8 @@ import base64
 import contextlib
 import importlib.util
 import io
+import sqlite3
+import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -11,6 +13,32 @@ backup=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(backup)
 
 class BackupFailureTests(unittest.TestCase):
+    def test_smith_restore_requires_matching_volume_and_recovery_key(self):
+        deployment={'kind':'Deployment','metadata':{'name':'smith-postgres'}}
+        key={'kind':'Secret','metadata':{'name':'blak-smith'},'data':{'kek':base64.b64encode(b'test-only-key').decode()}}
+        plan=backup.restore_database_plan([deployment,key],['smith-pgdata'])
+        self.assertIn(('smith-postgres','smith-pgdata','/var/lib/postgresql'),plan)
+        self.assertNotIn('smith-postgres',[item[0] for item in backup.restore_database_plan([],[])])
+        for resources,volumes in [([deployment,key],[]),([],['smith-pgdata']),([deployment],['smith-pgdata'])]:
+            with self.assertRaises(RuntimeError):backup.restore_database_plan(resources,volumes)
+
+    def test_eyes_restore_does_not_create_a_missing_database(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            self.assertIsNone(backup.check_eyes_database(root,[]))
+            with self.assertRaises(RuntimeError):backup.check_eyes_database(root,['eyes-data'])
+            self.assertFalse((root/'volumes/eyes-data/blakeyes.sqlite3').exists())
+
+    def test_eyes_restore_checks_integrity_and_foreign_keys(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);db=root/'volumes/eyes-data/blakeyes.sqlite3';db.parent.mkdir(parents=True)
+            with sqlite3.connect(db) as con:
+                con.execute('CREATE TABLE parent (id INTEGER PRIMARY KEY)')
+                con.execute('CREATE TABLE child (id INTEGER REFERENCES parent(id))')
+            self.assertIn('ok',backup.check_eyes_database(root,['eyes-data']))
+            with sqlite3.connect(db) as con:con.execute('INSERT INTO child VALUES (42)')
+            with self.assertRaisesRegex(RuntimeError,'foreign key'):backup.check_eyes_database(root,['eyes-data'])
+
     def test_unrelated_binary_secret_is_not_decoded(self):
         resources=[{'kind':'Secret','metadata':{'name':'binary'},'data':{'key':base64.b64encode(b'\xff\xfe').decode()}},
                    {'kind':'Secret','metadata':{'name':'blak-core'},'data':{'postgres-user':base64.b64encode(b'postgres').decode()}}]
