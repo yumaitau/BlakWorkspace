@@ -7,6 +7,9 @@ portal; open documents, spreadsheets and slides from Drive in Collabora.
 ## 1. Offline foundation and community authority
 
 Start with the [offline acceptance runbook](runbooks/offline-readiness.md).
+The [local network setup](runbooks/local-network.md) supplies optional bundled DNS,
+existing-DNS record export and local certificate tooling. It does not by itself
+establish application trust, LAN-only access or complete offline readiness.
 Record three independent results: internet unavailable on the community LAN,
 device completely disconnected, and reconnect reconciliation. Browser-only
 traffic restriction is an early dependency check, not the LAN outage result.

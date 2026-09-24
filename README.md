@@ -113,6 +113,10 @@ Prepare a release for your actual domain before building or deploying. Checked-i
 `workspace.example.com` URLs are templates. See the
 [dedicated deployment runbook](docs/runbooks/dedicated-deployment.md).
 
+Standalone and offline installations can use [bundled LAN DNS and local HTTPS](docs/runbooks/local-network.md),
+or export records for an existing DNS server. Router DNS selection and device/service
+certificate trust remain explicit setup steps; Tailscale is optional.
+
 Verified workflows include Blak ID SSO, files and sharing, Docs editing, team chat,
 knowledge, projects, forms, private drawings, Frappe CRM and private Hermes sync.
 Blak Knowledge uses Outline; Docmost was replaced because its SSO is licence-gated.

@@ -7,6 +7,7 @@ This file is a skeleton inventory for Blak Workspace overlays that configure or 
 | Component | Upstream | Licence (as documented) | Notes |
 | --- | --- | --- | --- |
 | openDesk deployment (Helmfile) | ZenDiS / Open CoDE GitLab | Apache-2.0 | Baseline pin in docs/upstream-baseline.md |
+| Optional LAN DNS | [CoreDNS 1.14.7](https://github.com/coredns/coredns/tree/v1.14.7) | Apache-2.0 | Digest-pinned in scripts/deploy/local_network.py; separate from cluster DNS |
 
 ## Functional applications (from openDesk introduction docs)
 

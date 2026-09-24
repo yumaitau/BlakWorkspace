@@ -27,6 +27,8 @@ export BLAK_E2E_IDP_URL=https://id.community.example
 export BLAK_E2E_DRIVE_URL=https://drive.community.example
 export BLAK_E2E_LOCAL_ORIGINS='["https://portal.community.example","https://id.community.example","https://drive.community.example","https://docs.community.example","https://knowledge.community.example","https://chat.community.example","https://smith.community.example","https://eyes.community.example"]'
 export BLAK_E2E_SERVICE_ORIGINS='{"drive":"https://drive.community.example"}'
+# Optional: use only this resolver for allowed browser destinations; no system fallback.
+export BLAK_E2E_DNS_SERVER=192.168.50.10
 # Supply BLAK_E2E_USER and BLAK_E2E_PASSWORD through the operator's secret workflow.
 # On the homelab only, BLAK_E2E_BOOTSTRAP=1 explicitly opts into in-memory retrieval.
 npm run test:local-only
@@ -65,6 +67,10 @@ are on the Tailscale address. Existing tailnet sessions are not evidence that a
 fresh device can resolve and reach every application with WAN unavailable.
 
 ## Community LAN gate
+
+Set up [local DNS and HTTPS](local-network.md) before this gate. The optional
+`BLAK_E2E_DNS_SERVER` exercises that resolver inside the browser proxy. It does not
+change operating-system DNS or cover server-side lookups/direct API fixtures.
 
 Use an isolated rehearsal environment or an onsite-controlled outage. Do not cut
 the network carrying the operator's only management connection.

@@ -33,6 +33,7 @@ Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to matc
 - Branding and theming overlays that preserve upstream upgrades
 - Helmfile/Kubernetes configuration profiles (eval / staging / prod intent)
 - Operator documentation and architecture decision records
+- Optional LAN DNS and local TLS tooling for dedicated/offline installations, or generated records for existing DNS; no dependency on a particular homelab or Tailscale account
 - GitHub backlog and seed tooling
 - Carefully scoped extensions that do not break upgrades
 - Pivot additions: Portal, adapters, gateway/search/notifications/audit services; Compose (Micro/Small) + K3s/Helm (Business/Enterprise) with same containers; OIDC-first, permission-aware search/AI, central audit with SIEM export
