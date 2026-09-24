@@ -163,16 +163,16 @@ class NewWorkspaceSourcesTests(unittest.TestCase):
                 if path == '/api/v1/auths/': return {'id':'owner'}
                 return {'user_id':'owner', 'access_grants':[]}
         mapping={'owner_id':'owner', 'hermes':{'base':'https://hermes.example'},
-                 'sources':{'forms':{'base':'https://forms.example'}, 'draw':{'base':'https://portal.example'}}}
+                 'sources':{'crm':{'base':'https://crm.example'}, 'draw':{'base':'https://portal.example'}}}
         state={name:{'collection':name, 'files':{}} for name in mapping['sources']}
         with patch.object(sync, 'API', return_value=Hermes()), \
-             patch.object(sync, 'forms_documents', side_effect=RuntimeError('offline')), \
+             patch.object(sync, 'crm_documents', side_effect=RuntimeError('offline')), \
              patch.object(sync, 'portal_documents', return_value=[]) as reader, \
              patch.object(sync, 'ensure_workspace_model') as model:
             with self.assertRaises(RuntimeError): sync.sync_mapping(mapping, state, lambda:None,set(mapping['sources']))
             reader.assert_called_once()
             self.assertEqual(set(model.call_args.args[2]), {'draw'})
-            self.assertIn('last_error', state['forms'])
+            self.assertIn('last_error', state['crm'])
             self.assertIn('last_success', state['draw'])
 
     def test_crm_requires_matching_identity_before_reading_any_records(self):
@@ -197,28 +197,6 @@ class NewWorkspaceSourcesTests(unittest.TestCase):
         docs=sync.crm_documents(Source())
         self.assertEqual(len(docs),100)
         self.assertIn(b'Workspace lead',docs[0]['content'])
-
-    def test_forms_errors_never_become_successful_empty_listing(self):
-        class Source:
-            def json(self,*args):return {'errors':[{'message':'Forbidden'}], 'data':{'teams':[]}}
-        with self.assertRaises(RuntimeError):sync.graphql(Source(),'{teams{id}}')
-
-    def test_forms_paginate_responses_and_exclude_password_settings(self):
-        class Source:
-            expected_user='alice@example.test'; public_base='https://forms.example'
-            def json(self, method, path, data):
-                query=data['query']; values=data['variables'].get('input',{})
-                self_test.assertNotIn('password',query)
-                if 'userDetail' in query:return {'data':{'userDetail':{'email':self.expected_user}}}
-                if 'teams{' in query:return {'data':{'teams':[{'id':'t','name':'Team','projects':[{'id':'p','name':'Project'}]}]}}
-                if 'forms(' in query:return {'data':{'forms':[{'id':'f','name':'Survey'}]}}
-                if 'formDetail' in query:return {'data':{'formDetail':{'id':'f','name':'Survey','fields':[]}}}
-                page=values['page']; count=30 if page==1 else 1
-                return {'data':{'submissions':{'total':31,'submissions':[{'id':str((page-1)*30+i),'answers':[{'value':'answer'}]} for i in range(count)]}}}
-        self_test=self
-        docs=sync.forms_documents(Source())
-        self.assertEqual(len(docs),32)
-        self.assertIn(b'answer',docs[-1]['content'])
 
     def test_portal_export_cannot_be_mapped_to_another_owner(self):
         class Source:
@@ -250,11 +228,11 @@ class HealthPublicationTests(unittest.TestCase):
 
 class SearchTests(unittest.TestCase):
     def test_structured_exports_have_readable_previews(self):
-        doc = {'id': 'form', 'name': 'export.json', 'content': b'{"form":{"name":"Team feedback","id":"opaque-id","fields":[{"title":["What should we improve?"],"kind":"short_text"}]},"source":"https://forms.example/form"}'}
-        result = sync.search_document(None, 'owner', 'ada', 'forms', {'public_base': 'https://forms.example'}, doc, {})
+        doc = {'id': 'project', 'name': 'export.json', 'content': b'{"project":{"name":"Team feedback","id":"opaque-id","fields":[{"title":["What should we improve?"],"kind":"short_text"}]},"source":"https://projects.example/project"}'}
+        result = sync.search_document(None, 'owner', 'ada', 'projects', {'public_base': 'https://projects.example'}, doc, {})
         self.assertEqual(result['title'], 'Team feedback')
         self.assertEqual(result['content'], 'Team feedback\nWhat should we improve?')
-        self.assertEqual(result['url'], 'https://forms.example/form')
+        self.assertEqual(result['url'], 'https://projects.example/project')
     def test_private_owner_title_url_and_expiry(self):
         doc={'id':'one','name':'one.md','content':b'# A project\nSource: https://docs.example/doc/one\nPrivate plan'}
         result=sync.search_document(None,'hermes-owner','ada','outline',{'public_base':'https://docs.example'},doc,{})
@@ -368,6 +346,55 @@ class SourceRevocationTests(unittest.TestCase):
         record = {'files': {'doc': {'file_id': 'already-deleted'}}}
         sync.revoke_source(Hermes(), 'owner', record, lambda: None)
         self.assertEqual(record['files'], {})
+
+
+class RetiredFormsTests(unittest.TestCase):
+    def test_retired_forms_never_connect_and_remove_only_owned_tracked_copies(self):
+        class Hermes(FakeHermes):
+            def json(self, method, path, data=None):
+                if path == '/api/v1/auths/': return {'id': 'owner'}
+                if method == 'GET' and path.startswith('/api/v1/files/'):
+                    return {'user_id': 'owner'}
+                return super().json(method, path, data)
+        for configured in (True, False):
+            with self.subTest(configured=configured):
+                api = Hermes()
+                mapping = {'owner_id': 'owner', 'hermes': {},
+                           'sources': {'forms': {'base': 'https://forms.invalid'}} if configured else {}}
+                state = {'forms': {'collection': 'old-forms', 'files': {
+                    'response': {'file_id': 'tracked', 'cleanup': ['old']}}}}
+                with patch.object(sync, 'API', return_value=api) as client, \
+                     patch.object(sync, 'ensure_workspace_model') as model:
+                    result = sync.sync_mapping(mapping, state, lambda: None, {'forms'})
+                    client.assert_called_once_with()
+                    self.assertEqual(result['forms']['deleted'], 2)
+                    self.assertEqual(state['forms']['files'], {})
+                    self.assertTrue(state['forms']['access_revoked'])
+                    self.assertEqual(model.call_args.args[2], {})
+                    self.assertIn(('DELETE', '/api/v1/files/tracked', None), api.calls)
+                    self.assertEqual(sync.sync_mapping(mapping, state, lambda: None, {'forms'})['forms']['deleted'], 0)
+
+    def test_retired_forms_cannot_delete_another_owners_file(self):
+        class Hermes(FakeHermes):
+            def json(self, method, path, data=None):
+                if path == '/api/v1/auths/': return {'id': 'owner'}
+                if path == '/api/v1/files/foreign': return {'user_id': 'someone-else'}
+                return super().json(method, path, data)
+        api = Hermes()
+        state = {'forms': {'files': {'response': {'file_id': 'foreign'}}}}
+        with patch.object(sync, 'API', return_value=api), patch.object(sync, 'ensure_workspace_model'):
+            with self.assertRaises(RuntimeError):
+                sync.sync_mapping({'owner_id': 'owner', 'hermes': {}, 'sources': {}}, state, lambda: None, set())
+        self.assertFalse(any(call[0] == 'DELETE' for call in api.calls))
+        self.assertIn('response', state['forms']['files'])
+
+    def test_retired_forms_excluded_from_grants_and_health(self):
+        mapping = {'name': 'account', 'portal_owner': 'subject', 'sources': {'forms': {}}}
+        self.assertNotIn('forms', sync.permitted_sources(mapping, {'subject': {'apps': ['hermes', 'forms']}}))
+        with tempfile.TemporaryDirectory() as tmp:
+            file = Path(tmp) / 'health.json'
+            sync.publish_health({'accounts': [mapping]}, {}, file)
+            self.assertEqual(sync.json.loads(file.read_text())['accounts'][0]['sources'], [])
 
 if __name__ == "__main__":
     unittest.main()

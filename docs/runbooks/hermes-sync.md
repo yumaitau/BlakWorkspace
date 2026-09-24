@@ -3,7 +3,7 @@
 The `hermes-workspace-sync` CronJob runs every five minutes in `blak-micro`.
 It reads the configured account's accessible Drive/Docs files, published Knowledge
 pages, joined Chat channels, private groups and direct conversations, Projects
-boards/tasks, CRM records and activities, Forms questions/responses, Draw boards,
+boards/tasks, CRM records and activities, Draw boards,
 Flow definitions/run status and Cloud files. Archived pages/tasks, unsupported
 file formats and files over 20 MiB are excluded. Images/audio/video are not
 transcribed; embedded drawing images and infrastructure secrets are not indexed. This is a per-account replica, not a public organisation-wide index.
@@ -80,13 +80,14 @@ own mapping and credentials; their private documents are not copied by this one.
 - Projects uses the owner's API key (one-year expiry). This upstream API does not
   let clients set read-only key permissions; the connector performs only reads.
 - CRM uses the verified owner's Frappe API key and native record permissions.
-- Forms uses that owner's authenticated session; regular reads renew it. Re-enrol
-  if revoked or expired after an outage.
+- Forms is not indexed. Retired Forms mappings only revoke tracked Hermes copies;
+  original forms and submissions stay in HeyForm. Remove Forms credentials from
+  existing sync mappings when deploying this change.
 - Draw/Flow exports use a separate read-only bearer token bound to the portal
   owner. Requests cannot select another owner. Cloud files use the shared deployment
   storage service; this is shared workspace storage, not per-user private storage.
-- `node scripts/deploy/connect-hermes-apps.js` enrols these five new sources after
-  matching Hermes, portal and Forms identities. Deployment runs it automatically.
+- `node scripts/deploy/connect-hermes-apps.js` enrols CRM, Draw, Flow and Cloud after
+  matching Hermes and portal identities. Deployment runs it automatically.
   Additional people need their own account mapping and source credentials.
 - Hermes API keys must be enabled. Its `WEBUI_SECRET_KEY` comes from
   `blak-hermes/session-secret`, so sessions survive deployment replacement.
@@ -124,5 +125,5 @@ test workspace, then remove their own data and reconcile deletions.
 
 `hermes-apps.spec.js` exercises CRM, Draw, Flow and Cloud create/update/delete,
 private board isolation, read-only exports and a grounded CRM answer.
-`forms.spec.js` verifies published questions and submitted answers reach Hermes
-and disappear after deletion. Run the complete Playwright suite after deployment.
+`forms.spec.js` verifies form publishing, submissions and deletion in HeyForm.
+Worker regression tests verify retired Forms copies are removed without contacting HeyForm. Run the complete Playwright suite after deployment.

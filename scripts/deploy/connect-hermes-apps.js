@@ -60,18 +60,8 @@ async function main() {
     mapping.portal_owner = identity.sub;
     mapping.credential_metadata ||= {};
     const checkedAt = Math.floor(Date.now()/1000);
-    stage = 'Forms sign-in';
-    await page.goto('https://forms.workspace.example.com');
-    await page.getByRole('button', { name: 'Blak ID', exact: true }).click();
-    await page.waitForURL(u => u.hostname === 'forms.workspace.example.com' && u.pathname.startsWith('/workspace/'));
-    const detail = await page.request.post('https://forms.workspace.example.com/graphql', { data: { query: '{userDetail{id email}}' } });
-    const user = (await detail.json()).data?.userDetail;
-    if (user?.email !== hermes.email) throw new Error('Forms and Hermes identities differ');
-    const cookies = await context.cookies('https://forms.workspace.example.com');
-    mapping.sources.forms = { base: 'http://forms:9157', public_base: 'https://forms.workspace.example.com', expected_user: hermes.email,
-      headers: { Cookie: cookies.map(c => c.name + '=' + c.value).join('; ') } };
-    const expires=cookies.map(cookie=>cookie.expires).filter(value=>value>0);
-    if(expires.length)mapping.credential_metadata.forms={...mapping.credential_metadata.forms,expires_at:Math.min(...expires)};
+    delete mapping.sources.forms;
+    delete mapping.credential_metadata.forms;
     const token = mapping.sources.draw?.token || crypto.randomBytes(40).toString('base64url');
     for (const source of ['draw', 'flow']) mapping.sources[source] = { base: 'http://portal:3000', public_base: 'https://portal.workspace.example.com', token, expected_user: identity.sub };
     const exporters = JSON.parse(secret('blak-portal-exports')['accounts.json'] || '[]').filter(a => a.owner !== identity.sub);
@@ -83,7 +73,7 @@ async function main() {
     mapping.sources.crm = { base: 'http://crm:3000', public_base: 'https://crm.workspace.example.com', expected_user: hermes.email,
       headers: { Authorization: 'token ' + crm.api_key + ':' + crm.api_secret } };
     mapping.sources.storage = { base: 'http://floci:4566', public_base: 'https://portal.workspace.example.com/cloud' };
-    for (const source of ['forms','draw','flow','crm','storage']) mapping.credential_metadata[source] = { ...mapping.credential_metadata[source], checked_at: checkedAt };
+    for (const source of ['draw','flow','crm','storage']) mapping.credential_metadata[source] = { ...mapping.credential_metadata[source], checked_at: checkedAt };
     save('blak-hermes-sync', { 'accounts.json': JSON.stringify(config) });
     stage = 'portal credential projection';
     const portalIP = kube(['get', 'service', 'portal', '-o', 'jsonpath={.spec.clusterIP}']);
@@ -94,7 +84,7 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     if (!ready) throw new Error('Portal export credential projection is not ready');
-    console.log('CRM, Forms, Draw, Flow and Cloud files connected to verified private Hermes owner');
+    console.log('CRM, Draw, Flow and Cloud files connected to verified private Hermes owner');
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error('Hermes connector enrolment failed:', stage, error.name); process.exitCode = 1; });
