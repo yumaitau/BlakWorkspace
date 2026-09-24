@@ -223,6 +223,15 @@ test('Blak ID client uses the service token and the documented endpoints', async
   } finally { server.close(); }
 });
 
+test('BlakSmith and BlakEyes say their changes need the directory sync', async () => {
+  const { run } = harness();
+  for (const app of ['smith', 'eyes']) {
+    assert.equal(APP_ACCESS[app].timing, 'directory');
+    const page = (await run({ path: '/access/admin/apps/' + app, user: fx.ADMIN })).body;
+    assert.match(page, /sync-directory\.py --from-cluster --push/);
+  }
+});
+
 test('role sets merge apps that share role groups', () => {
   const drive = roleSets().find(set => set.id === 'drive');
   assert.deepEqual(drive.apps, ['drive', 'docs']);

@@ -30,8 +30,8 @@ Every change shows its effect in plain words before you confirm, and success is
 only shown after Blak ID confirms it. Native apps pick the change up within about
 a minute (the `app-roles` reconciler); Draw, Flow, Cloud and Search within 30
 seconds. Workspace administrators show as "Admin: via Workspace administrators"
-everywhere and cannot be given a lower per-app role here. BlakSmith and BlakEyes take effect only after an operator runs the
-directory sync.
+everywhere and cannot be given a lower per-app role here. BlakSmith and BlakEyes take effect only after an operator runs
+`scripts/deploy/sync-directory.py --from-cluster --push`.
 
 **Team groups.** Giving a team group a role makes it a child group of the role
 group. Authentik 2026.8 groups can have several parents, and a member of a group

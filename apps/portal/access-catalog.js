@@ -13,7 +13,7 @@ const ROLE_LABEL = Object.freeze({ reader: 'Reader', writer: 'Writer', admin: 'A
 const TIMING = Object.freeze({
   native: 'Blak ID updates the app within about a minute. The person may need to sign in to the app again.',
   portal: 'Takes effect within 30 seconds. Blak Home re-checks roles on the next page load.',
-  directory: 'Takes effect after an operator runs the directory sync. Until then the app keeps the old role.',
+  directory: 'Takes effect after an operator runs scripts/deploy/sync-directory.py --from-cluster --push. Until then the app keeps the old role.',
 });
 
 const APP_ACCESS = {
@@ -137,20 +137,20 @@ const APP_ACCESS = {
   },
   smith: {
     name: 'BlakSmith', timing: 'directory',
-    purpose: 'Knowledge graph for Country, title and heritage.',
+    purpose: 'Knowledge graph for Country, title and heritage. Tenant admins approve what custodians share.',
     roles: {
-      reader: { summary: 'view records in BlakSmith', can: ['View records you have access to'], cannot: ['Add or change records'] },
-      writer: { summary: 'add and edit records in BlakSmith', can: ['Everything a Reader can do', 'Add and edit records'], cannot: ['Manage BlakSmith settings'] },
-      admin: { summary: 'manage records and settings in BlakSmith', can: ['Everything a Writer can do', 'Manage BlakSmith settings'], cannot: ['Change Blak ID roles'] },
+      reader: { summary: 'look through the knowledge graph in BlakSmith', can: ['Look through places, people, title and heritage records you are allowed to see', 'Follow links between records'], cannot: ['Add or change records', 'Approve anything for custodians'] },
+      writer: { summary: 'add and edit records in BlakSmith', can: ['Everything a Reader can do', 'Add and edit records and the links between them', 'Send records for custodian approval'], cannot: ['Approve records on behalf of custodians', 'Manage BlakSmith settings or people'] },
+      admin: { summary: 'approve custodian records and manage BlakSmith', can: ['Everything a Writer can do', 'Approve or hold back records as the tenant admin, with custodians', 'Manage BlakSmith settings'], cannot: ['See records custodians have kept restricted from you', 'Change Blak ID roles'] },
     },
   },
   eyes: {
     name: 'BlakEyes', timing: 'directory',
-    purpose: 'Drone imagery for land and sea management on Country.',
+    purpose: 'Drone imagery appliance for land and sea management on Country.',
     roles: {
-      reader: { summary: 'view imagery and maps in BlakEyes', can: ['View imagery and map layers'], cannot: ['Upload or change imagery'] },
-      writer: { summary: 'upload and edit imagery in BlakEyes', can: ['Everything a Reader can do', 'Upload and edit imagery and layers'], cannot: ['Manage BlakEyes settings'] },
-      admin: { summary: 'manage imagery and settings in BlakEyes', can: ['Everything a Writer can do', 'Manage BlakEyes settings'], cannot: ['Change Blak ID roles'] },
+      reader: { summary: 'look at drone imagery and survey layers in BlakEyes', can: ['Look at drone imagery, maps and survey layers'], cannot: ['Bring in new imagery', 'Review or change surveys'] },
+      writer: { summary: 'bring in and review drone imagery in BlakEyes', can: ['Everything a Reader can do', 'Bring in (ingest) new flights and imagery', 'Review and annotate surveys'], cannot: ['Manage the appliance or survey layers'] },
+      admin: { summary: 'manage the BlakEyes appliance and survey layers', can: ['Everything a Writer can do', 'Manage the appliance, its storage and settings', 'Create and manage survey layers'], cannot: ['Change Blak ID roles'] },
     },
   },
 };
