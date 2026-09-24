@@ -36,13 +36,22 @@ for (const theme of ['dark', 'light']) {
     await expect(signIn.or(tools)).toBeVisible();
     if (await signIn.isVisible()) await signIn.click();
     await expect(tools).toBeVisible();
+    await expect(page.locator('.brand-logo')).toBeVisible();
+    expect(await page.locator('.brand-logo').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
     await expect(page.locator('html')).toHaveAttribute('data-blak-theme', theme);
     for (const screen of screens) {
       await test.step(screen, async () => {
         await page.getByRole('button', { name: screen, exact: true }).click();
+        if (screen === 'Map') {
+          await expect(page.getByRole('status').filter({ hasText: 'Offline world overview' })).toBeVisible();
+          await expect(page.getByLabel('Offline survey map').locator('canvas')).toBeVisible();
+          await expect(page.getByRole('alert')).toHaveCount(0);
+          await page.screenshot({ path: test.info().outputPath(`eyes-${theme}-map.png`), fullPage: true });
+        }
         await audit(page);
       });
     }
+    await checkNotification(page);
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await page.getByRole('button', { name: 'New site', exact: true }).click();
     await audit(page);
@@ -61,6 +70,22 @@ for (const theme of ['dark', 'light']) {
     await audit(page);
     await tools.click();
     await audit(page);
+    await page.getByRole('button', { name: 'Toggle navigation' }).click();
+    await checkNotification(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
+}
+
+async function checkNotification(page) {
+  await page.getByRole('button', { name: 'Data quality', exact: true }).click();
+  await page.getByRole('button', { name: 'Reprocess metadata', exact: true }).click();
+  const toast = page.locator('.toast');
+  await expect(toast).toContainText('Metadata reprocessing queued');
+  expect(await toast.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    return [0.15, 0.5, 0.85].every(f => el.contains(document.elementFromPoint(rect.x + rect.width * f, rect.y + rect.height / 2)));
+  })).toBe(true);
+  await page.screenshot({ path: test.info().outputPath(`eyes-toast-${page.viewportSize().width}.png`) });
+  await page.getByRole('button', { name: 'Dismiss notification' }).click();
+  await expect(toast).toHaveCount(0);
 }
