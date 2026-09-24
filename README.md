@@ -10,6 +10,51 @@ Indigenous-branded digital workplace suite by Yuma IT, distributed as branding, 
 
 Blak Workspace helps Australian organisations run a coherent digital workplace experience with Blak product naming on top of openDesk components, while preserving upstream compatibility and honest licensing. The [product contract](docs/product-contract.md) is the definition of done for this seed.
 
+## Deployed screenshots
+
+Captured in Chromium from the running K3s homelab reference deployment on **24 September 2026**. These views show the workspace administrator's apps with test data and empty workspaces. Click an image to view it at full size.
+
+**Workspace home** — shared navigation, app access and intranet collections.
+
+[![Blak Workspace desktop home with app navigation and intranet collections](docs/screenshots/2026-09-24/workspace-desktop.png)](docs/screenshots/2026-09-24/workspace-desktop.png)
+
+| Files | Office editing |
+| --- | --- |
+| [![Blak Drive personal file list](docs/screenshots/2026-09-24/drive.png)](docs/screenshots/2026-09-24/drive.png) | [![A test document edited and saved in Collabora within Blak Drive](docs/screenshots/2026-09-24/office-editing.png)](docs/screenshots/2026-09-24/office-editing.png) |
+| **Blak Drive** — the single portal entry for files and office documents. | **Collabora within Drive** — a real test document after an edit and save. |
+
+| Knowledge | Projects |
+| --- | --- |
+| [![Blak Knowledge Front desk collection with five seeded intranet pages](docs/screenshots/2026-09-24/knowledge.png)](docs/screenshots/2026-09-24/knowledge.png) | [![Blak Projects workspace ready for its first project](docs/screenshots/2026-09-24/projects.png)](docs/screenshots/2026-09-24/projects.png) |
+| **Blak Knowledge** — an Outline collection with Home, News, How we work, People and Policies. | **Blak Projects** — the Kaneo project workspace. |
+
+| Forms | Assistant |
+| --- | --- |
+| [![Blak Forms dashboard showing test forms and no submissions](docs/screenshots/2026-09-24/forms.png)](docs/screenshots/2026-09-24/forms.png) | [![Blak Hermes start page with its chat composer](docs/screenshots/2026-09-24/hermes.png)](docs/screenshots/2026-09-24/hermes.png) |
+| **Blak Forms** — the HeyForm dashboard. | **Blak Hermes** — the local assistant's start page. |
+
+| Records | Cloud console |
+| --- | --- |
+| [![BlakSmith home with record types for land, title and Country](docs/screenshots/2026-09-24/smith.png)](docs/screenshots/2026-09-24/smith.png) | [![Blak Cloud console showing Floci local runtime services](docs/screenshots/2026-09-24/cloud.png)](docs/screenshots/2026-09-24/cloud.png) |
+| **BlakSmith** — getting started with records and their relationships. | **Blak Cloud** — Floci's local cloud runtime console. |
+
+| Field operations | Survey map |
+| --- | --- |
+| [![BlakEyes overview with the updated logo and field workflow checklist](docs/screenshots/2026-09-24/eyes.png)](docs/screenshots/2026-09-24/eyes.png) | [![BlakEyes offline Natural Earth map centred on Australia with no mapped records yet](docs/screenshots/2026-09-24/eyes-map.png)](docs/screenshots/2026-09-24/eyes-map.png) |
+| **BlakEyes** — survey, imagery, review and model workflow. | **BlakEyes map** — the offline world overview before survey data is added. |
+
+<details>
+<summary>Mobile views: Workspace and BlakEyes</summary>
+
+Captured at a 390 × 844 viewport.
+
+<a href="docs/screenshots/2026-09-24/workspace-mobile.png"><img src="docs/screenshots/2026-09-24/workspace-mobile.png" alt="Blak Workspace home at a mobile viewport" width="260"></a>
+<a href="docs/screenshots/2026-09-24/eyes-mobile.png"><img src="docs/screenshots/2026-09-24/eyes-mobile.png" alt="BlakEyes field operations overview at a mobile viewport" width="260"></a>
+
+</details>
+
+The Flow entry visible in the portal still opens the existing prototype. The selected Node-RED migration and its [accepted RBAC model](docs/node-red-rbac-and-connections.md) are not yet deployed.
+
 ## Scope
 
 **In scope**
