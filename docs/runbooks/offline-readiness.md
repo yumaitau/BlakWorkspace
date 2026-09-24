@@ -18,6 +18,9 @@ and device gates below before describing the deployment as offline-ready.
 
 ```sh
 cd e2e
+# Prepare dependencies/browser while connected, before outage rehearsal.
+npm ci --ignore-scripts
+npx playwright install chromium
 export KUBECONFIG=/path/to/the/intended-cluster.yaml
 export BLAK_E2E_BASE_URL=https://portal.community.example
 export BLAK_E2E_IDP_URL=https://id.community.example
@@ -44,14 +47,20 @@ the required application operations must still pass.
 
 ### Homelab observation — 24 September 2026
 
-All three browser tests passed against the deployed tailnet origins.
+All four browser tests passed against the deployed tailnet origins in 48.8 seconds.
 The only blocked origin was `https://update.opencloud.eu`; document editing and
 session renewal still worked. Knowledge, Chat and Eyes attempted no external origin
 in the tested paths. This proves those browser operations can avoid public services
 while the local application servers remain reachable.
+Smith web/API ran `sha-8680f30`, including the consent and field-import fixes from
+[BlakSmith PR #131](https://github.com/yumaitau/BlakSmith/pull/131). Native malformed
+imports returned 400; consent expiry and shared-device sanitisation also have unit
+regressions in Smith. These checks do not establish suite-wide cultural protection.
 
 The LAN gate has **not passed**: a direct request to the node's LAN address using
-the current portal hostname failed certificate verification. Current app listeners
+the current portal hostname failed certificate verification. The LAN listener
+presented a development certificate for `*.homelab.local`, while current SSO/app
+origins use the tailnet hostname. Current app listeners
 are on the Tailscale address. Existing tailnet sessions are not evidence that a
 fresh device can resolve and reach every application with WAN unavailable.
 

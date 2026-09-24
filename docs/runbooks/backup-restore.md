@@ -10,6 +10,10 @@ It discovers namespace PVCs and archives their bytes plus Kubernetes configurati
 and secrets in an encrypted snapshot. Snapshot creation briefly stops application
 workloads; the restore drill uses copied data and isolated Docker containers with
 no network or published ports. It does not stop production services.
+The drill requires the archived deployment's database images in the node's Docker
+cache and uses `--pull=never`. K3s/containerd and Docker have separate image stores;
+prepare the exact image in the restore engine before disconnecting. Missing images
+fail closed rather than silently relying on a registry.
 
 The database drill checks the shared PostgreSQL database, Frappe MariaDB,
 Rocket.Chat MongoDB, Smith PostgreSQL 18, Hermes SQLite, Eyes SQLite and Vault
@@ -29,6 +33,16 @@ Read `/var/backups/blak-workspace/last-backup.json` and
 `last-restore-drill.json` on the node for actual timestamps and coverage. Keep
 archives, recovery keys and private resource inventories out of git. A successful
 older drill does not prove recovery of applications added afterward.
+
+On **24 September 2026**, the expanded drill restored
+`workspace-20260923T173122Z.tar.gpg`: **27 volumes, 16,288 verified files**, and
+successful checks for all seven stores listed above, in 41 seconds. Database
+containers had `--network none` and `--pull=never`; only copied volumes were mounted.
+The archived Smith graph contained zero nodes, so this proves schema readability,
+not recovery of an encrypted cultural record. PostgreSQL 18 parent-directory
+ownership is repaired within the copied volume before startup, because safe tar
+extraction deliberately discards original ownership. Production workloads remain
+running during the drill.
 
 ## openDesk seed rehearsal plan
 

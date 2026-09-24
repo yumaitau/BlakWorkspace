@@ -131,7 +131,15 @@ def restore_drill(root,key,archive):
                 # Parent mount must remain traversable after privilege drop.
                 (data/'volumes'/volume).chmod(0o755)
                 options=['-e','PGDATA=/var/lib/postgresql/data/pgdata'] if deployment=='postgres' else []
-                run('docker','run','-d','--name',name,'--label',RESTORE_LABEL,'--network','none','--memory','768m','--cpus','1',*options,'-v',str(data/'volumes'/volume)+':'+mount,c['image'])
+                # Images must be prepared locally. A drill must not silently depend on a registry.
+                try:run('docker','image','inspect',c['image'])
+                except subprocess.CalledProcessError:raise RuntimeError('Restore image missing locally: '+deployment) from None
+                if deployment=='smith-postgres':
+                    # PG18 has a private major-version parent above PGDATA. Safe tar
+                    # extraction strips ownership; its entrypoint only fixes PGDATA.
+                    # Repair ownership inside the isolated copy, never the live PVC.
+                    run('docker','run','--rm','--pull=never','--network','none','--user','0','--entrypoint','chown','-v',str(data/'volumes'/volume)+':/restore',c['image'],'-R','postgres:postgres','/restore')
+                run('docker','run','-d','--pull=never','--name',name,'--label',RESTORE_LABEL,'--network','none','--memory','768m','--cpus','1',*options,'-v',str(data/'volumes'/volume)+':'+mount,c['image'])
                 if deployment=='postgres':
                     user=secret_text(resources,'blak-core','postgres-user')
                     command=['psql','-U',user,'-d','portal','-Atc',"SELECT count(*) FROM pg_database WHERE NOT datistemplate;"]
