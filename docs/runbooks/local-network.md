@@ -69,6 +69,18 @@ availability is not implemented. Network/firewall policy should allow TCP/UDP 53
 from the selected LANs only. The CoreDNS ACL also rejects other sources; account
 for any NAT that changes the source address it sees.
 
+For a UFW-managed appliance, explicit rules can be scoped to the actual LAN
+interface, client range and destination address. Substitute your own values:
+
+```sh
+sudo ufw allow in on br0 proto udp from 192.168.50.0/24 to 192.168.50.10 port 53 comment 'Blak Workspace LAN DNS'
+sudo ufw allow in on br0 proto tcp from 192.168.50.0/24 to 192.168.50.10 port 53 comment 'Blak Workspace LAN DNS'
+```
+
+Firewall management is operator-specific; the installer does not disable a
+firewall or open DNS to every interface. Remove these exact owned rules during
+DNS retirement, after clients have moved to their replacement resolver.
+
 Configure the router's DHCP DNS option to advertise this address, or configure
 the existing resolver to forward **only the workspace zone** here. An existing
 resolver is preferable when clients also need other organisational zones. Renew
