@@ -20,8 +20,8 @@ const APPS = [
   { id: 'forms', name: 'Blak Forms', desc: 'Forms and surveys', url: 'https://forms.workspace.example.com', backend: 'Powered by HeyForm', group: 'Workspace', status: 'live', oidcClient: 'blak-forms', check: { proto: 'http', host: 'forms', port: 9157, path: '/' } },
   { id: 'draw', name: 'Blak Draw', desc: 'Private diagrams and drawings', url: '/draw', backend: 'Powered by Excalidraw', group: 'Workspace', status: 'live', oidcClient: 'blak-portal', check: null },
   { id: 'crm', name: 'Blak CRM', desc: 'Leads, contacts, organisations and deals', url: 'https://crm.workspace.example.com/login?redirect-to=/crm', backend: 'Powered by Frappe CRM', group: 'Organise', status: 'live', oidcClient: 'blak-crm', check: { proto: 'http', host: 'crm', port: 3000, path: '/api/method/ping' } },
-  { id: 'drive', name: 'Blak Drive', desc: 'Files and sharing', url: 'https://drive.workspace.example.com', backend: 'Powered by OpenCloud', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'drive', port: 9200, path: '/' } },
-  { id: 'docs', name: 'Blak Docs', desc: 'Documents, spreadsheets, presentations', url: 'https://drive.workspace.example.com', backend: 'Powered by Collabora (WOPI via Drive SSO)', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'docs', port: 9980, path: '/hosting/discovery' } },
+  { id: 'drive', name: 'Blak Drive', desc: 'Files, documents, spreadsheets and slides', url: 'https://drive.workspace.example.com', backend: 'Powered by OpenCloud', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'drive', port: 9200, path: '/' } },
+  { id: 'docs', hidden: true, name: 'Blak Docs', desc: 'Documents, spreadsheets, presentations', url: 'https://drive.workspace.example.com', backend: 'Powered by Collabora (WOPI via Drive SSO)', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'docs', port: 9980, path: '/hosting/discovery' } },
   { id: 'chat', name: 'Blak Chat', desc: 'Team messaging', url: 'https://chat.workspace.example.com', backend: 'Powered by Rocket.Chat', group: 'Workspace', status: 'live', oidcClient: 'rocketchat', check: { proto: 'http', host: 'chat', port: 3000, path: '/api/info' } },
   { id: 'sites', name: 'Blak Knowledge', desc: 'Intranet sites and team knowledge', url: 'https://sites.workspace.example.com', backend: 'Powered by Outline', group: 'Organise', status: 'live', oidcClient: 'outline', check: { proto: 'http', host: 'sites', port: 3000, path: '/_health' } },
   { id: 'projects', name: 'Blak Projects', desc: 'Projects, tasks and boards', url: 'https://projects.workspace.example.com', backend: 'Powered by Kaneo', group: 'Organise', status: 'live', oidcClient: 'kaneo', check: { proto: 'http', host: 'projects', port: 5173, path: '/api/health' } },
@@ -35,7 +35,7 @@ const APPS = [
 ];
 
 function liveApps() {
-  return APPS.filter((a) => a.status === 'live' && a.url);
+  return APPS.filter((a) => a.status === 'live' && !a.hidden && a.url);
 }
 
 module.exports = { APPS, ACCENT, ICON_IMG, RAIL_ICON, liveApps };

@@ -36,12 +36,6 @@
     "backend": "Powered by OpenCloud"
   },
   {
-    "id": "docs",
-    "name": "Blak Docs",
-    "url": "https://drive.workspace.example.com/",
-    "backend": "Powered by Collabora (WOPI via Drive SSO)"
-  },
-  {
     "id": "chat",
     "name": "Blak Chat",
     "url": "https://chat.workspace.example.com/",

@@ -3,11 +3,11 @@
 ## Decision and implementation status
 
 Node-RED is selected as the Blak Flow engine. Access to existing documents and
-other systems must be opt-in. These two requirements are accepted; the role and
-workspace model below is a proposal for discussion, not a deployed permission
-system. The existing portal Flow prototype remains in place during migration.
+other systems must be opt-in. The role, workspace-isolation and opt-in connection model below was accepted
+on 2026-09-24. It is an implementation contract, not a claim that every control
+is deployed. The existing portal Flow prototype remains in place during migration.
 
-## Recommended trust boundary
+## Accepted trust boundary
 
 Use a separate runtime for each personal automation workspace. Give a team its
 own runtime only when its members explicitly share responsibility for its flows
@@ -27,11 +27,11 @@ network policy, and avoid host filesystem/Docker socket mounts and Kubernetes
 service-account tokens. Node installation is operator-controlled. These controls
 reduce exposure; they do not turn an editor into an untrusted code sandbox.
 
-## Proposed roles
+## Accepted roles
 
 Keep existing Blak ID groups, with every permission scoped to a workspace:
 
-| Group / role | Proposed access |
+| Group / role | Access |
 | --- | --- |
 | `blak-flow-reader` | Portal list and redacted history of approved flows. No editor access by default. |
 | Runner grant | Execute specifically assigned published flows through the portal; cannot choose arbitrary URLs, credentials or source paths. Separate from reader permission. |
@@ -58,7 +58,7 @@ source credentials across users.
 A connection consent screen must identify:
 
 1. The source system and account acting on the user's behalf.
-   Document storage is being reconsidered; see [office editing direction](office-editing-direction.md).
+   Drive remains the document store; see [office editing direction](office-editing-direction.md).
 2. Allowed resources: selected Drive files/folders or spaces, Outline collections,
    project boards, or other source-specific resources.
 3. Allowed actions. Default to read; request create/update, delete, or sending
@@ -118,15 +118,13 @@ external system. Retention and deletion of cached copies need a visible policy.
   in Playwright, with native API checks for the actual enforcement boundaries.
 - Preserve old Flow definitions/history; migration is explicit and reversible.
 
-## Decisions to resolve before runtime rollout
+## Delivery order
 
-- Should ordinary members build personal automations, or only run admin-published
-  workflows? Personal authoring requires the separate-runtime model above.
-- Are team connections allowed initially, or should the first release be personal
-  workspaces plus a separate operator runtime?
-- Which actions and systems are first: recommended initial scope is read-only
-  selected documents from the chosen document store, then Outline; other
-  capabilities follow explicit grants. Do not require the retiring Drive app.
+Personal isolated workspaces first; explicitly assigned team workspaces follow
+the same isolation boundary. Readers and runners use the portal. Begin with
+read-only, selected Drive documents and Outline resources; expand actions only
+through explicit grants. Keep Node-RED source access disabled until enforcement
+and revocation tests pass.
 
 ## Sources
 

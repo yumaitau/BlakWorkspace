@@ -1,7 +1,7 @@
 # Blak Flow engine assessment
 
 Checked 2026-09-24. Node-RED subsequently selected by the workspace owner.
-Source access must be opt-in. See the [RBAC and connection proposal](node-red-rbac-and-connections.md).
+Source access must be opt-in. See the [accepted RBAC and connection model](node-red-rbac-and-connections.md).
 No service migration has been deployed.
 
 ## Current implementation
@@ -23,8 +23,10 @@ not a general integration engine or proof of scheduled delivery.
 | Node-RED | Editor supports OAuth/OpenID through Passport strategies and automatic login | Best free candidate for an operator automation service. Authentik integration and user isolation still need proof; one shared editor is not a private workspace for each user. |
 
 Decision: use Node-RED with native Blak ID OIDC integration and explicit source
-connection consent. Resolve workspace isolation and authoring roles before
-replacing the prototype. Do not replace native SSO with a proxy login.
+connection consent. Personal runtimes are isolated; team runtimes require explicit
+membership. Readers and runners use the portal, and source access requires a
+separate resource grant. Prove these boundaries before replacing the prototype.
+Do not replace native SSO with a proxy login.
 
 ## Acceptance before replacement
 
