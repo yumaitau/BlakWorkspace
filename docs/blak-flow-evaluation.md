@@ -1,6 +1,8 @@
 # Blak Flow engine assessment
 
-Checked 2026-09-24. Assessment only; no service migration.
+Checked 2026-09-24. Node-RED subsequently selected by the workspace owner.
+Source access must be opt-in. See the [accepted RBAC and connection model](node-red-rbac-and-connections.md).
+No service migration has been deployed.
 
 ## Current implementation
 
@@ -20,10 +22,11 @@ not a general integration engine or proof of scheduled delivery.
 | Windmill | OIDC is Enterprise-only | Good fit for code-driven jobs, but the free edition does not meet native Blak ID requirements. |
 | Node-RED | Editor supports OAuth/OpenID through Passport strategies and automatic login | Best free candidate for an operator automation service. Authentik integration and user isolation still need proof; one shared editor is not a private workspace for each user. |
 
-Recommendation: keep Flow migration separate from the current incident fixes.
-Prototype Node-RED if free native Blak ID remains mandatory. If a paid edition
-is acceptable, evaluate n8n Enterprise first for the visual builder. Do not
-replace native SSO with a proxy login or modify licence gates.
+Decision: use Node-RED with native Blak ID OIDC integration and explicit source
+connection consent. Personal runtimes are isolated; team runtimes require explicit
+membership. Readers and runners use the portal, and source access requires a
+separate resource grant. Prove these boundaries before replacing the prototype.
+Do not replace native SSO with a proxy login.
 
 ## Acceptance before replacement
 

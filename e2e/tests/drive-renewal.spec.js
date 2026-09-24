@@ -19,6 +19,13 @@ test('Drive renews an expired session silently and keeps files accessible', asyn
   await page.goto(`${portal}/login`);
   await authentikLogin(page);
   await page.waitForURL(url => url.origin === new URL(portal).origin && url.pathname === '/');
+  // One document entry point; Collabora remains available from a Drive file.
+  const modules = await (await page.request.get(`${portal}/api/modules`)).json();
+  const apps = modules.modules;
+  expect(apps.some(app => app.id === 'drive')).toBe(true);
+  expect(apps.some(app => app.id === 'docs')).toBe(false);
+  await expect(page.getByRole('link', { name: 'Blak Drive', exact: true })).toBeVisible();
+  await expect(page.locator('a[href="/launch/docs"]')).toHaveCount(0);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => {

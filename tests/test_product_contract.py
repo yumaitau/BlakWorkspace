@@ -17,7 +17,7 @@ NAMING = {
     "Blak Knowledge": "Outline",
     "Blak Projects": "Kaneo",
     "Blak Admin": "Nubus",
-    "Blak Flow": "Blak Flow engine",
+    "Blak Flow": "Node-RED",
     "Blak Hermes": "Hermes",
 }
 

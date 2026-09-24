@@ -22,7 +22,7 @@ const INTEGRATIONS = {
 
 function allowedApps(apps, user) {
   const grants = new Set(Array.isArray(user?.apps) ? user.apps : []);
-  return apps.filter(app => app.status === 'live' && grants.has(app.id));
+  return apps.filter(app => app.status === 'live' && !app.hidden && grants.has(app.id));
 }
 
 function launchURL(app) {

@@ -4,8 +4,10 @@ const {test,expect}=require('@playwright/test');
 const {authentikLogin}=require('../helpers/auth');
 const {syncAccount,serviceURL,ownedPersonalDrive}=require('../helpers/sync');
 
-test('Blak Docs opens, edits and saves a real Drive document with themed chrome',async({page,playwright})=>{
+test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+test('Drive opens, edits and saves a real document in Collabora',async({page,playwright})=>{
  test.setTimeout(150000);
+ const driveOrigin=process.env.BLAK_E2E_DRIVE_URL||'https://drive.workspace.example.com';
  const source=syncAccount().sources.drive;
  const drive=await playwright.request.newContext({proxy:undefined,baseURL:serviceURL('drive',9200),extraHTTPHeaders:{authorization:'Basic '+Buffer.from(source.username+':'+source.password).toString('base64')}});
  const drives=await (await drive.get('/graph/v1.0/drives')).json();
@@ -18,20 +20,22 @@ test('Blak Docs opens, edits and saves a real Drive document with themed chrome'
  });
  try {
   expect((await drive.put(path,{data:require('node:fs').readFileSync(require('node:path').join(__dirname,'../fixtures/docs.odt')),headers:{'content-type':'application/vnd.oasis.opendocument.text'}})).ok()).toBeTruthy();
-  await page.goto('https://drive.workspace.example.com');await authentikLogin(page);
-  await page.waitForURL(u=>u.hostname==='drive.workspace.example.com'&&!/callback/.test(u.pathname));
+  await page.goto(driveOrigin);await authentikLogin(page);
+  await page.waitForURL(u=>u.origin===new URL(driveOrigin).origin&&!/callback/.test(u.pathname));
   await page.getByText(name,{exact:true}).dblclick();
   await expect(page.locator('iframe')).toBeVisible();
   const editor=page.frameLocator('iframe');
   await expect(editor.locator('#document-container')).toBeVisible({timeout:60000});
-  await expect(editor.locator('html')).toHaveAttribute('data-blak-app','docs');
+  // The workspace shell brands Drive; it deliberately does not inject into WOPI frames.
+  await expect(page.locator('html')).toHaveAttribute('data-blak-app','drive');
   await expect(editor.locator('#toolbar-up')).toBeVisible();
-  await expect.poll(()=>editor.locator('body').evaluate(el=>getComputedStyle(el).getPropertyValue('--color-main-background').trim())).toBe(require('../../apps/portal/theme').tokens.dark.surface);
   const welcome=editor.frameLocator('iframe[title="Welcome Dialogue"]');
   await editor.locator('iframe[title="Welcome Dialogue"]').waitFor({timeout:5000}).catch(()=>{});
   if(await editor.locator('iframe[title="Welcome Dialogue"]').isVisible())await welcome.getByRole('button',{name:'Close',exact:true}).click();
   const edited='Saved by Blak Docs '+crypto.randomBytes(4).toString('hex');
-  await editor.locator('#document-container').click();await page.keyboard.press('Control+End');await page.keyboard.press('Enter');await page.keyboard.type(edited);await page.keyboard.press('Control+s');
+  await editor.locator('#document-container').click();
+  const input=editor.locator('#clipboard-area');
+  await input.press('End');await input.press('Enter');await input.pressSequentially(edited);await input.press('ControlOrMeta+s');
   await expect.poll(async()=>{const data=await (await drive.get(path)).body();return require('node:child_process').execFileSync('python3',['-c',"import sys,io,zipfile; print(zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).read('content.xml').decode())"],{input:data}).toString();},{timeout:45000}).toContain(edited);
   await page.screenshot({path:test.info().outputPath('docs-editor.png'),fullPage:true});
  } catch(error) {

@@ -13,15 +13,15 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak label | Upstream component |
 | --- | --- |
 | Blak Workspace | openDesk suite |
-| Blak Drive | OpenCloud |
-| Blak Docs | Collabora |
+| Blak Drive | OpenCloud; the single portal entry for files and office editing |
+| Blak Docs | Collabora, opened from Drive; no separate portal tile |
 | Blak Chat | Rocket.Chat (OIDC via Blak ID; openDesk seed still documents Element) |
 | Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
 | Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
 | Blak Knowledge | Outline (team wiki with free OIDC; replaced Docmost, whose SSO is licence-gated) |
 | Blak Projects | Kaneo (OIDC via Blak ID; openDesk seed still documents OpenProject) |
 | Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
-| Blak Flow | Blak Flow engine (in-workspace automation; Drive + Sites connectors) |
+| Blak Flow | Node-RED selected with the accepted [RBAC and opt-in connection model](node-red-rbac-and-connections.md); migration from the portal prototype in progress |
 | Blak Hermes | Hermes agent runtime (opt-in; Nubus control plane; default off; evolves into Blak AI Gateway) |
 | BlakSmith | BlakSmith knowledge graph (separate checkout `yumaitau/BlakSmith`; catalog id `smith`) |
 | BlakEyes | BlakEyes drone imagery appliance (separate checkout `yumaitau/BlakEyes`; catalog id `eyes`) |
