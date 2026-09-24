@@ -38,8 +38,9 @@ test('Drive opens, edits and saves a real document in Collabora',async({page,pla
   await input.press('End');await input.press('Enter');await input.pressSequentially(edited);await input.press('ControlOrMeta+s');
   await expect.poll(async()=>{
    const response=await drive.get(path);
-   // A save can briefly hold the DAV resource. Retry only the transient lock.
-   if(response.status()===423)return false;
+   // OpenCloud can briefly lock (423) or still process (425) a saved file.
+   // Keep the bounded content-readback assertion; neither status means success.
+   if([423,425].includes(response.status()))return false;
    if(!response.ok())throw Error(`Saved document read failed: HTTP ${response.status()}`);
    const data=await response.body();
    if(data[0]!==0x50||data[1]!==0x4b)throw Error(`Saved document is not ODT: HTTP ${response.status()}, ${response.headers()['content-type']||'unknown type'}`);

@@ -23,6 +23,12 @@ Use DNS records for `portal`, `id`, `drive`, `docs`, `sites`, `projects`, `forms
 these names and configure the ingress certificate before exposing the service.
 Operator commands use the selected Kubernetes context or `KUBECONFIG`.
 
+For standalone or offline installations, use the optional
+[local DNS and HTTPS setup](local-network.md). It generates either a bundled LAN
+resolver or records for existing DNS, plus an opt-in local CA workflow. Configure
+device and service trust before enabling sign-in; no router settings are changed
+automatically. Existing publicly trusted certificate workflows remain supported.
+
 ## Dedicated single-node K3s
 
 The current `deploy/k3s/micro/` manifests and `scripts/deploy/deploy-micro.sh`
