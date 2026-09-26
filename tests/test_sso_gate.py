@@ -146,8 +146,14 @@ class TestSsoGate(unittest.TestCase):
         crm = next(a for a in live if a["id"] == "crm")
         self.assertEqual(crm["oidcClient"], "blak-crm")
         self.assertIn("Frappe CRM", crm["backend"])
-        missing = [a["id"] for a in live if not a.get("oidcClient")]
+        missing = [a["id"] for a in live if not a.get("oidcClient") and a.get("authentication") != "external"]
         self.assertEqual(missing, [])
+        # A hosted service outside the workspace must say so and must not be health-checked.
+        for app in live:
+            if app.get("authentication") == "external":
+                self.assertFalse(app.get("oidcClient"), app["id"])
+                self.assertIsNone(app.get("check"), app["id"])
+                self.assertNotIn("Blak", app["name"], app["id"])
         flow = next(a for a in live if a["id"] == "flow")
         self.assertEqual(flow["oidcClient"], "blak-portal")
 

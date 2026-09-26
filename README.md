@@ -85,7 +85,7 @@ checks from LAN outages and fully disconnected devices.
 | Blak Docs | Collabora |
 | Blak Chat | Rocket.Chat |
 | Blak Meet | Jitsi |
-| Blak Mail and Calendar | OX App Suite (optional, if licensed) |
+| Proton Mail (mail and calendar) | Proton for Business, linked from Blak Home; not self-hosted. OX App Suite optional if licensed. See [why Proton](docs/product-contract.md#mail-and-calendar) |
 | Blak Knowledge | Outline (team wiki, OIDC via Blak ID) |
 | Blak Projects | Kaneo |
 | Blak Admin | Nubus admin / portal admin surfaces |

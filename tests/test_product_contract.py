@@ -13,7 +13,7 @@ NAMING = {
     "Blak Docs": "Collabora",
     "Blak Chat": "Rocket.Chat",
     "Blak Meet": "Jitsi",
-    "Blak Mail and Calendar": "OX App Suite",
+    "Proton Mail (mail and calendar)": "Proton for Business",
     "Blak Knowledge": "Outline",
     "Blak Projects": "Kaneo",
     "Blak Admin": "Nubus",

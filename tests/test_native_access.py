@@ -32,8 +32,10 @@ class NativeAccessTests(unittest.TestCase):
         self.user.update(is_superuser=True, groups=['Team'])
         result = self.snapshot()[self.identity]
         role_apps = [app for app, contract in access.CONTRACT.items() if contract.get('roleGroups')]
+        # Apps with only a membership group (such as the Proton Mail tile) have no roles.
+        group_apps = [app for app, contract in access.CONTRACT.items() if contract.get('group') and not contract.get('roleGroups')]
         self.assertEqual(result['roles'], {app: 'admin' for app in role_apps})
-        self.assertEqual(sorted(result['apps']), sorted(role_apps))
+        self.assertEqual(sorted(result['apps']), sorted(role_apps + group_apps))
     def test_disabled_or_unconfirmed_administrator_gets_nothing_extra(self):
         self.user.update(is_superuser=True, is_active=False, groups=[])
         self.assertEqual(self.snapshot()[self.identity]['apps'], [])

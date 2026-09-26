@@ -18,6 +18,8 @@ Labels only. Do not rename Helm releases, chart names, or OIDC client IDs withou
 | Blak Hermes | Hermes agent (Yuma-packaged `companyos-hermes`) | hermes |
 | Blak Sites | Sites (overlay aggregation layer) | sites |
 
+The OX row applies to the openDesk seed only. The homelab suite links to Proton Mail (catalog id `mail`) instead, and does not brand it as a Blak product. See [Mail and calendar](../product-contract.md#mail-and-calendar).
+
 Blak Knowledge maps to **Docmost**, not XWiki. See BW-055. Do not enable both in default profiles. Do not show an XWiki portal tile as Blak Knowledge.
 
 ## Portal tile plan

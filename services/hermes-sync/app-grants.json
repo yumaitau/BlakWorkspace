@@ -46,6 +46,9 @@
       "blak-drive-admin"
     ]
   },
+  "mail": {
+    "group": "Blak Mail users"
+  },
   "chat": {
     "group": "Blak Chat users",
     "roleGroups": [

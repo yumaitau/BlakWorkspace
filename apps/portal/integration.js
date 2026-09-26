@@ -8,6 +8,8 @@ const INTEGRATIONS = {
   crm: { application: 'blak-crm', group: 'Blak CRM users', roleGroups: ['blak-crm-reader', 'blak-crm-writer', 'blak-crm-admin'], login: '/_blak/launch.html', theme: 'frappe' },
   drive: { application: 'opencloud', group: 'Blak Drive users', roleGroups: ['blak-drive-reader', 'blak-drive-writer', 'blak-drive-admin'], theme: 'opencloud' },
   docs: { application: 'opencloud', group: 'Blak Drive users', roleGroups: ['blak-drive-reader', 'blak-drive-writer', 'blak-drive-admin'], theme: 'collabora' },
+  // Proton accounts live at Proton. The group only decides who sees the tile.
+  mail: { group: 'Blak Mail users', external: true },
   chat: { application: 'rocketchat', group: 'Blak Chat users', roleGroups: ['blak-chat-reader', 'blak-chat-writer', 'blak-chat-admin'], login: '/home?blak_launch=1', theme: 'rocketchat' },
   sites: { application: 'outline', group: 'Blak Knowledge users', roleGroups: ['blak-knowledge-reader', 'blak-knowledge-writer', 'blak-knowledge-admin'], login: '/auth/oidc', theme: 'outline' },
   projects: { application: 'kaneo', group: 'Blak Projects users', roleGroups: ['blak-projects-reader', 'blak-projects-writer', 'blak-projects-admin'], theme: 'kaneo' },
