@@ -1,0 +1,12 @@
+[Unit]
+Description=Blak Workspace backup agent for Blak Home
+After=k3s.service
+Wants=k3s.service
+[Service]
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/blak-backup/backup-agent.py
+# The pod bridge appears only after k3s starts. Keep retrying until it does.
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
