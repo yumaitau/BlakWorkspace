@@ -1,0 +1,10 @@
+[Unit]
+Description=Restore the whole Blak Workspace from a backup
+After=k3s.service
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/blak-backup/workspace-backup.py restore
+ExecStopPost=/usr/bin/python3 /opt/blak-backup/workspace-backup.py recover
+TimeoutStartSec=2h
+TimeoutStopSec=3h

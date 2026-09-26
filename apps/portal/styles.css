@@ -182,3 +182,7 @@ ul.cant li::marker{content:"✕  ";color:var(--danger)}
 @media (max-width:600px){.accessflow ol{grid-template-columns:minmax(0,1fr);gap:26px}.accessflow li:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-24px;transform:translateX(-50%)}.types{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:600px){.access .flowtable,.access .flowtable tbody,.access .flowtable tr,.access .flowtable th,.access .flowtable td{display:block;min-width:0;width:auto}.access .flowtable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.access .flowtable tr{border-bottom:1px solid var(--border-subtle);padding:10px 0}.access .flowtable th,.access .flowtable td{border:0;padding:3px 0}.access .tablewrap{overflow-x:visible}.inlineform select,.inlineform input{max-width:100%}}
 .access .flowtable ul{margin:0;padding-left:20px}
+.backuplist{list-style:none;padding:0;margin:0}
+.restore summary,.placeform+summary{cursor:pointer;font-weight:600}
+.restore label,.placeform label{display:grid;gap:4px;font-size:14px;margin:10px 0;max-width:460px}
+.placeform fieldset{border:0;padding:0;margin:0}

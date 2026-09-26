@@ -8,6 +8,7 @@ const APPS = publicApps(CATALOG_APPS);
 const flowEngine = require('./flow-engine');
 const outlineSites = require('./outline-sites');
 const fileGuard = require('./file-guard');
+const backups = require('./backups');
 const { INTEGRATIONS, allowedApps, launchURL, routeApp } = require('./integration');
 const { rolesFromClaims, can, requiredRole } = require('./app-roles');
 const { supportsAccessFilter, accessFilter } = require('./search-access');
@@ -45,6 +46,7 @@ if (fileGuardStore && SCAN_ROOT && process.env.CLAMAV_HOST && require.main === m
     version: () => fileGuard.clamdCommand(process.env.CLAMAV_HOST, Number(process.env.CLAMAV_PORT || 3310), 'VERSION'),
   }).start();
 }
+const backupAgent = process.env.BACKUP_AGENT_URL && process.env.BACKUP_AGENT_TOKEN ? backups.createClient(process.env.BACKUP_AGENT_URL, process.env.BACKUP_AGENT_TOKEN) : null;
 async function heldRecords() {
   if (fileGuardRemote) return fileGuardRemote.list();
   return fileGuardStore ? fileGuardStore.list() : [];
@@ -72,7 +74,8 @@ async function sessionUser(req) {
   if (!session.checkedAt || Date.now() - session.checkedAt > 30000) {
     if (!refreshes.has(cookie.sid)) refreshes.set(cookie.sid, (async () => {
       if (session.refreshToken && Date.now() >= session.accessExpiresAt - 30000) {
-        const result = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'refresh_token', refresh_token: session.refreshToken, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+        const result = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'refresh_token', refresh_token: session.refreshToken, client_id: CLIENT_ID, client_secret: CLIENT_SECRET }).catch(unreachable);
+        if (result.status >= 500) unreachable(new Error('Blak ID unavailable'));
         const token = JSON.parse(result.body);
         if (result.status !== 200 || !token.access_token) throw new Error('Session refresh rejected');
         if (token.id_token) await oidc.refreshedIdentity(token.id_token, session.sub);
@@ -84,7 +87,8 @@ async function sessionUser(req) {
       session.roles = rolesFromClaims(ui.blak_roles);
       session.name = ui.name; session.email = ui.email; session.checkedAt = Date.now();
     })().finally(() => refreshes.delete(cookie.sid)));
-    try { await refreshes.get(cookie.sid); } catch { sessions.revoke(cookie.sid); return null; }
+    // Blak ID down (for example during a backup) denies this request but keeps the session.
+    try { await refreshes.get(cookie.sid); } catch (error) { if (!error.transient) sessions.revoke(cookie.sid); return null; }
   }
   if (!sessions.get(cookie.sid)) return null;
   return { sub: session.sub, identity: session.identity, name: session.name, email: session.email, apps: session.apps, roles: session.roles, sessionId: cookie.sid };
@@ -186,8 +190,12 @@ function probe(c) {
 function postForm(url, params) {
   return textRequest(url, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(params).toString() });
 }
+function unreachable(error) {
+  throw Object.assign(error, { transient: true });
+}
 async function getJson(url, token) {
-  const result = await textRequest(url, { headers: { authorization: `Bearer ${token}` } });
+  const result = await textRequest(url, { headers: { authorization: `Bearer ${token}` } }).catch(unreachable);
+  if (result.status >= 500) unreachable(new Error('Blak ID unavailable'));
   if (result.status !== 200) throw new Error('userinfo rejected');
   return JSON.parse(result.body);
 }
@@ -260,6 +268,7 @@ ${wordmark()}
 <a class=nav-item href="/access" ${active === 'access' ? 'data-active="true" aria-current="page"' : ''} title="People and access: who can use each app"><span class=ric>⚿</span><span class=lbl>People &amp; access</span></a>
 ${navGroups(active, user)}
 ${fileGuard.isAdmin(user) ? `<a class=nav-item href="/monitoring" ${active === 'monitoring' ? 'data-active="true"' : ''} title="Host monitoring"><span class=ric>▥</span><span class=lbl>Monitoring</span></a>` : ''}
+${backups.canManage(user) ? `<a class=nav-item href="/backups" ${active === 'backups' ? 'data-active="true"' : ''} title="Backups and restore"><span class=ric>↺</span><span class=lbl>Backups</span></a>` : ''}
 <a class=nav-item href="/welcome" title="Getting started"><span class=ric>?</span><span class=lbl>Getting started</span></a>
 <span class=sp></span><a class=nav-item href="/logout" title="Sign out"><span class=ric>⏻</span><span class=lbl>Sign out</span></a></nav>
 <main>${main}</main></div>
@@ -272,7 +281,7 @@ ${fileGuard.isAdmin(user) ? `<a class=nav-item href="/monitoring" ${active === '
 <script>const b=document.getElementById('wbtn'),w=document.getElementById('drawer'),s=document.getElementById('scrim');
 function tog(f){const sh=f!==undefined?f:w.hidden;w.hidden=!sh;s.hidden=!sh;b.setAttribute('aria-expanded',String(sh));}b.onclick=()=>tog();s.onclick=()=>tog(false);
 const pal=document.getElementById('pal'),pscrim=document.getElementById('palscrim'),pi=document.getElementById('pali'),pres=document.getElementById('palres');
-const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'People & access', d: 'What roles do and who has them', u: '/access' }, { t: 'My access', d: 'Your apps, roles and where they come from', u: '/access/me' }, ...(fileGuard.isAdmin(user) ? [{ t: 'Monitoring', d: 'Host CPU and memory', u: '/monitoring' }] : []), { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
+const ITEMS=${JSON.stringify(allowedApps(APPS, user).filter((a) => a.url).map((a) => ({ t: a.name, d: a.desc, u: launchURL(a) })).concat([{ t: 'Held files', d: 'Files held back because they looked unsafe', u: '/held-files' }, { t: 'People & access', d: 'What roles do and who has them', u: '/access' }, { t: 'My access', d: 'Your apps, roles and where they come from', u: '/access/me' }, ...(fileGuard.isAdmin(user) ? [{ t: 'Monitoring', d: 'Host CPU and memory', u: '/monitoring' }] : []), ...(backups.canManage(user) ? [{ t: 'Backups', d: 'Back up or restore the whole workspace', u: '/backups' }] : []), { t: 'Getting started', d: 'Learn your workspace', u: '/welcome' }, { t: 'Sign out', d: 'End your Blak session', u: '/logout' }]))};
 let sel=0,shown=[];
 function ptog(f){const sh=f!==undefined?f:pal.hidden;pal.hidden=!sh;pscrim.hidden=!sh;if(sh){pi.value='';prender('');pi.focus();}}
 function prender(t){shown=ITEMS.filter(i=>(i.t+' '+i.d).toLowerCase().includes(t.toLowerCase())).slice(0,8);sel=0;
@@ -469,6 +478,7 @@ ${queues}`;
 <p class=gsub>Store files and send queue messages for your workspace automations.</p>${body}`);
 }
 
+const handleBackups = backups.createRoutes({ agent: backupAgent, shell });
 async function handleRequest(req, res) {
   const url = new URL(req.url, 'http://x');
   const user = await sessionUser(req);
@@ -509,6 +519,7 @@ async function handleRequest(req, res) {
     res.setHeader('content-type','text/html; charset=utf-8');
     res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(allowedApps(APPS, user).map(a => ({ ...a, url: launchURL(a) })))));return;
   }
+  if (await handleBackups(req, res, url, user)) return;
   if (url.pathname === '/monitoring' || url.pathname === '/api/monitoring') {
     if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
     if (!fileGuard.isAdmin(user)) { res.writeHead(403); res.end('Workspace admin required'); return; }

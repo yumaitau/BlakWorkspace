@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """Encrypted, consistent single-node PVC backup and isolated database restore drill."""
-import argparse, base64, datetime, fcntl, hashlib, json, os, secrets, signal, shutil, sqlite3, subprocess, tarfile, tempfile, time
+import argparse, base64, contextlib, datetime, fcntl, hashlib, json, os, secrets, signal, shutil, sqlite3, subprocess, sys, tarfile, tempfile, time
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import backup_places
 NS='blak-micro'
+PLACES=Path('/etc/blak-backup/places.json')
+# The agent token must survive a restore, or the portal loses the agent.
+KEEP_SECRETS={'blak-backup-agent'}
+SKIP_SECRET_TYPES={'kubernetes.io/service-account-token','helm.sh/release.v1'}
 RESTORE_LABEL='com.blakworkspace.restore-drill=true'
 os.umask(0o077)
 os.environ.setdefault('KUBECONFIG','/etc/rancher/k3s/k3s.yaml')
 def run(*args, **kwargs):
     return subprocess.run(args,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**kwargs).stdout
-def kube(*args):
+def kube(*args,**kwargs):
     timeout='330s' if args[0]=='rollout' else '30s'
-    return run('kubectl','--request-timeout='+timeout,'-n',NS,*args).decode()
+    return run('kubectl','--request-timeout='+timeout,'-n',NS,*args,**kwargs).decode()
 def cleanup_restore():
     containers=run('docker','ps','-aq','--filter','label='+RESTORE_LABEL).decode().split()
     if containers:run('docker','rm','-f',*containers)
@@ -48,7 +54,29 @@ def digest(path):
     return h.hexdigest()
 def atomic(path,data):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,indent=2));temp.replace(path)
+def progress(root,step):
+    atomic(root/'progress.json',{'step':step,'at':int(time.time())})
+def volume_paths():
+    pvs=json.loads(run('kubectl','get','pv','-o','json'))['items']
+    return {p['spec']['claimRef']['name']:p['spec'].get('hostPath',p['spec'].get('local',{})).get('path') for p in pvs if p['spec'].get('claimRef',{}).get('namespace')==NS}
+def quiesce(root,items):
+    """Record replica counts, then stop CronJobs and scale workloads to zero. recover() undoes it."""
+    deploys=[r for r in items if r['kind']=='Deployment']
+    replicas={d['metadata']['name']:d['spec'].get('replicas',1) for d in deploys if d['metadata']['name'] not in {'ollama','workspace-shell'}}
+    crons={r['metadata']['name']:r['spec'].get('suspend',False) for r in items if r['kind']=='CronJob'}
+    atomic(root/'resume.json',{'replicas':replicas,'crons':crons})
+    for name in crons:kube('patch','cronjob',name,'--type=merge','-p','{"spec":{"suspend":true}}')
+    deadline=time.monotonic()+900
+    while any(j.get('status',{}).get('active',0) for j in json.loads(kube('get','jobs','-o','json'))['items']):
+        if time.monotonic()>deadline:raise RuntimeError('Active jobs did not finish')
+        time.sleep(2)
+    for name in replicas:kube('scale','deploy/'+name,'--replicas=0')
+    deadline=time.monotonic()+180
+    while any(p['metadata'].get('labels',{}).get('app') in replicas and p['status']['phase'] not in {'Succeeded','Failed'} for p in json.loads(kube('get','pods','-o','json'))['items']):
+        if time.monotonic()>deadline:raise RuntimeError('Workloads did not quiesce')
+        time.sleep(2)
 def recover(root):
+    rollback_restore(root)
     journal=root/'resume.json'
     if not journal.exists():return
     state=json.loads(journal.read_text())
@@ -69,30 +97,21 @@ def snapshot(root,key):
         stage=Path(tmp);(stage/'volumes').mkdir()
         resources=json.loads(kube('get','deploy,service,configmap,secret,pvc,cronjob,ingressroute,middleware','-o','json'))
         atomic(stage/'resources.json',resources)
-        pvs=json.loads(run('kubectl','get','pv','-o','json'))['items']
-        volumes={p['spec']['claimRef']['name']:p['spec'].get('hostPath',p['spec'].get('local',{})).get('path') for p in pvs if p['spec'].get('claimRef',{}).get('namespace')==NS}
+        volumes=volume_paths()
         if not volumes or any(not p or not Path(p).is_dir() for p in volumes.values()):raise RuntimeError('Volume inventory is incomplete')
         # Downloadable Ollama weights can be re-pulled. Every data PVC is captured.
         volumes.pop('ollama-data',None)
-        deploys=[r for r in resources['items'] if r['kind']=='Deployment']
-        replicas={d['metadata']['name']:d['spec'].get('replicas',1) for d in deploys if d['metadata']['name'] not in {'ollama','workspace-shell'}}
-        crons={r['metadata']['name']:r['spec'].get('suspend',False) for r in resources['items'] if r['kind']=='CronJob'}
-        atomic(root/'resume.json',{'replicas':replicas,'crons':crons})
         snapshot_error=None
         try:
-            for name in crons:kube('patch','cronjob',name,'--type=merge','-p','{"spec":{"suspend":true}}')
-            deadline=time.monotonic()+900
-            while any(j.get('status',{}).get('active',0) for j in json.loads(kube('get','jobs','-o','json'))['items']):
-                if time.monotonic()>deadline:raise RuntimeError('Active jobs did not finish')
-                time.sleep(2)
-            for name in replicas:kube('scale','deploy/'+name,'--replicas=0')
-            deadline=time.monotonic()+180
-            while any(p['metadata'].get('labels',{}).get('app') in replicas and p['status']['phase'] not in {'Succeeded','Failed'} for p in json.loads(kube('get','pods','-o','json'))['items']):
-                if time.monotonic()>deadline:raise RuntimeError('Workloads did not quiesce')
-                time.sleep(2)
+            progress(root,'Pausing apps')
+            quiesce(root,resources['items'])
+            progress(root,'Copying data')
             for name,path in volumes.items():run('cp','-a','--reflink=auto',path,str(stage/'volumes'/name))
         except Exception as error:snapshot_error=error
-        finally:recover_after_snapshot(root,snapshot_error)
+        finally:
+            progress(root,'Starting apps again')
+            recover_after_snapshot(root,snapshot_error)
+        progress(root,'Encrypting the backup')
         checks={str(p.relative_to(stage)):digest(p) for p in stage.rglob('*') if p.is_file() and not p.is_symlink()}
         atomic(stage/'manifest.json',{'created_at':stamp,'namespace':NS,'volumes':sorted(volumes),'excluded':{'ollama-data':'Downloadable model weights; re-pull after restore'},'sha256':checks})
         tar=subprocess.Popen(['tar','-C',str(stage),'-cf','-','.'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
@@ -104,7 +123,112 @@ def snapshot(root,key):
     # Retain at least seven complete snapshots; incomplete files never count.
     for old in sorted(root.glob('workspace-*.tar.gpg'))[:-7]:old.unlink()
     print('Backup complete:',output.name,'volumes:',len(volumes),flush=True)
+    send_to_places(root,output)
     return output
+
+def send_to_places(root,output,places_file=PLACES):
+    """Copy the finished archive to every extra place. One failing place never fails the backup."""
+    results={}
+    for place in backup_places.load(places_file):
+        progress(root,'Copying to '+place['name'])
+        try:
+            with backup_places.open_place(place) as target:
+                target.put(output);backup_places.prune(target,place.get('keep',7))
+            results[place['id']]={'ok':True,'file':output.name,'at':int(time.time())}
+        except Exception as error:
+            # Place errors are written for admins. Anything else may hold host detail.
+            message=str(error) if isinstance(error,backup_places.PlaceError) else 'Copy failed ('+type(error).__name__+')'
+            results[place['id']]={'ok':False,'error':message,'at':int(time.time())}
+            print('Copy to place failed:',place['id'],message,flush=True)
+    atomic(root/'places-status.json',results)
+
+def restorable_secrets(items):
+    return {s['metadata']['name']:{'apiVersion':'v1','kind':'Secret','type':s.get('type','Opaque'),'metadata':{'name':s['metadata']['name'],'namespace':NS,'labels':s['metadata'].get('labels',{})},'data':s.get('data',{})}
+            for s in items if s['kind']=='Secret' and s.get('type','Opaque') not in SKIP_SECRET_TYPES and s['metadata']['name'] not in KEEP_SECRETS}
+def put_secrets(secrets_by_name):
+    for secret in secrets_by_name.values():kube('replace','-f','-',input=json.dumps(secret).encode())
+def move(source,target):
+    try:os.rename(source,target)
+    except OSError:
+        run('cp','-a','--reflink=auto',str(source),str(target));shutil.rmtree(source)
+def rollback_restore(root):
+    """Undo an unfinished full restore: put the live data and secrets back as they were."""
+    journal=root/'restore-journal.json'
+    if not journal.exists():return
+    state=json.loads(journal.read_text())
+    for entry in reversed(state['swapped']):
+        live,aside=Path(entry['path']),Path(entry['aside'])
+        if not aside.exists():continue
+        if live.exists():shutil.rmtree(live)
+        os.rename(aside,live)
+    if state.get('secrets_changed'):put_secrets(state['secrets'])
+    journal.unlink()
+    print('Unfinished restore rolled back to the data from before it started.',flush=True)
+def fetch_archive(root,name,place_id,places_file=PLACES):
+    place=next((p for p in backup_places.load(places_file) if p['id']==place_id),None)
+    if not place:raise RuntimeError('Backup place not found')
+    partial=root/(name+'.partial')
+    with backup_places.open_place(place) as source:source.get(name,partial)
+    partial.replace(root/name)
+def restore(root,key,name,place_id=None):
+    """Replace every workspace volume and secret with the ones in a backup."""
+    if not backup_places.ARCHIVE_NAME.match(name or ''):raise RuntimeError('Invalid backup name')
+    recover(root)
+    archive=root/name
+    if not archive.exists():
+        if not place_id:raise RuntimeError('Backup not found on this server')
+        progress(root,'Fetching the backup');fetch_archive(root,name,place_id)
+    # Unpacked data is several times the compressed archive. Keep headroom for the host.
+    if shutil.disk_usage(root).free<archive.stat().st_size*4+5*1024**3:raise RuntimeError('Not enough free disk space to restore')
+    stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    with tempfile.TemporaryDirectory(prefix='full-restore-',dir=root) as tmp:
+        data=Path(tmp)/'data';data.mkdir()
+        progress(root,'Unpacking the backup')
+        gpg=subprocess.Popen(['gpg','--batch','--pinentry-mode','loopback','--passphrase-file',str(key),'--decrypt',str(archive)],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+        # Running as root: keep numeric owners so each database finds its own files.
+        try:run('tar','-x','-p','--numeric-owner','-C',str(data),'-f','-',stdin=gpg.stdout)
+        finally:gpg.stdout.close()
+        if gpg.wait()!=0:raise RuntimeError('Backup could not be decrypted')
+        progress(root,'Checking the backup')
+        manifest=json.loads((data/'manifest.json').read_text())
+        for path,expected in manifest['sha256'].items():
+            if digest(data/path)!=expected:raise RuntimeError('Restore checksum mismatch')
+        saved=restorable_secrets(json.loads((data/'resources.json').read_text())['items'])
+        live=json.loads(kube('get','deploy,cronjob,secret','-o','json'))['items']
+        current=restorable_secrets(live)
+        paths=volume_paths()
+        plan=[(volume,paths[volume]) for volume in manifest['volumes'] if paths.get(volume)]
+        if not plan:raise RuntimeError('No volumes in this backup match the workspace')
+        # Sessions from backup time must not sign anyone back in.
+        with contextlib.suppress(FileNotFoundError):(data/'volumes/portal-flow-data/sessions.enc').unlink()
+        changed={name:secret for name,secret in saved.items() if name in current and secret['data']!=current[name]['data']}
+        restore_error=None
+        try:
+            progress(root,'Pausing apps')
+            quiesce(root,live)
+            state={'stamp':stamp,'archive':name,'swapped':[],'secrets':{n:current[n] for n in changed},'secrets_changed':False}
+            atomic(root/'restore-journal.json',state)
+            progress(root,'Putting data back')
+            if changed:
+                state['secrets_changed']=True;atomic(root/'restore-journal.json',state)
+                put_secrets(changed)
+            for volume,path in plan:
+                aside=path+'.pre-restore-'+stamp
+                os.rename(path,aside)
+                state['swapped'].append({'path':path,'aside':aside});atomic(root/'restore-journal.json',state)
+                move(data/'volumes'/volume,path)
+            (root/'restore-journal.json').unlink()
+        except Exception as error:restore_error=error
+        finally:
+            progress(root,'Starting apps again')
+            recover_after_snapshot(root,restore_error)
+    # Keep only the data from right before this restore, so an admin can still undo it.
+    for path in paths.values():
+        if not path:continue
+        for old in Path(path).parent.glob(Path(path).name+'.pre-restore-*'):
+            if old.name!=Path(path).name+'.pre-restore-'+stamp:shutil.rmtree(old)
+    atomic(root/'last-restore.json',{'archive':name,'completed_at':int(time.time()),'volumes':len(plan),'secrets':len(changed),'previous_data_suffix':'.pre-restore-'+stamp})
+    print('Restore complete:',name,'volumes:',len(plan),flush=True)
 
 def restore_drill(root,key,archive):
     started=time.time();containers=[]
@@ -185,7 +309,7 @@ def restore_drill(root,key,archive):
             for name in containers:subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['snapshot','restore-drill','recover','cleanup-restore']);parser.add_argument('--root',type=Path,default=Path('/var/backups/blak-workspace'));parser.add_argument('--key',type=Path,default=Path('/etc/blak-backup/key'));parser.add_argument('--archive',type=Path)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['snapshot','restore-drill','restore','recover','cleanup-restore']);parser.add_argument('--place');parser.add_argument('--root',type=Path,default=Path('/var/backups/blak-workspace'));parser.add_argument('--key',type=Path,default=Path('/etc/blak-backup/key'));parser.add_argument('--archive',type=Path)
     args=parser.parse_args();args.root.mkdir(parents=True,exist_ok=True,mode=0o700)
     if args.action=='cleanup-restore':cleanup_restore();return
     lock=open(args.root/'lock','w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -193,6 +317,12 @@ def main():
     if not args.key.exists():raise RuntimeError('Backup key must be provisioned separately')
     if args.key.stat().st_mode & 0o077:raise RuntimeError('Backup key must be private')
     if args.action=='snapshot':snapshot(args.root,args.key)
+    elif args.action=='restore':
+        # The agent leaves a request file; a command-line archive name wins.
+        request=args.root/'restore-request.json'
+        wanted=json.loads(request.read_text()) if request.exists() else {}
+        request.unlink(missing_ok=True)
+        restore(args.root,args.key,args.archive.name if args.archive else wanted.get('archive'),args.place or wanted.get('place'))
     else:restore_drill(args.root,args.key,args.archive or sorted(args.root.glob('workspace-*.tar.gpg'))[-1])
 if __name__=='__main__':
     def terminate(signum,frame):raise InterruptedError('Backup service stopped')
