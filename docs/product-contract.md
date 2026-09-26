@@ -6,7 +6,7 @@
 
 Blak Workspace is an Indigenous-branded digital workplace suite distributed as branding, configuration, deploy automation, documentation, and carefully scoped extensions on [openDesk](https://docs.opendesk.eu/operations/introduction/) (ZenDiS). User-facing labels use Blak product names. Internal chart names, Helm release names, OIDC client IDs, and application identifiers stay as upstream defines them.
 
-Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS behind adapters. Base = Portal + Identity + Drive + Docs + Sites + Search + Admin + Audit. No mail, no Jitsi, no OpenProject by default. Original Blak code Apache-2.0 where possible; upstream keeps own licences. See [NOTICE](../NOTICE), [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md), and [docs/adr/](adr/README.md).
+Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS behind adapters. Base = Portal + Identity + Drive + Docs + Sites + Search + Admin + Audit. No self-hosted mail, no Jitsi, no OpenProject by default. Original Blak code Apache-2.0 where possible; upstream keeps own licences. See [NOTICE](../NOTICE), [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md), and [docs/adr/](adr/README.md).
 
 ## Naming map (labels only)
 
@@ -17,7 +17,7 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak Docs | Collabora, opened from Drive; no separate portal tile |
 | Blak Chat | Rocket.Chat (OIDC via Blak ID; openDesk seed still documents Element) |
 | Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
-| Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
+| Proton Mail (mail and calendar) | Proton for Business, linked from Blak Home (catalog id `mail`). Not self-hosted and not Blak-branded. See [Mail and calendar](#mail-and-calendar). OX App Suite stays an optional licensed alternative. |
 | Blak Knowledge | Outline (team wiki with free OIDC; replaced Docmost, whose SSO is licence-gated) |
 | Blak Projects | Kaneo (OIDC via Blak ID; openDesk seed still documents OpenProject) |
 | Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
@@ -27,6 +27,54 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | BlakEyes | BlakEyes drone imagery appliance (separate checkout `yumaitau/BlakEyes`; catalog id `eyes`) |
 
 Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels. Do not rename upstream internal identifiers.
+
+## Mail and calendar
+
+Blak Workspace does not run its own mail or calendar server. The recommended
+provider is **Proton for Business** (Proton Mail and Proton Calendar). Blak Home
+shows a Proton Mail tile to members of the `Blak Mail users` group, and the tile
+opens Proton directly.
+
+### Why Proton
+
+- **Mail is the hardest service to self-host well.** A mail server needs a clean
+  sending reputation, spam and phishing filtering, blocklist monitoring, and
+  24-hour operations. Home and small-site connections often cannot send mail at
+  all. A missed message costs more than any other outage. Proton runs all of this.
+- **Proton cannot read the mail.** Mail and calendar events are end-to-end or
+  zero-access encrypted. Proton cannot read what is stored, and does not fund
+  itself through advertising or by training AI on customer content. That supports
+  a community keeping control of its own information, as in the CARE Principles
+  for Indigenous Data Governance. It is not a sovereignty certification.
+- **The apps are open source.** Proton's clients are published, and they have
+  been independently audited.
+- **It covers what people expect.** You get mail on the organisation's own
+  domain, a shared calendar, contacts, and web, desktop and phone apps without
+  extra work.
+- **The rest of the workspace is unaffected.** Files stay in Blak Drive,
+  passwords in Blak Vault, and chat in Blak Chat. Proton only replaces what we
+  chose not to build.
+
+### What to tell customers
+
+- **Data location.** Data is held by Proton in Switzerland and the EU, not in
+  Australia. Do not describe Proton as Australian-hosted or sovereign. An
+  organisation that must keep mail in Australia should use Microsoft 365 with
+  Australian data residency, or a licensed OX App Suite deployment.
+- **Sign-in.** Proton accounts are separate from Blak ID. Confirm that the
+  customer's Proton plan supports SAML single sign-on before promising one
+  login. Blak ID (Authentik) can act as the SAML identity provider.
+- **No Blak branding.** Proton pages carry no Blak branding and no way back to
+  Home, because the workspace shell cannot reach them. The tile is labelled
+  Proton Mail, not Blak Mail.
+- **Encrypted content stays out of the workspace.** Hermes, Blak Search and
+  Blak Flow cannot read Proton mail or calendars.
+- **Limited sync with other apps.** Proton Calendar does not sync with other
+  calendar apps over CalDAV. Other mail clients such as Outlook or Thunderbird
+  need Proton Bridge, a desktop app on paid plans.
+- **Other providers.** An organisation that already uses Microsoft 365, Google
+  Workspace or another IMAP provider can keep it. Point the `mail` tile's URL at
+  that provider with `BLAK_APP_ORIGINS`.
 
 ## In scope
 

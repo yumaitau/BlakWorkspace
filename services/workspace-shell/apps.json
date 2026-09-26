@@ -36,6 +36,12 @@
     "backend": "Powered by OpenCloud"
   },
   {
+    "id": "mail",
+    "name": "Proton Mail",
+    "url": "https://mail.proton.me/",
+    "backend": "Hosted by Proton (Switzerland)"
+  },
+  {
     "id": "chat",
     "name": "Blak Chat",
     "url": "https://chat.workspace.example.com/",

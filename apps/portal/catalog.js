@@ -2,6 +2,8 @@
 
 // status: live = available and advertised; soon = not advertised as live.
 // oidcClient identifies SSO; authentication labels explicit local-login exceptions.
+// authentication 'external' marks a hosted service outside the workspace: it signs
+// people in itself, is not Blak-branded and has no health check.
 const ACCENT = {
   forms: '#D68B2C', draw: '#3199A2', crm: '#D65B2E', workspace: '#D65B2E', drive: '#3199A2', docs: '#66996B', notes: '#D68B2C', chat: '#C55235',
   meet: '#21818A', mail: '#737BB8', knowledge: '#66996B', projects: '#D8792E', admin: '#7583B0',
@@ -22,6 +24,7 @@ const APPS = [
   { id: 'crm', name: 'Blak CRM', desc: 'Leads, contacts, organisations and deals', url: 'https://crm.workspace.example.com/login?redirect-to=/crm', backend: 'Powered by Frappe CRM', group: 'Organise', status: 'live', oidcClient: 'blak-crm', check: { proto: 'http', host: 'crm', port: 3000, path: '/api/method/ping' } },
   { id: 'drive', name: 'Blak Drive', desc: 'Files, documents, spreadsheets and slides', url: 'https://drive.workspace.example.com', backend: 'Powered by OpenCloud', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'drive', port: 9200, path: '/' } },
   { id: 'docs', hidden: true, name: 'Blak Docs', desc: 'Documents, spreadsheets, presentations', url: 'https://drive.workspace.example.com', backend: 'Powered by Collabora (WOPI via Drive SSO)', group: 'Workspace', status: 'live', oidcClient: 'web', check: { proto: 'http', host: 'docs', port: 9980, path: '/hosting/discovery' } },
+  { id: 'mail', name: 'Proton Mail', desc: 'Encrypted email and calendar, run by Proton', url: 'https://mail.proton.me', backend: 'Hosted by Proton (Switzerland)', group: 'Workspace', status: 'live', authentication: 'external', check: null },
   { id: 'chat', name: 'Blak Chat', desc: 'Team messaging', url: 'https://chat.workspace.example.com', backend: 'Powered by Rocket.Chat', group: 'Workspace', status: 'live', oidcClient: 'rocketchat', check: { proto: 'http', host: 'chat', port: 3000, path: '/api/info' } },
   { id: 'sites', name: 'Blak Knowledge', desc: 'Intranet sites and team knowledge', url: 'https://sites.workspace.example.com', backend: 'Powered by Outline', group: 'Organise', status: 'live', oidcClient: 'outline', check: { proto: 'http', host: 'sites', port: 3000, path: '/_health' } },
   { id: 'projects', name: 'Blak Projects', desc: 'Projects, tasks and boards', url: 'https://projects.workspace.example.com', backend: 'Powered by Kaneo', group: 'Organise', status: 'live', oidcClient: 'kaneo', check: { proto: 'http', host: 'projects', port: 5173, path: '/api/health' } },
