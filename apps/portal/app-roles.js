@@ -25,4 +25,10 @@ function requiredRole(app, method, pathname) {
   return ['GET', 'HEAD', 'OPTIONS'].includes(method) ? 'reader' : 'writer';
 }
 
-module.exports = { MANAGED_APPS, rolesFromClaims, can, requiredRole };
+function isWorkspaceAdmin(user) {
+  const apps = Array.isArray(user && user.apps) ? user.apps : [];
+  const driveRole = user && user.roles && user.roles.drive;
+  return apps.includes('idp') || (apps.includes('drive') && driveRole === 'admin');
+}
+
+module.exports = { isWorkspaceAdmin, MANAGED_APPS, rolesFromClaims, can, requiredRole };

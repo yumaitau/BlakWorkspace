@@ -26,7 +26,7 @@ python3 scripts/deploy/provision-id.py
 python3 scripts/deploy/provision-role-reader.py
 python3 scripts/deploy/provision-drive-roles.py --prepare-only
 NS="$NS" bash scripts/deploy/ensure-secrets.sh
-kubectl -n "$NS" apply -f deploy/k3s/micro/98-clamav.yaml
+NS="$NS" python3 scripts/deploy/retire-file-guard.py
 python3 - <<'PY' | kubectl -n "$NS" apply -f -
 import os,yaml
 from pathlib import Path
@@ -34,8 +34,6 @@ manifest=next(d for d in yaml.safe_load_all(Path('deploy/k3s/micro/50-opencloud.
 for container in manifest['spec']['template']['spec']['containers']:
     if container['name'] == 'opencloud':
         container['image'] = os.environ['DRIVE_IMAGE']
-    if container['name'] == 'file-guard':
-        container['image'] = os.environ['PORTAL_IMAGE']
 print(yaml.safe_dump(manifest))
 PY
 kubectl -n "$NS" rollout status deploy/opencloud --timeout=600s

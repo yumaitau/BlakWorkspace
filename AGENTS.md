@@ -84,33 +84,6 @@ Git CRM is Frappe. At the last cluster check the live `crm` Deployment was still
 
 Every app keeps Blak branding and a way back to Home. An existing Blak ID session must not show a second login, MFA, or "Verify your identity" step. Vault's provider uses the implicit-consent authorization flow. Do not put an authenticator-enrollment stage back on that provider. The vault master password is separate from SSO. The first SSO user still sets it inside Vaultwarden. Suite logout clears the portal cookie only.
 
-## Held files
-
-ClamAV scans named Drive files under `/var/lib/opencloud/storage/users/users`. The loop defaults to 300000 ms, and to 15 seconds after a failed pass. Skip dot-directories, `*.held.txt`, symlinks, and files over 64MB. Do not move `.oc-nodes` blobs. Moving them breaks Drive. Do not scan Vault ciphertext. Do not send file bytes to VirusTotal. Chat and Forms uploads are out of scope.
-
-User-facing words are: held back, looked unsafe, not deleted, Put it back, Delete it for good. Do not say quarantine, virus, malware, signature, or ClamAV in the main UI. The signature stays under Technical detail. A non-admin is told to ask a workspace admin and to give the file name.
-
-An admin has `idp` in their apps, or drive role `admin`. `ownerId` is the first path segment, the OpenCloud user uuid. It often does not equal the Authentik subject, so a non-admin usually sees the note left in Drive and an empty Held files list. Admins see every held record.
-
-Release copies the bytes back and deletes the note. Refuse the release when the original path already exists. Delete removes the held copy and the note.
-
-`file-guard.js` must load without `app-roles.js`. The ConfigMap sidecar only mounts the file-guard files, and `isAdmin` is inlined for that reason.
-
-On `main` (`fc1319a`) the sidecar is `node:22-alpine`, command `node /opt/file-guard/file-guard-run.js`, ConfigMap `blak-file-guard-code`, PVC `file-guard-data`, secret `blak-file-guard` key `token`. That is what the homelab was running on 2026-09-23. The portal calls `FILE_GUARD_URL=http://drive:8092`.
-
-The uncommitted working tree runs the checker from the portal image (`node /app/file-guard-run.js`, image `blak-portal:micro`) via `scripts/deploy/file-guard.py`. `up` requires `PORTAL_IMAGE`, creates the secret when missing, applies `deploy/k3s/micro/98-clamav.yaml`, and patches the live opencloud Deployment, portal Deployment, and drive Service. `down` removes the sidecar, the portal `FILE_GUARD_*` env, service port 8092, and the clamav Deployment. It keeps both PVCs. It must not rewrite `OC_URL` or `BLAK_APP_ORIGINS`.
-
-Do not point the live sidecar at `blak-portal:knowledge-sites`. That image does not contain `file-guard-run.js`. Rebuild and import the portal image before `file-guard.py up`.
-
-`scripts/deploy/deploy-drive-roles.sh` still applies the opencloud Deployment from the yaml after it swaps image names. On a tailnet deploy that replaces public URLs. Use `file-guard.py` for the checker.
-
-Tests:
-
-```sh
-node --test apps/portal/test/file-guard.test.js
-PYTHONPATH=tests python3 -m unittest tests.test_file_guard_deploy
-```
-
 ## Chat upgrades
 
 `main` still builds Rocket.Chat from the 7.9.3 digest and tags `blak-chat:7.9.3-blak1`. The homelab `deploy/chat` was rolled with `kubectl set image` to `docker.io/library/blak-chat:8.8.1-blak1`. The version API returns the string `8.8`. That image is release 8.8.1. Do not apply `90-rocketchat.yaml` to make git match the cluster.
@@ -131,7 +104,7 @@ Chat role files are also mounted from ConfigMap `blak-chat-role-policy`. Restart
 
 Treated as current stable at that check: Authentik `ghcr.io/goauthentik/server:2026.8.3`, Vaultwarden 1.37.3 (`blak-vault:1.37.3`). Homelab Hermes reported Open WebUI 0.11.3. The next stable noted then was 0.11.4. Do not retag Hermes until `services/hermes/patch-*.py` is re-anchored. The image is digest-pinned in `services/hermes/Dockerfile` and `deploy/k3s/micro/92-hermes.yaml`. Drive is OpenCloud 7.5.0 (`blak-drive:7.5.0-blak1`). Outline, Collabora, Kaneo, HeyForm, Meilisearch, Frappe, Postgres, nginx, Valkey, and NATS were not bumped. Confirm upstream again before the next bump.
 
-ClamAV in git is `clamav/clamav:1.4`. The live daemon at that check was 1.4.6.
+ClamAV and the Drive file checker are retired. Host EDR is operator-managed. See `docs/runbooks/host-operations.md`.
 
 ## Browser checks
 
@@ -150,8 +123,7 @@ Stay in one browser context. A new tab does not keep `blak_session` the way a sa
 Uncommitted, and part of the intended workflow above:
 
 - Chat 8.8.1 `ARG`, `services/chat/patch.cjs`, `services/chat/patch.test.cjs`, `scripts/deploy/build-chat.sh`, and the `90-rocketchat.yaml` image tag plus the Mongo 8 comment
-- `scripts/deploy/file-guard.py`, the portal-image sidecar in `50-opencloud.yaml`, the `blak-file-guard` block in `ensure-secrets.sh`, the `deploy-micro.sh` and `deploy-drive-roles.sh` hooks, `tests/test_file_guard_deploy.py`, and the `98-clamav.yaml` comment
 
 Also dirty, and not part of that work: `sbom/cyclonedx.json`.
 
-The live checker on that date was still the `main` ConfigMap sidecar. The live chat image was already `blak-chat:8.8.1-blak1`. The live portal image seen earlier was `blak-portal:knowledge-sites`, with portal code overlaid from a ConfigMap. Git says `blak-portal:micro`.
+The scanner was retired on 2026-09-27; retained PVCs must not be deleted without inspecting their contents. The live chat image was already `blak-chat:8.8.1-blak1`. The live portal image seen earlier was `blak-portal:knowledge-sites`, with portal code overlaid from a ConfigMap. Git says `blak-portal:micro`.
