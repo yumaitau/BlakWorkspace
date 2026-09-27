@@ -33,7 +33,7 @@ The running homelab suite is single-node K3s, namespace `blak-micro`.
 - SSH `justinmiddler@100.95.43.17`
 - `KUBECONFIG=$HOME/.kube/blak-homelab-ts.yaml`
 - The laptop default kubectl context is an AWS EKS cluster. Do not use it for this suite.
-- Tailnet name `homelab.tail073805.ts.net`. Funnel is off. Tailscale Serve maps portal 443 and app ports 8444–8456 to `127.0.0.1:18480`, then workspace-shell. Port 8443 is reserved. BlakSmith is 8455 and BlakEyes is 8456.
+- Tailnet name `homelab.tail073805.ts.net`. Funnel is off. Tailscale Serve maps portal 443 and app ports 8444–8456 to `127.0.0.1:18480`, then workspace-shell. Port 8443 is reserved. BlakSmith is 8455, BlakEyes is 8456, and Beszel monitoring is 8457.
 
 Checked-in manifests use `workspace.example.com`. A live tailnet deploy stores real origins in env and in the workspace-shell nginx ConfigMap. Applying the whole manifest replaces that live config.
 
@@ -83,6 +83,10 @@ Blak Chat is Rocket.Chat. Blak Projects is Kaneo. Mattermost and OpenProject wer
 Git CRM is Frappe. At the last cluster check the live `crm` Deployment was still Twenty. Read the live image before deleting Twenty storage.
 
 Every app keeps Blak branding and a way back to Home. An existing Blak ID session must not show a second login, MFA, or "Verify your identity" step. Vault's provider uses the implicit-consent authorization flow. Do not put an authenticator-enrollment stage back on that provider. The vault master password is separate from SSO. The first SSO user still sets it inside Vaultwarden. Suite logout clears the portal cookie only.
+
+## Host monitoring
+
+Beszel replaces the custom portal metrics page. `/monitoring` redirects admins to `BLAK_MONITORING_URL`; `/api/monitoring` is retired. Hub: `deploy/beszel`, PVC `beszel-data`. Native host agent: systemd `beszel-agent`. Native Blak ID OIDC client: `beszel`; no forwarded-header authentication. See `docs/runbooks/host-operations.md` for provisioning, private agent configuration and recovery. Do not restore `portal-monitor` RBAC or the removed `host-monitor.js`.
 
 ## Chat upgrades
 

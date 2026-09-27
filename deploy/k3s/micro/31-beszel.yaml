@@ -1,0 +1,47 @@
+# Native Beszel hub. Host agents run outside Kubernetes; no node metrics RBAC.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: beszel-data, namespace: blak-micro }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 5Gi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: beszel, namespace: blak-micro }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: beszel } }
+  template:
+    metadata: { labels: { app: beszel } }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: beszel
+          image: henrygd/beszel:0.20.0@sha256:897e807a065adf8e89e30ae0cd79d1f5e38fe84ccaffbc418bde9d3cdca4eacc
+          ports: [{ name: http, containerPort: 8090 }]
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - { name: APP_URL, value: https://monitoring.workspace.example.com }
+            - { name: USER_EMAIL, valueFrom: { secretKeyRef: { name: blak-beszel, key: operator-email } } }
+            - { name: USER_PASSWORD, valueFrom: { secretKeyRef: { name: blak-beszel, key: recovery-password } } }
+            - { name: DISABLE_PASSWORD_AUTH, value: "true" }
+            - { name: OAUTH_DISABLE_POPUP, value: "true" }
+            - { name: USER_CREATION, value: "true" }
+            - { name: SHARE_ALL_SYSTEMS, value: "true" }
+            - { name: CONTAINER_DETAILS, value: "false" }
+          volumeMounts: [{ name: data, mountPath: /beszel_data }]
+          readinessProbe: { httpGet: { path: /api/health, port: http }, initialDelaySeconds: 3, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /api/health, port: http }, initialDelaySeconds: 20, periodSeconds: 30 }
+      volumes: [{ name: data, persistentVolumeClaim: { claimName: beszel-data } }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: beszel, namespace: blak-micro }
+spec:
+  selector: { app: beszel }
+  ports: [{ name: http, port: 8090, targetPort: http }]

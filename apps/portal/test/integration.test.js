@@ -58,6 +58,7 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   process.env.OIDC_REDIRECT_URI='http://127.0.0.1/callback';
   const drawDirectory=fs.mkdtempSync(path.join(os.tmpdir(),'blak-role-draw-'));
   process.env.DRAW_STORE=drawDirectory;
+  process.env.BLAK_MONITORING_URL='https://monitoring.example.org/';
   const {server,sign}=require('../server');
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   t.after(()=>{server.closeAllConnections();idp.closeAllConnections();server.close();idp.close();fs.rmSync(drawDirectory,{recursive:true,force:true});});
@@ -72,11 +73,12 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   const callback=await login();assert.equal(callback.status,302);assert.equal(callback.headers.get('location'),'/launch/draw');
   const cookie=callback.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
   const request=(url,options={})=>fetch(base+url,{redirect:'manual',...options,headers:{cookie,...options.headers}});
-  assert.equal((await fetch(base+'/api/monitoring')).status,401);
-  assert.equal((await request('/api/monitoring')).status,403);
+  assert.equal((await fetch(base+'/monitoring')).status,401);
+  assert.equal((await request('/monitoring')).status,403);
   assert.equal((await request('/held-files')).status,404);
   assert.equal((await request('/held-files/abc123/release',{method:'POST'})).status,404);
   assert.equal((await request('/held-files/abc123/delete',{method:'POST'})).status,404);
+  assert.equal((await request('/api/monitoring')).status,404);
   const me=await (await request('/api/me')).json();assert.equal(me.sub,'fixed-owner');assert.equal(me.identity,claims.blak_id);
   const modules=await (await request('/api/modules')).json();assert.deepEqual(modules.modules.map(a=>a.id),['draw']);
   assert.equal((await request('/launch/crm')).status,403);assert.equal((await request('/cloud')).status,403);
@@ -118,4 +120,11 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   const logout=async audience=>request('/oidc/backchannel-logout',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({logout_token:await jwt({sid:'browser-one',jti:crypto.randomUUID(),events:{'http://schemas.openid.net/event/backchannel-logout':{}}},audience)})});
   assert.equal((await logout('another-client')).status,400);assert.equal((await request('/api/me')).status,200);
   assert.equal((await logout('blak-portal')).status,200);assert.equal((await request('/api/me')).status,401);
+  claims.blak_apps=['idp'];
+  const adminLogin=await login();
+  const adminCookie=adminLogin.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
+  const monitoring=await request('/monitoring',{headers:{cookie:adminCookie}});
+  assert.equal(monitoring.status,302);
+  assert.equal(monitoring.headers.get('location'),'https://monitoring.example.org/?blak_launch=1');
+
 });

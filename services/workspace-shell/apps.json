@@ -1,5 +1,11 @@
 [
   {
+    "id": "monitoring",
+    "name": "Blak Monitoring",
+    "url": "https://monitoring.workspace.example.com/",
+    "backend": "Powered by Beszel"
+  },
+  {
     "id": "portal",
     "name": "Workspace",
     "url": "https://portal.workspace.example.com/",

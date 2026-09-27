@@ -21,6 +21,21 @@
     },100);
   }
 
+  if(app.id==='monitoring') {
+    const brandStyle=document.createElement('style');
+    brandStyle.textContent='html[data-blak-app=monitoring] :is(a[aria-label="Home"],h1)>svg[viewBox="0 0 285 75"]{display:none}html[data-blak-app=monitoring] :is(a[aria-label="Home"],h1):has(>svg[viewBox="0 0 285 75"])::after{content:"Blak Monitoring";font-size:20px;font-weight:700;white-space:nowrap}';
+    document.head.append(brandStyle);
+  }
+  // Invoke Beszel's own OAuth handler so it retains PKCE/state verification.
+  if(app.id==='monitoring' && new URL(location.href).searchParams.get('blak_launch')==='1') {
+    const start=Date.now();
+    const launch=setInterval(()=>{
+      const button=[...document.querySelectorAll('button')].find(el=>el.textContent.trim()==='Blak ID');
+      if(button && !button.disabled) {clearInterval(launch);button.click();}
+      else if(Date.now()-start>15000) clearInterval(launch);
+    },100);
+  }
+
   const root = document.documentElement, cookieName = 'blak-theme';
   const cookieTheme = () => document.cookie.split('; ').find(s => s.startsWith(cookieName + '='))?.split('=')[1];
   let mode = cookieTheme();
@@ -111,13 +126,13 @@
   // Only known application chrome is changed; editable content is never rewritten.
   function brandChrome() {
     if(app.id==='portal') return;
-    const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI',smith:'BlakSmith',eyes:'BlakEyes'}[app.id];
+    const upstream={forms:'HeyForm',crm:'Frappe CRM',sites:'Outline',projects:'Kaneo',drive:'OpenCloud',chat:'Rocket.Chat',hermes:'Open WebUI',smith:'BlakSmith',eyes:'BlakEyes',monitoring:'Beszel'}[app.id];
     let title=document.title;
     if(upstream) {
       if(title.includes(app.name)) title=title.replaceAll(' ('+upstream+')','');
       if(title===upstream) title=app.name;
       // Preserve document titles that mention another product in their content.
-      for(const separator of [' - ',' — ',' · ',' | ']) {
+      for(const separator of [' - ',' — ',' · ',' | ',' / ']) {
         const suffix=separator+upstream;
         if(title.endsWith(suffix)) {
           const prefix=title.slice(0,-suffix.length);
