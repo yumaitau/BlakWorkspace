@@ -1,4 +1,5 @@
 'use strict';
+const { sendError } = require('./error-pages');
 // People & access: explainer, My access, and the workspace-admin area.
 // Every admin request re-checks Blak ID live; every write is reviewed, guarded,
 // verified against Blak ID and audited before success is reported.
@@ -363,7 +364,7 @@ ${prepared.text.timing ? `<p class=muted><b>When it applies:</b> ${esc(prepared.
       send(res, 503, frame(user, 'apps', 'Not set up yet', '<p class=notice role=alert>Access management is not connected to Blak ID on this workspace. An operator must run <code>scripts/deploy/provision-access-admin.py</code> and give the portal its Blak ID token.</p>'));
       return;
     }
-    if (!readLimit(user.sub)) { send(res, 429, frame(user, 'apps', 'Slow down', `<p class=notice role=alert>${PAGE_LIMIT_MESSAGE}</p>`)); return; }
+    if (!readLimit(user.sub)) { send(res, 429, frame(user, 'apps', 'Please wait a moment', `<p class=notice role=alert>${PAGE_LIMIT_MESSAGE}</p>`)); return; }
     let admin;
     try { admin = await blakId.isWorkspaceAdmin(user.identity); } catch {
       send(res, 503, frame(user, 'apps', 'Blak ID unavailable', '<p class=notice role=alert>Blak ID could not confirm that you are a workspace administrator. Nothing was changed. Try again shortly.</p>'));
@@ -375,12 +376,12 @@ ${prepared.text.timing ? `<p class=muted><b>When it applies:</b> ${esc(prepared.
     }
     const parts = url.pathname.split('/').filter(Boolean).slice(2);
     if (req.method === 'POST') {
-      if (!sameOrigin(req, origin)) { res.writeHead(403, { 'content-type': 'text/plain' }); res.end('Cross-origin request rejected'); return; }
+      if (!sameOrigin(req, origin)) { sendError(req, res, 403, { message: 'This request couldn’t be verified. Open the page again and try once more.' }); return; }
       const fields = await readForm(req);
-      if (!csrf.valid(user.sessionId, fields.csrf)) { res.writeHead(403, { 'content-type': 'text/plain' }); res.end('This form has expired. Go back, reload the page and try again.'); return; }
+      if (!csrf.valid(user.sessionId, fields.csrf)) { sendError(req, res, 403, { title: 'Please reopen this form', message: 'This form has expired. Go back, reload the page and try again.' }); return; }
       const back = safeReturn(fields.return);
       if (parts[0] === 'review' && parts.length === 1) {
-        try { send(res, 200, reviewPage(user, await prepare(fields), back)); } catch (error) { send(res, error.status && error.status < 500 ? error.status : 502, resultPage(user, false, null, back, error.guard || error.status ? error.message : 'Blak ID could not be reached. Nothing was changed.')); }
+        try { send(res, 200, reviewPage(user, await prepare(fields), back)); } catch (error) { send(res, error.status && error.status < 500 ? error.status : 502, resultPage(user, false, null, back, error.guard ? error.message : 'Blak ID could not be reached. Nothing was changed.')); }
         return;
       }
       if (parts[0] === 'apply' && parts.length === 1) {
@@ -392,17 +393,17 @@ ${prepared.text.timing ? `<p class=muted><b>When it applies:</b> ${esc(prepared.
           audit.record({ actor: actorOf(user), action: fields.action, summary: prepared.summary, target: prepared.target, app: prepared.fields.app, role: prepared.fields.role, outcome: 'applied' });
           send(res, 200, resultPage(user, true, prepared, back));
         } catch (error) {
-          const partial = error.partial?.length ? ` Part of the change was applied (${error.partial.join(', ')}); check the person's access and try again.` : ' Nothing was changed.';
-          const reason = error.status || /^Blak ID /.test(error.message) ? error.message + '.' : 'Blak ID could not complete the change.';
+          const partial = error.partial?.length ? ` Part of the change was applied (${error.partial.join(', ')}); check the person's access and try again.` : ' Check the current access before trying again.';
+          const reason = 'Blak ID couldn’t confirm the change.';
           const message = error.guard ? error.message : reason + partial;
           audit.record({ actor: actorOf(user), action: fields.action, summary: prepared?.summary || ACTIONS.get(fields.action) || 'Unknown change', target: prepared?.target, outcome: 'failed', error: message });
           send(res, error.guard ? error.status : 502, resultPage(user, false, prepared, back, message));
         }
         return;
       }
-      res.writeHead(404); res.end(); return;
+      sendError(req, res, 404); return;
     }
-    if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+    if (req.method !== 'GET') { sendError(req, res, 405); return; }
     try {
       let html = null;
       if (!parts.length) { res.writeHead(302, { location: '/access/admin/apps' }); res.end(); return; }
@@ -413,10 +414,10 @@ ${prepared.text.timing ? `<p class=muted><b>When it applies:</b> ${esc(prepared.
       else if (parts[0] === 'people' && parts.length === 1) html = await peoplePage(user, (url.searchParams.get('q') || '').slice(0, 100));
       else if (parts[0] === 'people' && parts.length === 2) html = await personPage(user, parts[1]);
       else if (parts[0] === 'changes' && parts.length === 1) html = changesPage(user);
-      if (!html) { send(res, 404, frame(user, 'apps', 'Not found', '<p>That page does not exist.</p>')); return; }
+      if (!html) { sendError(req, res, 404); return; }
       send(res, 200, html);
     } catch (error) {
-      send(res, error.status === 404 || error.status === 400 ? 404 : 502, frame(user, 'apps', 'Blak ID unavailable', `<p class=notice role=alert>${error.status === 404 || error.status === 400 ? 'Not found in Blak ID.' : 'Blak ID could not be reached. Try again shortly.'}</p>`));
+      sendError(req, res, error.status === 404 || error.status === 400 ? 404 : 502);
     }
   }
 
@@ -425,16 +426,16 @@ ${prepared.text.timing ? `<p class=muted><b>When it applies:</b> ${esc(prepared.
       if (url.pathname !== '/access' && !url.pathname.startsWith('/access/')) return false;
       if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return true; }
       if (url.pathname === '/access' || url.pathname === '/access/') {
-        if (req.method !== 'GET') { res.writeHead(405); res.end(); return true; }
+        if (req.method !== 'GET') { sendError(req, res, 405); return true; }
         send(res, 200, explainerPage(user)); return true;
       }
       if (url.pathname === '/access/me') {
-        if (req.method !== 'GET') { res.writeHead(405); res.end(); return true; }
-        if (!readLimit(user.sub)) { send(res, 429, frame(user, 'me', 'Slow down', `<p class=notice role=alert>${PAGE_LIMIT_MESSAGE}</p>`)); return true; }
+        if (req.method !== 'GET') { sendError(req, res, 405); return true; }
+        if (!readLimit(user.sub)) { send(res, 429, frame(user, 'me', 'Please wait a moment', `<p class=notice role=alert>${PAGE_LIMIT_MESSAGE}</p>`)); return true; }
         send(res, 200, await myAccessPage(user)); return true;
       }
       if (url.pathname === '/access/admin' || url.pathname.startsWith('/access/admin/')) { await handleAdmin(req, res, url, user); return true; }
-      send(res, 404, frame(user, 'how', 'Not found', '<p>That page does not exist.</p>'));
+      sendError(req, res, 404);
       return true;
     },
     explainerPage, myAccessPage, appPage, groupsPage, personPage,

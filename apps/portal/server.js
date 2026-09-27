@@ -1,4 +1,5 @@
 const http = require('http');
+const { sendError, isBrowserNavigation } = require('./error-pages');
 const https = require('https');
 const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
@@ -29,6 +30,15 @@ const outline = outlineSites.createClient({
   token: process.env.OUTLINE_API_KEY || '',
   publicUrl: process.env.OUTLINE_PUBLIC_URL || (knowledge && knowledge.url) || '',
 });
+function friendlyFlowError(error) {
+  const copy = {
+    'name must have at least two characters': 'Give your flow a name with at least two characters.',
+    'event starter needs a name': 'Enter the event name that starts this flow.',
+    'flow is disabled': 'Enable this flow before running it.',
+    'starter did not match event': 'This event doesn’t match the flow’s starting rule. Check the rule and try again.',
+  };
+  return copy[error.message] || 'Check the flow’s starting rule and steps, then try again.';
+}
 const ownerConnectors = new Map();
 function connectorsFor(owner) {
   if (!ownerConnectors.has(owner)) ownerConnectors.set(owner, flowEngine.defaultConnectors());
@@ -118,6 +128,7 @@ async function proxyCloudConsole(req, res, url) {
   const body = req.method === 'GET' || req.method === 'HEAD' ? null : await readBody(req);
   try {
     const result = await upstreamRequest(target, { method: req.method, headers, body });
+    if (result.status >= 400 && isBrowserNavigation(req)) { sendError(req, res, result.status); return; }
     const type = String(result.headers['content-type'] || 'application/octet-stream');
     let payload = result.body;
     if (type.includes('text/html')) payload = Buffer.from(rewriteConsoleDocument(payload.toString('utf8')));
@@ -125,8 +136,7 @@ async function proxyCloudConsole(req, res, url) {
     res.writeHead(result.status, { 'content-type': type, 'cache-control': 'no-store' });
     res.end(payload);
   } catch {
-    res.writeHead(502, { 'content-type': 'text/html; charset=utf-8' });
-    res.end('<!doctype html><html data-blak-app="storage"><head><title>Blak Cloud</title></head><body><main><h1>Blak Cloud is unavailable</h1><p>The cloud console could not be reached.</p></main></body></html>');
+    sendError(req, res, 502);
   }
 }
 function awsReq(service, method, path, query, body, contentType) {
@@ -429,7 +439,7 @@ async function cloudPage(user, bucket, prefix, msg) {
       const qforms = urls.slice(0, 10).map((u) => writable ? `<form method=post action=/cloud/send style="margin:6px 0"><input type=hidden name=url value="${esc(u)}"><input name=body aria-label="Message body" required placeholder="Message to ${esc(u.split('/').pop())}…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-width:280px"> <button class=btn-sec type=submit>Send</button></form>` : `<p>${esc(u.split('/').pop())}</p>`).join('');
       queues = `<h3 class=sec>Queues</h3>` + (urls.length ? qforms : `<p class=gsub>No queues yet.</p>`)
         + (writable ? `<form method=post action=/cloud/queue style="margin:6px 0"><input aria-label="New queue name" name=name required minlength=1 placeholder="New queue name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit>Create queue</button></form>` : '');
-    } catch (e) { queues = `<p class=gsub>Queues unavailable (${esc(e.message)}).</p>`; }
+    } catch (e) { queues = `<p class=gsub>Queues couldn’t be loaded. Try again shortly.</p>`; }
     body = `${msg ? `<p class=gsub>${esc(msg)}</p>` : ''}
 <h3 class=sec>Object storage (S3)</h3>
 <form method=get action=/cloud><div class=search style="margin:0 0 12px;max-width:640px"><select aria-label="Bucket" name=bucket onchange="this.form.submit()"><option value="">Choose a bucket…</option>${opts}</select>
@@ -438,10 +448,10 @@ ${listing}
 ${writable ? `<form method=post action=/cloud/bucket style="margin:12px 0"><input aria-label="New bucket name" name=name required minlength=3 placeholder="New bucket name…" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px"> <button class=btn-sec type=submit style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Create bucket</button></form>` : '<p>Read-only access</p>'}
 ${bucket && writable ? `<h3 class=sec>Upload to ${esc(bucket)}</h3><input type=file id=upfile aria-label="File to upload"><button class=btn-sec id=upbtn style="padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-raised);cursor:pointer">Upload</button><p class=gsub id=upmsg></p>
 <script>document.getElementById('upbtn').onclick=async()=>{const f=document.getElementById('upfile').files[0];if(!f)return;const m=document.getElementById('upmsg');m.textContent='Uploading…';
-try{const r=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(f.name),{method:'PUT',body:f});m.textContent=r.ok?'Uploaded. Reload to see it.':'Upload failed ('+r.status+')';}catch{m.textContent='Upload failed. Please retry.';}};
-document.querySelectorAll('[data-delete-object]').forEach(button=>button.onclick=async()=>{const m=document.getElementById('upmsg');try{const response=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(button.dataset.deleteObject),{method:'DELETE'});if(response.ok)location.reload();else m.textContent='Delete failed ('+response.status+')';}catch{m.textContent='Delete failed. Please retry.';}});</script>` : ''}
+try{const r=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(f.name),{method:'PUT',body:f});m.textContent=r.ok?'Uploaded. Reload to see it.':(r.status===401?'Please sign in again before uploading.':r.status===413?'That file is too large. Choose a smaller file.':'Your file couldn’t be uploaded. Check your access and try again.');}catch{m.textContent='We couldn’t confirm the upload. Refresh the file list before trying again.';}};
+document.querySelectorAll('[data-delete-object]').forEach(button=>button.onclick=async()=>{const m=document.getElementById('upmsg');try{const response=await fetch('/cloud/object?bucket='+encodeURIComponent(${scriptJson(bucket)})+'&key='+encodeURIComponent(button.dataset.deleteObject),{method:'DELETE'});if(response.ok)location.reload();else m.textContent=response.status===401?'Please sign in again before deleting.':'The file couldn’t be deleted. Check your access and try again.';}catch{m.textContent='We couldn’t confirm the deletion. Refresh the file list before trying again.';}});</script>` : ''}
 ${queues}`;
-  } catch (e) { body = `<p class=gsub>Blak Cloud is unavailable right now (${esc(e.message)}).</p>`; }
+  } catch (e) { body = `<p class=gsub>Blak Cloud couldn’t be reached. Try again shortly.</p>`; }
   return shell(user, 'storage', 'Blak Cloud', `<div class=greet>Blak Cloud</div>
 <p class=gsub>Store files and send queue messages for your workspace automations.</p>${body}`);
 }
@@ -451,15 +461,14 @@ async function handleRequest(req, res) {
   const user = await sessionUser(req);
   res.setHeader('cache-control', 'no-store');
   const requiredApp = routeApp(url.pathname);
-  if (user && requiredApp && !allowedApps(APPS, user).some(a => a.id === requiredApp)) { res.writeHead(403); res.end('Application access not granted'); return; }
+  if (user && requiredApp && !allowedApps(APPS, user).some(a => a.id === requiredApp)) { sendError(req, res, 403); return; }
   const permission = requiredRole(requiredApp, req.method, url.pathname);
   if (user && permission && !can(user, requiredApp, permission)) {
-    res.writeHead(403, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ error: permission === 'reader' ? 'Application role required' : 'Writer role required' }));
+    sendError(req, res, 403, { message: 'Your current access doesn’t allow this action. Ask your workspace administrator for help.' });
     return;
   }
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) && req.headers.origin && req.headers.origin !== new URL(REDIRECT_URI).origin) {
-    res.writeHead(403); res.end('Cross-origin request rejected'); return;
+    sendError(req, res, 403, { title: 'Please reopen this page', message: 'This request couldn’t be verified. Open the page again and try once more.' }); return;
   }
   if (url.pathname === '/api/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
@@ -474,7 +483,7 @@ async function handleRequest(req, res) {
       const exporter = require('./knowledge-export');
       const owner = exporter.exportOwner(req.headers.authorization, process.env.KNOWLEDGE_EXPORT_ACCOUNTS);
       res.end(JSON.stringify({ owner, documents: exporter.documents(url.pathname.slice('/api/knowledge-export/'.length), owner, drawStore, flowStore) }));
-    } catch (error) { res.writeHead(error.status || 503); res.end(JSON.stringify({ error: 'Knowledge export unavailable' })); }
+    } catch (error) { sendError(req, res, error.status || 503); }
     return;
   }
   if (await access.handle(req, res, url, user)) return;
@@ -487,11 +496,11 @@ async function handleRequest(req, res) {
     res.end(shell(user,'home','Getting started',require('./welcome').welcomePage(allowedApps(APPS, user).map(a => ({ ...a, url: launchURL(a) })))));return;
   }
   if (url.pathname === '/monitoring') {
-    if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
-    if (!isWorkspaceAdmin(user)) { res.writeHead(403); res.end('Workspace admin required'); return; }
-    if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+    if (!user) { sendError(req, res, 401); return; }
+    if (!isWorkspaceAdmin(user)) { sendError(req, res, 403); return; }
+    if (req.method !== 'GET') { sendError(req, res, 405); return; }
     const target = process.env.BLAK_MONITORING_URL;
-    if (!target) { res.writeHead(503); res.end('Monitoring is not configured'); return; }
+    if (!target) { sendError(req, res, 503); return; }
     const destination = new URL(target);
     destination.searchParams.set('blak_launch', '1');
     res.writeHead(302, { location: destination.href });
@@ -500,8 +509,8 @@ async function handleRequest(req, res) {
   }
   if (url.pathname === '/api/sync-health' || url.pathname === '/sync') {
     res.setHeader('cache-control','no-store');
-    if (!user) { res.writeHead(401); res.end('Sign in required'); return; }
-    if (req.method !== 'GET') { res.writeHead(405); res.end(); return; }
+    if (!user) { sendError(req, res, 401); return; }
+    if (req.method !== 'GET') { sendError(req, res, 405); return; }
     const health = require('./sync-health').healthFor(user.sub, process.env.SYNC_HEALTH_FILE);
     if (url.pathname === '/api/sync-health') { res.setHeader('content-type','application/json'); res.end(JSON.stringify(health)); return; }
     const rows = health.sources.map(source => `<tr><th scope="row">${esc(source.label)}</th><td>${esc(source.status)}</td><td>${source.last_success ? esc(new Date(source.last_success*1000).toISOString().replace('T',' ').slice(0,19))+' UTC' : 'Not yet synced'}</td><td>${source.documents}</td><td>${source.expires_at ? esc(new Date(source.expires_at*1000).toISOString().slice(0,10)) : 'Not reported by source'}</td></tr>`).join('');
@@ -512,38 +521,38 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/draw' || url.pathname.startsWith('/api/draw/')) {
     res.setHeader('content-type', 'application/json');
     res.setHeader('cache-control', 'no-store');
-    if (!user) { res.writeHead(401); res.end(JSON.stringify({error:'Sign in required'})); return; }
+    if (!user) { sendError(req, res, 401); return; }
     try {
       const id = url.pathname.slice('/api/draw/'.length);
       let result;
       if (req.method === 'GET') result = id ? drawStore.read(user.sub,id) : drawStore.list(user.sub);
       else {
         let body;
-        try { body=JSON.parse((await readBody(req, MAX_UPLOAD_BYTES)).toString()); } catch(e) { if(e.status)throw e; throw Object.assign(new Error('Invalid JSON'),{status:400}); }
-        if (!body || typeof body !== 'object' || Array.isArray(body)) throw Object.assign(new Error('Expected a JSON object'),{status:400});
+        try { body=JSON.parse((await readBody(req, MAX_UPLOAD_BYTES)).toString()); } catch(e) { if(e.status)throw e; throw Object.assign(new Error('This drawing couldn’t be read. Check the file and try again.'),{status:400}); }
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw Object.assign(new Error('This drawing couldn’t be read. Check the file and try again.'),{status:400});
         if (req.method === 'POST' && !id) result=drawStore.create(user.sub,body.name);
         else if (req.method === 'PUT' && id) result=drawStore.save(user.sub,id,body);
         else if (req.method === 'DELETE' && id) result=drawStore.remove(user.sub,id,body.revision);
         else throw Object.assign(new Error('Method not allowed'),{status:405});
       }
       res.end(JSON.stringify(result));
-    } catch(e) { res.writeHead(e.status||500); res.end(JSON.stringify({error:e.status?e.message:'Drawing could not be saved'})); }
+    } catch(e) { sendError(req, res, e.status || 500, [400, 409].includes(e.status) ? { message: e.message } : {}); }
     return;
   }
   if (url.pathname === '/draw' || url.pathname.startsWith('/draw/')) {
     if (!user) { res.writeHead(302,{location:'/login'}); res.end(); return; }
     const root=path.join(__dirname,'draw-dist');
     const target=path.resolve(root, url.pathname.replace(/^\/draw\/?/,'') || 'index.html');
-    if(!target.startsWith(root+path.sep)){res.writeHead(404);res.end();return;}
+    if(!target.startsWith(root+path.sep)){sendError(req, res, 404);return;}
     try {
       const body=fs.readFileSync(target);
       const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png'}[path.extname(target)]||'application/octet-stream';
       res.writeHead(200,{'content-type':mime,'cache-control':'private, no-cache','x-content-type-options':'nosniff'});res.end(body);
-    } catch {res.writeHead(404);res.end('Not found');}
+    } catch {sendError(req, res, 404);}
     return;
   }
   if (url.pathname === '/api/me') {
-    if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
+    if (!user) { sendError(req, res, 401); return; }
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ sub: user.sub, name: user.name, email: user.email, identity: user.identity, apps: user.apps, roles: rolesFromClaims(user.roles) }));
     return;
@@ -553,12 +562,12 @@ async function handleRequest(req, res) {
     if (origin) {
       const origins = new Set(APPS.filter(a => a.url).map(a => new URL(a.url, REDIRECT_URI).origin));
       origins.add(new URL(REDIRECT_URI).origin);
-      if (!origins.has(origin)) { res.writeHead(403); res.end(); return; }
+      if (!origins.has(origin)) { sendError(req, res, 403); return; }
       res.setHeader('access-control-allow-origin', origin);
       res.setHeader('access-control-allow-credentials', 'true');
       res.setHeader('vary', 'Origin');
     }
-    if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
+    if (!user) { sendError(req, res, 401); return; }
     if (url.pathname === '/api/modules') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ modules: allowedApps(APPS, user).map((a) => ({ id: a.id, name: a.name, backend: a.backend, url: new URL(launchURL(a), REDIRECT_URI).href, status: a.status, oidcClient: a.oidcClient, enabled: a.status === 'live' })) }));
@@ -571,9 +580,9 @@ async function handleRequest(req, res) {
   }
   if (url.pathname.startsWith('/launch/')) {
     const app = APPS.find(a => a.id === url.pathname.slice('/launch/'.length));
-    if (!app) { res.writeHead(404); res.end(); return; }
+    if (!app) { sendError(req, res, 404); return; }
     if (!user) { res.writeHead(302, { location: '/login?app=' + encodeURIComponent(app.id) }); res.end(); return; }
-    if (!allowedApps(APPS, user).includes(app)) { res.writeHead(403); res.end('Application access not granted'); return; }
+    if (!allowedApps(APPS, user).includes(app)) { sendError(req, res, 403); return; }
     const integration = INTEGRATIONS[app.id] || {};
     const target = new URL(integration.login || app.url, new URL(app.url, REDIRECT_URI));
     // HeyForm accepts a device identifier, then creates and verifies its own
@@ -582,13 +591,13 @@ async function handleRequest(req, res) {
     res.writeHead(302, { location: target.href }); res.end(); return;
   }
   if (url.pathname === '/oidc/backchannel-logout') {
-    if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+    if (req.method !== 'POST') { sendError(req, res, 405); return; }
     try {
       const body = new URLSearchParams((await readBody(req, 16384)).toString());
       const claims = await oidc.logout(body.get('logout_token'));
       sessions.revokeIdentity(claims);
       res.writeHead(200); res.end();
-    } catch { res.writeHead(400); res.end('Invalid logout request'); }
+    } catch { sendError(req, res, 400); }
     return;
   }
   if (url.pathname === '/login') {
@@ -610,7 +619,7 @@ async function handleRequest(req, res) {
     const p = pending.get(state);
     const browserState = readCookie(req, 'blak_login');
     pending.delete(state);
-    if (!code || !p || browserState !== state || Date.now() - p.ts >= LOGIN_TTL_MS) { res.writeHead(400, { 'content-type': 'text/plain' }); res.end('bad login state'); return; }
+    if (!code || !p || browserState !== state || Date.now() - p.ts >= LOGIN_TTL_MS) { sendError(req, res, 400, { title: 'Let’s start sign-in again', message: 'This sign-in link has expired or is no longer valid. Sign in again to continue.', retryLogin: true }); return; }
     try {
       const tok = await postForm(`${OIDC_BASE}/token/`, { grant_type: 'authorization_code', code, code_verifier: p.verifier, redirect_uri: REDIRECT_URI, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
       const tj = JSON.parse(tok.body);
@@ -624,8 +633,7 @@ async function handleRequest(req, res) {
       res.writeHead(302, { location: p.returnTo, 'set-cookie': [`${COOKIE}=${sess}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${REDIRECT_URI.startsWith('https:') ? '; Secure' : ''}`, loginCookie('', REDIRECT_URI)] });
       res.end();
     } catch (e) {
-      res.writeHead(502, { 'content-type': 'text/plain' });
-      res.end('Sign-in failed. Please try again.');
+      sendError(req, res, 502, { title: 'We couldn’t sign you in', message: 'Please try signing in again. If this keeps happening, contact your workspace administrator.', retryLogin: true });
     }
     return;
   }
@@ -656,19 +664,19 @@ async function handleRequest(req, res) {
       const img = fs.readFileSync(path.join(__dirname, isLogo ? 'brand-home-logo.jpg' : 'brand-banner.png'));
       res.writeHead(200, { 'content-type': isLogo ? 'image/jpeg' : 'image/png', 'cache-control': 'public, max-age=86400' });
       res.end(img);
-    } catch (e) { res.writeHead(404); res.end(); }
+    } catch (e) { sendError(req, res, 404); }
     return;
   }
   if (url.pathname.startsWith('/brand/icons/')) {
     const f = url.pathname.split('/').pop();
     if (f?.endsWith('.svg') && APP_ICONS[f.slice(0,-4)]) { res.writeHead(200, {'content-type':'image/svg+xml','cache-control':'public, max-age=86400'});res.end(APP_ICONS[f.slice(0,-4)]);return; }
-    if (!/^[a-z]+\.png$/.test(f || '')) { res.writeHead(400); res.end(); return; }
+    if (!/^[a-z]+\.png$/.test(f || '')) { sendError(req, res, 400); return; }
     try {
       const fs = require('fs');
       const img = fs.readFileSync(__dirname + '/brand-icons/' + f);
       res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
       res.end(img);
-    } catch (e) { res.writeHead(404); res.end(); }
+    } catch (e) { sendError(req, res, 404); }
     return;
   }
   if (url.pathname === '/brand/logo.svg') {
@@ -697,7 +705,7 @@ async function handleRequest(req, res) {
     return;
   }
   if (url.pathname === '/api/cloud-access') {
-    if (!user || !can(user, 'storage', 'reader')) { res.writeHead(401); res.end(); return; }
+    if (!user || !can(user, 'storage', 'reader')) { sendError(req, res, 401); return; }
     res.writeHead(204); res.end(); return;
   }
   if ((url.pathname === '/cloud' || url.pathname === '/cloud/') && CLOUD_PUBLIC_URL) {
@@ -710,25 +718,26 @@ async function handleRequest(req, res) {
     return;
   }
   if (url.pathname === '/cloud/object') {
-    if (!user) { res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthenticated"}'); return; }
+    if (!user) { sendError(req, res, 401); return; }
     const bucket = url.searchParams.get('bucket') || '';
     const key = url.searchParams.get('key') || '';
     const s3Req = (method, path, body) => awsReq('s3', method, path, {}, body, body ? 'application/octet-stream' : null);
     const body = req.method === 'PUT' ? await readBody(req, MAX_UPLOAD_BYTES) : null;
     try {
-      writeCloudResult(res, await dispatchCloudObject(s3Req, { method: req.method, bucket, key, body }));
+      const result = await dispatchCloudObject(s3Req, { method: req.method, bucket, key, body });
+      if (result.httpStatus >= 400 && isBrowserNavigation(req)) sendError(req, res, result.httpStatus);
+      else writeCloudResult(res, result);
     } catch (e) {
-      res.writeHead(502, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: e.message }));
+      sendError(req, res, 502);
     }
     return;
   }
   if (url.pathname === '/cloud/bucket' && req.method === 'POST') {
-    if (!user) { res.writeHead(401); res.end(); return; }
+    if (!user) { sendError(req, res, 401); return; }
     const data = (await readBody(req)).toString('utf8');
       const name = (new URLSearchParams(data).get('name') || '').trim().toLowerCase();
       if (!validBucketName(name)) {
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('Invalid bucket name (3-63 chars, lowercase, dots and dashes).') });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('Choose a bucket name with 3–63 characters using lowercase letters, numbers, dots or dashes.') });
         res.end();
         return;
       }
@@ -737,35 +746,35 @@ async function handleRequest(req, res) {
         if (result.status < 200 || result.status >= 300) throw new Error('storage returned ' + result.status);
         res.writeHead(302, { location: '/cloud?bucket=' + encodeURIComponent(name) });
       } catch (e) {
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('Create failed: ' + e.message) });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('We couldn’t confirm the bucket was created. Check the bucket list before trying again.') });
       }
       res.end();
     return;
   }
   if (url.pathname === '/cloud/queue' && req.method === 'POST') {
-    if (!user) { res.writeHead(401); res.end(); return; }
+    if (!user) { sendError(req, res, 401); return; }
     const data = (await readBody(req)).toString('utf8');
       const name = (new URLSearchParams(data).get('name') || '').trim();
       try {
         const r = await sqsAction({ Action: 'CreateQueue', QueueName: name });
         const ok = r.status === 200 && !r.body.includes('<Code>');
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent(ok ? `Queue ${name} created.` : 'Create queue failed.') });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent(ok ? `Queue ${name} created.` : 'The queue couldn’t be created. Check its name and try again.') });
       } catch (e) {
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('Create queue failed: ' + e.message) });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('We couldn’t confirm the queue was created. Check the queue list before trying again.') });
       }
       res.end();
     return;
   }
   if (url.pathname === '/cloud/send' && req.method === 'POST') {
-    if (!user) { res.writeHead(401); res.end(); return; }
+    if (!user) { sendError(req, res, 401); return; }
     const data = (await readBody(req)).toString('utf8');
       const p = new URLSearchParams(data);
       try {
         const r = await sqsAction({ Action: 'SendMessage', QueueUrl: p.get('url') || '', MessageBody: p.get('body') || '' });
         const ok = r.status === 200 && r.body.includes('<MessageId>');
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent(ok ? 'Message sent.' : 'Send failed.') });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent(ok ? 'Message sent.' : 'Your message couldn’t be sent. Check the queue and try again.') });
       } catch (e) {
-        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('Send failed: ' + e.message) });
+        res.writeHead(302, { location: '/cloud?msg=' + encodeURIComponent('We couldn’t confirm your message was sent. Check the queue before sending it again.') });
       }
       res.end();
     return;
@@ -806,14 +815,14 @@ async function handleRequest(req, res) {
             res.writeHead(302, { location: '/flow/' + flow.id });
             res.end();
           } catch (e) {
-            res.writeHead(400, { 'content-type': 'text/html; charset=utf-8' });
-            res.end(flowNewPage(user, e.message));
+            res.writeHead(e instanceof flowEngine.FlowError ? 400 : 500, { 'content-type': 'text/html; charset=utf-8' });
+            res.end(flowNewPage(user, e instanceof flowEngine.FlowError ? friendlyFlowError(e) : 'We couldn’t save this flow. Try again shortly.'));
           }
         return;
       }
       if (parts.length === 2 && req.method === 'GET') {
         const flow = flowEngine.getFlow(flowStore, parts[1]);
-        if (flow.owner !== user.sub) { res.writeHead(404); res.end('not found'); return; }
+        if (flow.owner !== user.sub) { sendError(req, res, 404); return; }
         const runs = flowEngine.listRuns(flowStore, flow.id);
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         res.end(shell(user, 'flow', flow.name, `<div class=greet>${esc(flow.name)}</div>
@@ -829,7 +838,7 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
       }
       if (parts.length === 3 && req.method === 'POST' && ['enable', 'disable', 'run', 'delete'].includes(parts[2])) {
         const flow = flowEngine.getFlow(flowStore, parts[1]);
-        if (flow.owner !== user.sub) { res.writeHead(404); res.end('not found'); return; }
+        if (flow.owner !== user.sub) { sendError(req, res, 404); return; }
         if (parts[2] === 'delete') {
           delete flowStore.flows[flow.id];
           flowStore.runs = flowStore.runs.filter(run => run.flowId !== flow.id);
@@ -847,20 +856,19 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
         return;
       }
     } catch (e) {
-      res.writeHead(e.status || (e.message.startsWith('unknown flow') ? 404 : 400), { 'content-type': 'text/plain' });
-      res.end(e.message);
+      const missing = e instanceof flowEngine.FlowError && e.message.startsWith('unknown flow');
+      sendError(req, res, missing ? 404 : e.status || (e instanceof flowEngine.FlowError ? 400 : 500), missing ? {} : { message: e instanceof flowEngine.FlowError ? friendlyFlowError(e) : undefined });
       return;
     }
-    res.writeHead(404, { 'content-type': 'text/plain' });
-    res.end('not found');
+    sendError(req, res, 404);
     return;
   }
   if (url.pathname === '/intranet' || url.pathname === '/intranet/') {
     if (!user) { res.writeHead(302, { location: '/login' }); res.end(); return; }
     let collections = [];
     try { collections = await outline.listCollections(); } catch (error) {
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml([], outline.publicUrl, error.message)));
+      res.writeHead(503, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml([], outline.publicUrl, 'Your sites couldn’t be loaded. Try again shortly.')));
       return;
     }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -876,8 +884,8 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
       res.end();
     } catch (error) {
       const collections = await outline.listCollections().catch(() => []);
-      res.writeHead(error.status || 400, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml(collections, outline.publicUrl, error.message)));
+      res.writeHead(error.status === 400 ? 400 : 502, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(shell(user, 'intranet', 'Intranet', outlineSites.pageHtml(collections, outline.publicUrl, error.status === 400 ? 'Choose a site name with 2–80 characters.' : 'We couldn’t finish setting up the site. Check Blak Knowledge for a partly created site before trying again.')));
     }
     return;
   }
@@ -886,14 +894,12 @@ ${runs.length ? `<table class=flowtable data-testid="flow-activity"><tbody>${run
     res.end(user ? await homePage(user) : signinPage());
     return;
   }
-  res.writeHead(404, { 'content-type': 'application/json' });
-  res.end(JSON.stringify({ error: 'not found' }));
+  sendError(req, res, 404);
 }
 const server = http.createServer((req, res) => {
   handleRequest(req, res).catch(error => {
     if (res.headersSent) { res.destroy(); return; }
-    res.writeHead(error.status || 500, { 'content-type': 'text/plain' });
-    res.end(error.status ? error.message : 'Request failed. Please try again.');
+    sendError(req, res, error.status || 500);
   });
 });
 
