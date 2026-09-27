@@ -44,7 +44,7 @@ function sendError(req, res, status, options = {}) {
   const html = isBrowserNavigation(req);
   const body = html ? errorPage(status, options) : JSON.stringify({ error: options.message || (messages[status] || messages[500])[1] });
   const vary = [res.getHeader?.('vary'), 'Accept', 'Sec-Fetch-Dest', 'Sec-Fetch-Mode'].filter(Boolean).join(', ');
-  res.writeHead(status, { 'content-type': html ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', vary });
+  res.writeHead(status, { 'content-type': html ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-blak-error-page': '1', vary });
   res.end(req.method === 'HEAD' ? undefined : body);
 }
 module.exports = { errorPage, isBrowserNavigation, sendError, messages };

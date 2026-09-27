@@ -22,6 +22,7 @@ test('browser navigation receives branded recovery pages with the original statu
     assert.equal(response.status, status, route);
     assert.match(response.headers.get('content-type'), /text\/html/);
     assert.match(response.headers.get('cache-control'), /no-store/);
+    assert.equal(response.headers.get('x-blak-error-page'), '1');
     assert.ok(body.includes(title));
     assert.match(body, /Go Home/);
     assert.doesNotMatch(body, /not-for-display|bad login state/);
