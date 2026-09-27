@@ -67,10 +67,6 @@ if ! have blak-eyes; then
     --from-literal=scim-secret="$(rand)$(rand)" \
     --from-literal=organization-id="$(openssl rand -hex 16)"
 fi
-if ! have blak-file-guard; then
-  kubectl -n "$NS" create secret generic blak-file-guard \
-    --from-literal=token="$(rand)"
-fi
 if ! have blak-drive; then
   kubectl -n "$NS" create secret generic blak-drive \
     --from-literal=admin-password="$(rand)"

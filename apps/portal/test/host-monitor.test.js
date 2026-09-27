@@ -18,3 +18,12 @@ test('Kubernetes quantities and host readings use node capacity', async () => {
   assert.equal((await listHosts(get))[0].name, 'homelab');
   assert.equal(hosts(nodes, metrics, now + 120000)[0].cpu, null);
 });
+
+test('monitoring admin policy survives scanner retirement', () => {
+  const { isWorkspaceAdmin } = require('../app-roles');
+  assert.equal(isWorkspaceAdmin(null), false);
+  assert.equal(isWorkspaceAdmin({ apps: ['idp'] }), true);
+  assert.equal(isWorkspaceAdmin({ apps: ['drive'], roles: { drive: 'admin' } }), true);
+  assert.equal(isWorkspaceAdmin({ apps: [], roles: { drive: 'admin' } }), false);
+  assert.equal(isWorkspaceAdmin({ apps: ['drive'], roles: { drive: 'reader' } }), false);
+});

@@ -72,11 +72,18 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   const callback=await login();assert.equal(callback.status,302);assert.equal(callback.headers.get('location'),'/launch/draw');
   const cookie=callback.headers.getSetCookie().find(c=>c.startsWith('blak_session=')).split(';')[0];
   const request=(url,options={})=>fetch(base+url,{redirect:'manual',...options,headers:{cookie,...options.headers}});
+  assert.equal((await fetch(base+'/api/monitoring')).status,401);
+  assert.equal((await request('/api/monitoring')).status,403);
+  assert.equal((await request('/held-files')).status,404);
+  assert.equal((await request('/held-files/abc123/release',{method:'POST'})).status,404);
+  assert.equal((await request('/held-files/abc123/delete',{method:'POST'})).status,404);
   const me=await (await request('/api/me')).json();assert.equal(me.sub,'fixed-owner');assert.equal(me.identity,claims.blak_id);
   const modules=await (await request('/api/modules')).json();assert.deepEqual(modules.modules.map(a=>a.id),['draw']);
   assert.equal((await request('/launch/crm')).status,403);assert.equal((await request('/cloud')).status,403);
   assert.equal((await request('/welcome')).status,200);
   const home=await (await request('/')).text();assert(!home.includes('href="/launch/crm"'));assert(!home.includes('href="/launch/drive"'));
+  assert(!home.includes('/held-files'));
+  assert(!home.includes('href="/monitoring"'));
   assert.equal((await request('/api/modules',{headers:{origin:'https://untrusted.example'}})).status,403);
   const legacy=sign({sub:'owner',exp:Date.now()+60000});
   assert.equal((await fetch(base+'/api/me',{headers:{cookie:'blak_session='+legacy}})).status,401);
