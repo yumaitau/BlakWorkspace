@@ -9,7 +9,7 @@ function write(file, contents) {
   const target = path.join(root, file);
   if (check) {
     if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== contents) throw new Error(`Stale generated theme: ${file}`);
-  } else fs.writeFileSync(target, contents);
+  } else { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, contents); }
 }
 write('services/app-roles/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
 write('services/hermes-sync/content-sources.json', fs.readFileSync(path.join(root, 'apps/portal/content-sources.json'), 'utf8'));
@@ -124,3 +124,10 @@ write('services/workspace-shell/logo.svg', logo+'\n');
 write('services/workspace-shell/projects-logo.svg', logo+'\n');
 write('services/workspace-shell/apps.json', JSON.stringify(shellApps,null,2)+'\n');
 write('services/workspace-shell/tokens.json', JSON.stringify({...tokens,chat:{dark:chatRoles(tokens.dark),light:chatRoles(tokens.light)},drive:Object.fromEntries(blakTheme().clients.web.themes.map(theme=>[theme.isDark?'dark':'light',theme.designTokens.roles]))},null,2)+'\n');
+
+// Shared offline error pages: no app, font or script request is needed.
+const { errorPage, messages } = require('../../apps/portal/error-pages');
+for (const status of [404, 421, 500, 502, 503, 504]) {
+  write(`services/workspace-shell/errors/${status}.json`, JSON.stringify({ error: messages[status][1] }) + '\n');
+  write(`services/workspace-shell/errors/${status}.html`, errorPage(status, { home: 'https://portal.workspace.example.com/' }) + '\n');
+}

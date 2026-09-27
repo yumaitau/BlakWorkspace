@@ -57,7 +57,7 @@ function createClient({ url, token, publicUrl, fetch: fetchImpl = globalThis.fet
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || payload.ok === false) {
-      fail(response.status || 502, (payload && (payload.message || payload.error)) || 'Outline request failed');
+      fail(502, 'Blak Knowledge couldn’t complete the request. Try again shortly.');
     }
     return payload.data;
   }

@@ -3,6 +3,15 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { TEMPLATES, createClient, homeFragment } = require('../outline-sites');
 
+test('upstream error details never become user-facing copy, including a failed 200 response', async () => {
+  for (const status of [200, 400, 500]) {
+    const client = createClient({ url: 'http://sites:3000', token: 'test', fetch: async () => ({
+      ok: status === 200, status, json: async () => ({ ok: false, message: 'private upstream detail' }),
+    }) });
+    await assert.rejects(() => client.listCollections(), error => error.status === 502 && !error.message.includes('private upstream'));
+  }
+});
+
 test('a new intranet site is an Outline collection filled from the starter templates', async () => {
   const calls = [];
   const client = createClient({
