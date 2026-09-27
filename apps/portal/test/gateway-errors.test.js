@@ -12,6 +12,7 @@ const { request } = require('./http-fixture');
 test('gateway renders browser failures, preserves API bodies, and sends POSTs only once', { skip: !process.env.BLAK_NGINX_BIN }, async () => {
   let posts = 0;
   const app = http.createServer((req, res) => {
+    if (req.url === '/standalone') { res.writeHead(200, { 'content-type': 'text/html', 'x-blak-error-page': '1' }); res.end('<html><head><title>Recovery</title></head><body>Go Home</body></html>'); return; }
     if (req.url === '/api/cloud-access') { res.writeHead(401); res.end(); return; }
     if (req.method === 'POST') posts++;
     res.writeHead(req.url === '/outage' ? 503 : req.url === '/ok' ? 200 : 404, { 'content-type': 'application/json' });
@@ -54,6 +55,9 @@ test('gateway renders browser failures, preserves API bodies, and sends POSTs on
       assert.equal(response.status, 404);
       assert.equal((await response.json()).error, 'upstream detail');
     }
+    const standalone = await get('/standalone', { accept: 'text/html' });
+    assert.equal(standalone.status, 200);
+    assert.doesNotMatch(await standalone.text(), /shell\.(css|js)/);
     const hiddenAdmin = await get('/admin', { host: 'vault.workspace.example.com', accept: 'text/html' });
     assert.equal(hiddenAdmin.status, 404);
     assert.match(await hiddenAdmin.text(), /Go Home/);

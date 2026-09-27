@@ -4,7 +4,7 @@ Browser navigation gets a branded recovery page with a useful next step and the 
 
 `apps/portal/error-pages.js` owns the standalone page and safe default copy. It uses the existing palette and logo, works without JavaScript or an app connection, and follows the browser's light/dark preference. Run `node scripts/brand/generate.js` after changing it to regenerate the gateway pages.
 
-The gateway intercepts HTTP 404 and 5xx responses only for document navigation. Fetch metadata takes precedence over Accept; API calls, assets, streams and WebSockets keep their upstream responses. Named-location routing preserves the original method/body and sends a request once. Portal responses keep their more specific recovery copy. Native app pages that return HTTP 200, including SPA routes, remain owned by that app.
+The gateway intercepts HTTP 404 and 5xx responses only for document navigation. Fetch metadata takes precedence over Accept; API calls, assets, streams and WebSockets keep their upstream responses. Named-location routing preserves the original method/body and sends a request once. Portal responses keep their more specific recovery copy. Their `X-Blak-Error-Page` response header also suppresses the shared app stylesheet and script, so app theme overrides cannot break standalone error-page contrast. Native app pages that return HTTP 200, including SPA routes, remain owned by that app.
 
 Checks:
 
