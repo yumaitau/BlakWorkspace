@@ -24,7 +24,7 @@ spec:
   template:
     metadata: { labels: { app: portal } }
     spec:
-      serviceAccountName: portal-monitor
+      automountServiceAccountToken: false
       hostAliases:
         - ip: 10.43.169.184
           hostnames: [id.workspace.example.com]
@@ -46,6 +46,7 @@ spec:
             requests: { cpu: 250m, memory: 256Mi }
             limits: { cpu: "1", memory: 1Gi }
           env:
+            - { name: BLAK_MONITORING_URL, value: https://monitoring.workspace.example.com }
             - { name: SYNC_HEALTH_FILE, value: /sync-health/health.json }
             - { name: PORT, value: "3000" }
             - { name: KNOWLEDGE_EXPORT_ACCOUNTS, value: /exports/accounts.json }
