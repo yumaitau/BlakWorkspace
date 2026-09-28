@@ -2,6 +2,7 @@
 
 // The catalog owns app identity. This contract owns its native integration.
 const INTEGRATIONS = {
+  mail: { theme: 'external' },
   vault: { application: 'blak-vault', roleGroups: ['blak-vault-reader', 'blak-vault-writer', 'blak-vault-admin'], login: '/#/sso?identifier=00000000-01DC-01DC-01DC-000000000000', theme: 'vaultwarden' },
   forms: { application: 'blak-forms', group: 'Blak Forms users', roleGroups: ['blak-forms-reader', 'blak-forms-writer', 'blak-forms-admin'], login: '/_blak/launch.html', theme: 'heyform' },
   draw: { group: 'Blak Draw users', roleGroups: ['blak-draw-reader', 'blak-draw-writer', 'blak-draw-admin'], theme: 'excalidraw' },
@@ -21,8 +22,9 @@ const INTEGRATIONS = {
 };
 
 function allowedApps(apps, user) {
-  const grants = new Set(Array.isArray(user?.apps) ? user.apps : []);
-  return apps.filter(app => app.status === 'live' && !app.hidden && grants.has(app.id));
+  if (!user) return [];
+  const grants = new Set(Array.isArray(user.apps) ? user.apps : []);
+  return apps.filter(app => app.status === 'live' && !app.hidden && (app.external === true || grants.has(app.id)));
 }
 
 function launchURL(app) {

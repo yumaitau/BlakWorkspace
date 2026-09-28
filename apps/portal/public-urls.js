@@ -9,6 +9,7 @@ function publicApps(apps, env = process.env) {
     }
   }
   return apps.map(app => {
+    if (app.external) return app;
     const origin = origins[app.id];
     if (!origin || !app.url || app.url.startsWith('/')) return app;
     const url = new URL(app.url);

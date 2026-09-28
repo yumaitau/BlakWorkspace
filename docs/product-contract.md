@@ -17,7 +17,8 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | Blak Docs | Collabora, opened from Drive; no separate portal tile |
 | Blak Chat | Rocket.Chat (OIDC via Blak ID; openDesk seed still documents Element) |
 | Blak Meet | Jitsi (optional integration; Teams / Meet / Jitsi via MeetingProvider) |
-| Blak Mail and Calendar | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
+| Blak Mail | Proton Mail external launcher; Proton hosts mail and controls its account sign-in; no self-hosting or Blak ID SSO claim |
+| Blak Mail and Calendar (openDesk option) | OX App Suite (optional, if licensed; default is M365/Google/IMAP integration) |
 | Blak Knowledge | Outline (team wiki with free OIDC; replaced Docmost, whose SSO is licence-gated) |
 | Blak Projects | Kaneo (OIDC via Blak ID; openDesk seed still documents OpenProject) |
 | Blak Admin | Nubus admin / portal admin surfaces (pivot evaluates Authentik / Keycloak standalone) |
@@ -27,6 +28,13 @@ Pivot (ADR-014): Blak Portal (Next.js) owns UX; backends are replaceable OSS beh
 | BlakEyes | BlakEyes drone imagery appliance (separate checkout `yumaitau/BlakEyes`; catalog id `eyes`) |
 
 Do not rename upstream chart IDs, Helm release names, or OIDC client IDs to match these labels. Do not rename upstream internal identifiers.
+
+The homelab exposes Blak Mail on Home and both app pickers for signed-in workspace
+users. It opens `https://mail.proton.me/` in a new tab so Home stays available.
+This grants no mailbox permissions, creates no Proton accounts, and does not proxy,
+index or ingest email. Existing Proton sessions may be reused by Proton itself.
+Proton is an external service requiring internet access; the offline mail/calendar
+roadmap remains a separate, unimplemented capability.
 
 ## In scope
 

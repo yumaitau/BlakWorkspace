@@ -226,7 +226,7 @@ function navGroups(active, user) {
     const links = items.map((a) => {
       const inner = `${ICON_IMG[a.id] ? `<img src="/brand/icons/${ICON_IMG[a.id]}.svg" alt="" width="24" height="24" style="border-radius:6px;flex:none">` : `<span class=ric>${RAIL_ICON[a.id] || '•'}</span>`}<span class=lbl>${esc(a.name)}</span><span class=swatch style="background:${ACCENT[a.id] || 'var(--text-muted)'}"></span>${a.status === 'soon' ? '<span class=tag>Soon</span>' : ''}`;
       return a.url
-        ? `<a class=nav-item href="${launchURL(a)}" ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.desc ? a.name + ': ' + a.desc : a.name)}">${inner}</a>`
+        ? `<a class=nav-item href="${launchURL(a)}" ${a.external ? 'target="_blank" rel="noopener noreferrer"' : ''} ${a.id === active ? 'data-active="true"' : ''} title="${esc(a.desc ? a.name + ': ' + a.desc : a.name)}">${inner}</a>`
         : `<span class="nav-item soon" title="${esc(a.name)} — coming soon">${inner}</span>`;
     }).join('');
     return `<div class=nav-sec>${g}</div>${links}`;
@@ -236,7 +236,7 @@ function shell(user, active, title, main) {
   const initial = esc((user.name || user.sub || '?').trim().charAt(0).toUpperCase());
   const drawer = allowedApps(APPS, user).map((a) => {
     const inner = `${appIcon(a, 'tile-ic')}<span><span class=t>${esc(a.name)}</span><br><span class=d>${esc(a.backend || 'Coming soon')}</span></span>`;
-    return a.url ? `<a class=appitem href="${launchURL(a)}" data-app="${a.id}">${inner}</a>` : `<span class="appitem soon" data-app="${a.id}">${inner}</span>`;
+    return a.url ? `<a class=appitem href="${launchURL(a)}" ${a.external ? 'target="_blank" rel="noopener noreferrer"' : ''} data-app="${a.id}">${inner}</a>` : `<span class="appitem soon" data-app="${a.id}">${inner}</span>`;
   }).join('');
   return page(title, `<div class=topbar>
 <button class=waffle id=wbtn aria-expanded="false" aria-controls="drawer" aria-label="App launcher" data-testid="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button>
@@ -349,9 +349,9 @@ ${flowTabs('activity', user)}${body}`);
 async function homePage(user) {
   const live = allowedApps(APPS, user);
   const cards = live.map((a) => `<div class=card data-app="${a.id}" data-name="${esc((a.name + ' ' + a.desc).toLowerCase())}">
-<div class=apphead>${appIcon(a, 'tile-ic')}<span class=dot data-dot="${a.id}"> </span></div>
+<div class=apphead>${appIcon(a, 'tile-ic')}${a.external ? '<span class=tag>External</span>' : `<span class=dot data-dot="${a.id}"> </span>`}</div>
 <h3>${esc(a.name)}</h3><p>${esc(a.desc)}</p><p class=be>${esc(a.backend)}</p>
-<a href="${launchURL(a)}">Open →</a></div>`).join('');
+<a href="${launchURL(a)}" ${a.external ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open →</a></div>`).join('');
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
@@ -560,7 +560,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/modules' || url.pathname === '/api/status') {
     const origin = req.headers.origin;
     if (origin) {
-      const origins = new Set(APPS.filter(a => a.url).map(a => new URL(a.url, REDIRECT_URI).origin));
+      const origins = new Set(APPS.filter(a => a.url && !a.external).map(a => new URL(a.url, REDIRECT_URI).origin));
       origins.add(new URL(REDIRECT_URI).origin);
       if (!origins.has(origin)) { sendError(req, res, 403); return; }
       res.setHeader('access-control-allow-origin', origin);
@@ -570,10 +570,10 @@ async function handleRequest(req, res) {
     if (!user) { sendError(req, res, 401); return; }
     if (url.pathname === '/api/modules') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ modules: allowedApps(APPS, user).map((a) => ({ id: a.id, name: a.name, backend: a.backend, url: new URL(launchURL(a), REDIRECT_URI).href, status: a.status, oidcClient: a.oidcClient, enabled: a.status === 'live' })) }));
+      res.end(JSON.stringify({ modules: allowedApps(APPS, user).map((a) => ({ id: a.id, name: a.name, backend: a.backend, url: new URL(launchURL(a), REDIRECT_URI).href, status: a.status, oidcClient: a.oidcClient, external: a.external === true, enabled: a.status === 'live' })) }));
       return;
     }
-    const checks = await Promise.all(allowedApps(APPS, user).map(async (a) => ({ id: a.id, status: a.check ? await probe(a.check) : a.status === 'live' ? 'up' : a.status })));
+    const checks = await Promise.all(allowedApps(APPS, user).map(async (a) => ({ id: a.id, status: a.external ? 'external' : a.check ? await probe(a.check) : a.status === 'live' ? 'up' : a.status })));
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ status: Object.fromEntries(checks.map((c) => [c.id, c.status])) }));
     return;
@@ -584,6 +584,7 @@ async function handleRequest(req, res) {
     if (!user) { res.writeHead(302, { location: '/login?app=' + encodeURIComponent(app.id) }); res.end(); return; }
     if (!allowedApps(APPS, user).includes(app)) { sendError(req, res, 403); return; }
     const integration = INTEGRATIONS[app.id] || {};
+    if (app.external) res.setHeader('referrer-policy', 'no-referrer');
     const target = new URL(integration.login || app.url, new URL(app.url, REDIRECT_URI));
     // HeyForm accepts a device identifier, then creates and verifies its own
     // OAuth state, nonce and PKCE transaction in the native server.

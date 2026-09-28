@@ -98,7 +98,7 @@
       if(!response.ok) throw Error('Workspace session unavailable');
       const {modules}=await response.json();
       permittedIds=new Set(modules.map(item=>item.id));
-      for(const item of modules) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
+      for(const item of modules) {const link=document.createElement('a');link.href=item.url;link.textContent=item.name;if(item.external){link.target='_blank';link.rel='noopener noreferrer';link.title='External service — opens in a new tab';}if(item.id===app.id)link.setAttribute('aria-current','page');nav.append(link);}
     } catch {
       permittedIds=new Set();
       const link=document.createElement('a');link.href=new URL('/login',portalURL).href;link.textContent='Sign in to workspace';nav.append(link);

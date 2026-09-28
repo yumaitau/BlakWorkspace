@@ -9,6 +9,7 @@ function orbit(count, radius, dot, offset, colours) {
 const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 224" role="img" aria-label="Blak Workspace"><title>Blak Workspace</title><circle cx="112" cy="112" r="22" fill="#d69a40"/>${orbit(12,52,9,-90,['#d55a2a','#f4eee2','#d55a2a','#f4eee2'])}${orbit(20,94,7,-90,['#d55a2a','#d69a40','#f4eee2','#d55a2a'])}</svg>`;
 // Distinct app symbols share one vector grid, stroke and palette.
 const paths={
+  mail:'M3 6h26v20H3z M3 7l13 10L29 7 M3 26l9-10 M29 26l-9-10',
   vault:'M5 4h22v24H5z M9 4v24 M18 10a6 6 0 1 0 0 12 6 6 0 0 0 0-12 M18 13v6 M15 16h6',
   forms:'M8 5h16v22H8z M12 11h8 M12 16h8 M12 21h5',
   draw:'m8 23 2-7L22 4l6 6-12 12-8 1z M19 7l6 6 M10 16l6 6',
