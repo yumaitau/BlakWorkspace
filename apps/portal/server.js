@@ -351,7 +351,7 @@ async function homePage(user) {
   const cards = live.map((a) => `<div class=card data-app="${a.id}" data-name="${esc((a.name + ' ' + a.desc).toLowerCase())}">
 <div class=apphead>${appIcon(a, 'tile-ic')}${a.external ? '<span class=tag>External</span>' : `<span class=dot data-dot="${a.id}"> </span>`}</div>
 <h3>${esc(a.name)}</h3><p>${esc(a.desc)}</p><p class=be>${esc(a.backend)}</p>
-<a href="${launchURL(a)}" ${a.external ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open →</a></div>`).join('');
+<a href="${launchURL(a)}" ${a.external ? 'target="_blank" rel="noopener noreferrer" class="btn"' : ''}>${a.external ? 'Open in new tab ↗' : 'Open →'}</a></div>`).join('');
   return shell(user, 'home', 'Home', `<section class=hero aria-label="Blak Workspace">${homeLogo()}<div class=cap><b>Your work. Your workspace.</b><p>Our People. Our Data. A Stronger Tomorrow.</p><span>Sovereign · Open · Together</span></div></section>
 <div class=greet id=greet>Welcome</div><p class=gsub>Blak Workspace · sovereign micro cloud</p>
 <p class=guide-prompt>New here? <a href="/welcome">Start with the workspace guide</a>.</p>
