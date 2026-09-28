@@ -7,6 +7,8 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+# Official postgres:16-alpine manifest resolved during the 2026-09-28 rehearsal.
+IMAGE = 'postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777'
 
 
 def main():
@@ -19,7 +21,7 @@ def main():
     subprocess.run(docker + ['run', '-d', '--name', name, '--network', 'none',
                             '--label', 'blak.task=mail-isolation',
                             '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
-                            'postgres:16-alpine'], check=True, stdout=subprocess.DEVNULL)
+                            IMAGE], check=True, stdout=subprocess.DEVNULL)
     try:
         for _ in range(60):
             ready = subprocess.run(docker + ['exec', name, 'pg_isready', '-U', 'postgres'],
