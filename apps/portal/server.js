@@ -562,6 +562,7 @@ async function handleRequest(req, res) {
     if (origin) {
       const origins = new Set(APPS.filter(a => a.url && !a.external).map(a => new URL(a.url, REDIRECT_URI).origin));
       origins.add(new URL(REDIRECT_URI).origin);
+      if (process.env.BLAK_MONITORING_URL) origins.add(new URL(process.env.BLAK_MONITORING_URL).origin);
       if (!origins.has(origin)) { sendError(req, res, 403); return; }
       res.setHeader('access-control-allow-origin', origin);
       res.setHeader('access-control-allow-credentials', 'true');

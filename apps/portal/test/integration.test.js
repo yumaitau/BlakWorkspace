@@ -88,6 +88,10 @@ test('OIDC browser flow validates PKCE, nonce, identity, grants and signed logou
   assert.equal(modules.modules.find(a=>a.id==='mail').external,true);
   assert.equal((await fetch(base+'/launch/mail',{redirect:'manual'})).headers.get('location'),'/login?app=mail');
   assert.equal((await request('/api/modules',{headers:{origin:'https://mail.proton.me'}})).status,403);
+  const monitoringPicker=await request('/api/modules',{headers:{origin:'https://monitoring.example.org'}});
+  assert.equal(monitoringPicker.status,200);
+  assert.equal(monitoringPicker.headers.get('access-control-allow-origin'),'https://monitoring.example.org');
+  assert((await monitoringPicker.json()).modules.some(a=>a.id==='mail'));
   assert.equal((await request('/launch/crm')).status,403);assert.equal((await request('/cloud')).status,403);
   assert.equal((await request('/welcome')).status,200);
   const home=await (await request('/')).text();assert(!home.includes('href="/launch/crm"'));assert(!home.includes('href="/launch/drive"'));
