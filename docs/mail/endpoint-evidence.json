@@ -1,0 +1,139 @@
+{
+  "checked_at": "2026-09-28",
+  "scope": "Public endpoint table presence only, not account or feature qualification",
+  "records": [
+    {
+      "service": "acm",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/acm.html",
+      "sha256": "4379c8897a89d899db4a8a726f648ffd98c9be9a6c94aa4bd47ff0974b2c9619",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "backup",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/bk.html",
+      "sha256": "8e59f42ca281599d97fc3765aa969be53c772fc2567e37e0fda497d18e3bd304",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "cloudtrail",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/ct.html",
+      "sha256": "34fadf34b775bc082da3cb9e0f2b209e218fe23c87dda8962a738f141a033a97",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "cloudwatch",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/cw_region.html",
+      "sha256": "1f2b8ffc74009031ffb8151fe7d5665f1a5b46e8939acd544e9c5e6f5d505761",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "ec2",
+      "source": "https://docs.aws.amazon.com/ec2/latest/devguide/ec2-endpoints.html",
+      "sha256": "3f085850b3c61d45dda8b0719407648e155590e3045fa57d2cb0a482389c4d55",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "ecr",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/ecr.html",
+      "sha256": "bbfaeaf00f6b2d7950bf67dff8966a138426e40b58ea4591f83c77e289562c93",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "efs",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/elasticfilesystem.html",
+      "sha256": "4a77e70f34d584c3ba67026a7376f6e5865e15067299e4ad8ab77d7cd9ad3676",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "elb",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/elb.html",
+      "sha256": "feaffec0d116df282e6ad5f5f1c9344aca5c86f165619839ed2352229544a742",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "guardduty",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/guardduty.html",
+      "sha256": "91ff80554283d05e631d363ff8b16847c44c335635b2f159e0863faba62531bd",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "kms",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/kms.html",
+      "sha256": "03e4b21507ab7d676fa782b29937fc2a32bed7f42b3fbd6ec15c1d8e56a3d2c8",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "logs",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/cwl_region.html",
+      "sha256": "bd939c0c86da0eda3c1728435c0c2e7dd7c448a344ce09c879981b72245cd0d9",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "rds",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/rds-service.html",
+      "sha256": "25e84374fc28c247f92821783463d47bec3d6753050dc4bd6baf59c6d47752fc",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "s3",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/s3.html",
+      "sha256": "887614357342cadec5492c72774dd41452e4285dbf82b16e0eeab11f4fb3bd30",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "secretsmanager",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/asm.html",
+      "sha256": "c4f0b4af809c3f282e89e1ec0131eda87570303a0af493ea02d48774b54c9ca2",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "ses",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/ses.html",
+      "sha256": "7802161ba3b626c2a54a8a1013b701ad0b040492992457919a9b5e9eb4b3f458",
+      "sydney": true,
+      "melbourne": false
+    },
+    {
+      "service": "sns",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/sns.html",
+      "sha256": "b508a91c6d30d59f14b47fa33b54368669cfc3a10b33ef9bf4bbb08f03edfcb4",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "sqs",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/sqs-service.html",
+      "sha256": "3277eec724815dec15979f0b91a0e1dec09252f4cd2cbc468e07f4ce5210df44",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "ssm",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/ssm.html",
+      "sha256": "756e00a2148916640a0c0ae700a79a0b642dd2670cc6b51bc66d9dfb8c70619a",
+      "sydney": true,
+      "melbourne": true
+    },
+    {
+      "service": "sts",
+      "source": "https://docs.aws.amazon.com/general/latest/gr/sts.html",
+      "sha256": "928869b18aa57ab188fdfe16a6777bce24aa3db3ff6c5bc7017828601c1a071b",
+      "sydney": true,
+      "melbourne": true
+    }
+  ]
+}

@@ -58,6 +58,13 @@ roadmap remains a separate, unimplemented capability.
 
 ## Decisions
 
+The [Australian mail architecture](mail/README.md) defines the requested dedicated
+OX/Dovecot/Postfix/SES service, with Sydney primary and Melbourne disaster recovery.
+It is a proposed extension under incremental implementation, not the existing Proton
+launcher or a deployed mail platform. Its tenancy, residency, licensing and recovery
+gates must pass before production use. Existing installations are not migrated by
+publishing this design. No IRAP assessment or PROTECTED authorisation is claimed.
+
 The [offline community roadmap](offline-community-roadmap.md) records the accepted
 delivery order for expanding the suite. Its gates must pass before offline or
 community-governance claims are promoted; a selected tool is not a deployed feature.
