@@ -24,3 +24,14 @@ test('public origins replace only the host and keep the path', () => {
 test('missing origins leave the catalog unchanged', () => {
   assert.equal(publicApps(apps, {})[0].url, apps[0].url);
 });
+
+test('external mail stays at Proton when deployment origins are rewritten', () => {
+  const mail = require('../catalog').APPS.find(app => app.id === 'mail');
+  const [resolved] = publicApps([mail], { BLAK_APP_ORIGINS: JSON.stringify({ mail: 'https://mail.example.test' }) });
+  assert.equal(resolved.url, 'https://mail.proton.me/');
+  assert.equal(resolved.oidcClient, null);
+  const { allowedApps } = require('../integration');
+  assert.deepEqual(allowedApps([mail], null), []);
+  assert.deepEqual(allowedApps([mail], { apps: [] }), [mail]);
+  assert.equal(allowedApps(require('../catalog').APPS, { apps: [] }).length, 1);
+});

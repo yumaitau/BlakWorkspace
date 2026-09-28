@@ -146,7 +146,12 @@ class TestSsoGate(unittest.TestCase):
         crm = next(a for a in live if a["id"] == "crm")
         self.assertEqual(crm["oidcClient"], "blak-crm")
         self.assertIn("Frappe CRM", crm["backend"])
-        missing = [a["id"] for a in live if not a.get("oidcClient")]
+        missing = [a["id"] for a in live if not a.get("oidcClient") and not a.get("external")]
+        external = [a for a in live if a.get("external")]
+        self.assertEqual([a["id"] for a in external], ["mail"])
+        self.assertEqual(external[0]["url"], "https://mail.proton.me/")
+        self.assertEqual(external[0]["authentication"], "Proton account")
+        self.assertIsNone(external[0]["oidcClient"])
         self.assertEqual(missing, [])
         flow = next(a for a in live if a["id"] == "flow")
         self.assertEqual(flow["oidcClient"], "blak-portal")

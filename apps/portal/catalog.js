@@ -16,6 +16,7 @@ const RAIL_ICON = {
 };
 
 const APPS = [
+  { id: 'mail', name: 'Blak Mail', desc: 'Email with Proton Mail — opens in a new tab', url: 'https://mail.proton.me/', backend: 'Proton Mail · external service', group: 'Workspace', status: 'live', external: true, authentication: 'Proton account', oidcClient: null, check: null },
   { id: 'vault', name: 'Blak Vault', desc: 'Encrypted passwords, keys and sensitive files', url: 'https://vault.workspace.example.com', backend: 'Powered by Vaultwarden', group: 'Workspace', status: 'live', oidcClient: 'blak-vault', check: { proto: 'http', host: 'vault', port: 8080, path: '/alive' } },
   { id: 'forms', name: 'Blak Forms', desc: 'Forms and surveys', url: 'https://forms.workspace.example.com', backend: 'Powered by HeyForm', group: 'Workspace', status: 'live', oidcClient: 'blak-forms', check: { proto: 'http', host: 'forms', port: 9157, path: '/' } },
   { id: 'draw', name: 'Blak Draw', desc: 'Private diagrams and drawings', url: '/draw', backend: 'Powered by Excalidraw', group: 'Workspace', status: 'live', oidcClient: 'blak-portal', check: null },
