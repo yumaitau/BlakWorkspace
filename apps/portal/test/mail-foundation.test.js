@@ -26,13 +26,15 @@ function fixture() {
   return { identity, memberships, tenantId, record, now: 1000, resolver, txt };
 }
 
-test('region and routing deny foreign or implicit destinations; DR holds explicitly', () => {
+test('both Australian regions hold during SES outage and drain only through Sydney', () => {
   for (const region of [undefined, '', 'us-east-1', 'ap-southeast-1', 'ap-southeast-2.evil']) {
     assert.throws(() => requireRegion(region));
   }
   assert.equal(outboundRoute('ap-southeast-2', true).host, 'email-smtp.ap-southeast-2.amazonaws.com');
   assert.equal(outboundRoute('ap-southeast-2', false).action, 'hold');
-  assert.equal(outboundRoute('ap-southeast-4', true).action, 'hold');
+  assert.deepEqual(outboundRoute('ap-southeast-4', true), outboundRoute('ap-southeast-2', true));
+  assert.equal(outboundRoute('ap-southeast-4', false).action, 'hold');
+  assert.equal(outboundRoute('ap-southeast-4', false).region, 'ap-southeast-4');
   assert.throws(() => outboundRoute('ap-southeast-2', 'true'));
 });
 

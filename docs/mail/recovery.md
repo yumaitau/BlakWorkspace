@@ -8,7 +8,7 @@ Proposed targets require capacity benchmarks and regional fault drills before an
 | Mailbox folders/flags/ACLs, calendars/contacts | At most 15 minutes target | 60 minutes regional activation target; reconcile revoked access before reopening |
 | Credential revocations / security policy | Fail closed if current version cannot be established | Restore trusted policy before any send or privileged action |
 | Inbound gateway availability | Senders retry; either MX survives | Regional outage detection within 5 minutes target; surviving MX accepts or safely defers |
-| Outbound | Durable queue | Within 60 minutes only with qualified AU DR route; otherwise queued/degraded |
+| Outbound | Durable queue | SES recovery time plus controlled backlog drain; held/degraded throughout outage |
 | Full corruption/ransomware restore | Last verified immutable recovery set; hourly target | 24 hours at agreed capacity; measured by rehearsal |
 
 EFS replication generally targets 15 minutes but may exceed it; its sync watermark is
@@ -71,8 +71,9 @@ this design runbook is not an executable live-cluster procedure.
    ambiguous external sends instead of silently resending everything. Verify tenant
    A/B content and ACLs, mail counts/hashes and outbox state.
 7. **Prove service.** Synthetic accounts authenticate, send/receive, search, use shared
-   mailbox and calendar. Prove AU DR relay route and feedback ingestion. If unavailable,
-   retain queue and show degraded outbound. Never route to foreign SES endpoints.
+   mailbox and calendar. During SES outage, prove accepted outbound messages remain
+   held and show degraded delivery. After recovery, verify policy/quotas and controlled
+   Sydney SES drain per the [outage queue runbook](queue-and-events.md). No alternate relay.
 8. **Expose.** Update mail/imap/submission DNS through approved AU DNS control; keep
    both region-specific MX records accurate. Account for cached DNS and long-lived
    connections; stale endpoints must reject writes. Watch retry traffic and duplicates.

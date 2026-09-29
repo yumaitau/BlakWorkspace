@@ -7,11 +7,11 @@ the initial proposal assigns functional ownership, not invented personnel.
 
 | ID / milestone | Owner | Depends on | Exit criteria |
 | --- | --- | --- | --- |
-| MAIL-01: architecture/qualification | Platform + security | None | Twenty deliverables reviewed; global boundary, account targets, supported OX/storage, AU relay and SIEM resolved |
+| MAIL-01: architecture/qualification | Platform + security | None | Twenty deliverables reviewed; global boundary, account targets, supported OX/storage, outage queue contract and SIEM resolved |
 | MAIL-02: regional security/IaC | Platform | 01 | AU-only plans, two AZs/region, independent keys, private endpoints, immutable backup accounts; no foreign resources or content in state artifacts |
 | MAIL-03: tenant control plane | Identity + backend | 01 | Verified membership; RLS/native boundaries; domain lifecycle/DNS checks; audit/outbox; API contract and adversarial tests |
 | MAIL-04: OX/Dovecot identity | Mail + identity | 02,03 | Native OIDC, supported mailbox backend, quota/Sieve/shared ACL/FTS/mobile tests; revocation; no global master mailbox credential |
-| MAIL-05: Postfix/SES/DR delivery | Mail + security | 02,03 | No open relay; sender policy, scope/rate limits, DNS auth, SES feedback/suppression, private transport, independently working AU DR delivery |
+| MAIL-05: Postfix/SES/outage queues | Mail + security | 02,03 | No open relay; sender policy, scope/rate limits, DNS auth, SES feedback/suppression, private transport, persistent outage HOLD and controlled SES recovery drain |
 | MAIL-06: portal administration | Product + backend | 03,04,05 | Tenant-scoped domain/mailbox/SMTP/traces/audit surfaces; accessibility and real browser proof; no body/secret leaks |
 | MAIL-07: backup/DR/operations | SRE + security | 02,04,05 | Durable ACK gate, restore and region-loss drill, fencing, measured RPO/RTO, SIEM receipts and independent alert paths |
 | MAIL-08: assurance/pilot/release | Security + service owner | 01–07 | Control evidence, penetration/tenant tests, capacity, migration/rollback rehearsal, operating budget/support, source/CI/live proof |
@@ -61,7 +61,7 @@ plan and explicit target identity. Never reuse homelab manifests for AWS mail.
 | MAIL-01 | Calendar/contact/mobile/Sieve/quota/search/shared mailbox | Full real-provider workflow succeeds with tenant isolation |
 | DR-01 | Sydney power/network loss immediately after SMTP ACK | Every accepted message recoverable in Melbourne; metadata loss measured |
 | DR-02 | Partition with both regions alive, stale primary returns | No double writer; stale epoch cannot deliver or mutate |
-| DR-03 | Sydney SES down, Melbourne takeover | Independent Australian delivery and feedback verified; never foreign failover |
+| DR-03 | Sydney SES down, Melbourne takeover | Accepted messages remain held beyond ordinary expiry and restart; controlled Sydney SES drain after recovery; no alternate delivery |
 | BAK-01 | Delete/tamper backup as tenant/production admin | Denied; destination-account-only restore succeeds |
 | BAK-02 | Restore old checkpoint after credential revocation | Content restored without resurrecting revoked access |
 | AUD-01 | Collector/SIEM outage, log injection, privileged change | Bounded durable buffering; alerts; no silent audit loss |

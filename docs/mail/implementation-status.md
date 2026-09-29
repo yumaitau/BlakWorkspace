@@ -1,35 +1,53 @@
-# Implementation evidence — first increment
+# Implementation evidence — consolidated foundation
 
-Date: 2026-09-28. Scope: architecture package and source foundations, not deployed mail.
+Date: 2026-09-29. Scope: PR #202 architecture and source foundations, not deployed mail.
+Consolidates `codex/au-mail-platform` with the later `codex/au-mail-foundation` policy,
+tenant metadata and owner-approved queue-until-SES decision. Existing milestone
+issues #193–#201 remain open; no duplicate backlog was created.
 
 | Capability | Status | Evidence / limit |
 | --- | --- | --- |
 | Twenty requested design deliverables | Documented | README index; seven mail ADRs; epic #193 and issues #194–#201 |
-| Regional service discovery | Public documentation checked | Availability matrix and endpoint source hashes; account-specific feature tests still required |
-| Region/transport safety | Source-tested | Reject non-AU regions; hold unqualified DR route rather than foreign relay |
+| Regional service discovery | Public documentation checked previously | Availability matrix and source hashes; account-specific feature probes still required |
+| Region/transport safety | Source-tested | Both AU regions HOLD during SES outage; recovery uses only Sydney SES SMTP |
+| Deployment intent policy | Source-tested | Strict regional resources, SMTP port/STARTTLS, HOLD and ten evidence gates; no live inventory or signature verification |
 | Tenant permission contract | Source-tested | Issuer/subject/current-membership binding; no workspace-admin bypass |
 | Domain DNS checks | Source-tested | Ownership/MX/SPF/DKIM/DMARC/MTA-STS TXT/TLS-RPT; bounded lookups and unknown failures |
 | Domain activation / MTA-STS HTTPS | Not implemented | Verifier always reports activation pending; no arbitrary HTTP fetcher |
-| Tenant domain/mailbox/alias schema | PostgreSQL-tested | Real remote PostgreSQL 16 tests for missing scope, unfiltered reads, writes, FKs, audit grants, transaction reuse |
-| AU immutable archive module | Terraform-validated / mocked tests | Both regional roots; independent KMS, private versioned Object Lock buckets; not applied |
-| Tenant directory adapter / control API | Not implemented | Existing identity has no shared mail tenant contract; no unsafe endpoint exposed |
+| Tenant metadata schema | PostgreSQL-tested | Eleven FORCE RLS tables, two-tenant fixtures, composite FKs, missing-context denial, pool reset, protected verification/hash reads and append-only ingest |
+| AU immutable archive module | Terraform-validated / mocked tests | Independent regional roots and KMS/private Object Lock storage; not applied |
+| Tenant directory adapter / control API | Not implemented | No shared mail tenant contract or unsafe endpoint exposed |
 | Native OX/Dovecot/Postfix/SES integration | Not implemented | Supported artifacts, storage, provider/account and protocol proof outstanding |
-| Mail administration UI | Not implemented | Existing Proton launcher unchanged; no fake management controls |
-| Live backup/DR/observability/SIEM | Not implemented | Runbooks and acceptance gates documented; no RPO/RTO measurement claimed |
+| Outage HOLD / durable event workers | Design only | Local admission/hold controller, SNS/SQS fanout, receipts, replay and controlled drain remain MAIL-05/MAIL-07 gates |
+| Mail administration UI | Not implemented | Existing Proton launcher unchanged |
+| Live backup/DR/observability/SIEM | Not implemented | No RPO/RTO measurement claimed |
 
-Local verification:
+Current local verification:
 
 - Manifest validation passed.
-- Python suite: 357 passed, using Homebrew OpenSSL 3 via `BLAK_OPENSSL`; macOS
-  system LibreSSL initially failed the pre-existing local-TLS prerequisite.
-- Portal suite: 73 passed, 1 skipped; includes 8 new mail foundation tests.
-- Real PostgreSQL isolation harness passed against task-owned remote Docker container;
-  container and anonymous volumes removed afterward. No production database used.
-- Terraform storage module and both regional entry points validated. Five mocked
-  Terraform cases passed, including foreign region, provider mismatch and shared
-  writer/restore-identity rejection. No AWS resources created.
-- Public patch secret scan and local documentation-link check passed.
+- Python suite: 370 passed out of 371. The existing upstream-link network test failed
+  with local `CERTIFICATE_VERIFY_FAILED`; adding public roots to the broker CA bundle
+  did not resolve it. Homebrew OpenSSL 3 was selected via `BLAK_OPENSSL`. No source
+  workaround or disabled TLS verification was introduced. Fresh PR CI is required.
+- All 14 mail deployment-policy tests passed within that suite. Synthetic production
+  example correctly exits 1 with all ten readiness gates unresolved.
+- Portal regression suite passed with one existing skipped test, including all eight
+  mail foundation scenarios.
+- Real PostgreSQL 16 isolation tests passed on remote Docker context `m3-max`, engine
+  29.4.0, using the existing pinned image. Task container and anonymous volumes removed.
+  Synthetic data, no network or published ports; no production database used.
+- All five mocked Terraform storage tests passed. Existing regional modules are
+  unchanged; no AWS resources created.
+- Gitleaks scan of every file changed from main passed. Documentation links and git
+  whitespace checks passed.
 
-No source-level result in this table proves operational sovereignty, provider
-deliverability, native protocol isolation, immutable deployed backups or regional HA.
-Production rollout requires the open gates in README and milestone evidence.
+Earlier PR head `a85f07e` passed GitHub `validate` run 36411467446; that result does
+not validate the consolidation. The latest PR head must pass before squash merge.
+No source result proves operational sovereignty, deliverability, native protocol
+isolation, immutable deployed backups or regional HA. Production gates remain open.
+
+Publication access: the GitHub connector initially rejected writes with HTTP 403.
+The owner approved repository-scoped Agent Vault access on 2026-09-29; brokered
+GitHub REST access now succeeds. No plaintext credentials were read or written.
+Publication and merge still require the latest PR head to pass `validate`; no
+production deployment is part of this foundation increment.

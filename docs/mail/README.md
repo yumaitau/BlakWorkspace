@@ -20,7 +20,7 @@ new Australian mail deployment, not existing homelab installations.
 | 3 AWS regional availability | [Availability matrix](availability.md) |
 | 4 Threat model; 6 residency | [Security and residency](security.md) |
 | 7 Multi-region; 8 RPO/RTO; 14 backups; 15 DR runbook | [Recovery](recovery.md) |
-| 9 SES; 10 OX/Dovecot/Postfix; 11 identity | [Integration contracts](integrations.md) |
+| 9 SES; 10 OX/Dovecot/Postfix; 11 identity | [Integration contracts](integrations.md), [outage queues and events](queue-and-events.md) |
 | 12 Tenant isolation; 13 DNS/mail security | [Control plane](control-plane.md) |
 | 16 ISM mapping | [Control evidence register](ism-evidence.md) |
 | 17 ADRs | [Decisions](decisions.md) |
@@ -37,9 +37,10 @@ new Australian mail deployment, not existing homelab installations.
 3. Confirm supported OX/Dovecot versions, artifact access, licences, support and
    mailbox storage topology. Do not invent commercial entitlements or pin old
    Dovecot merely to retain its removed replication plugin.
-4. SES is not listed in Melbourne. Contract and test an independent Australian
-   outbound relay, or obtain approval for direct delivery from Melbourne with port
-   25, reverse DNS and reputation proof. Queuing is safe degradation, not outbound DR.
+4. Per owner decision on 2026-09-29, both regions retain outbound mail until Sydney
+   SES recovers. No alternate relay or direct delivery. Prove prolonged-outage HOLD,
+   restart survival, capacity backpressure and controlled replay. Outbound Internet
+   delivery remains unavailable during an SES outage; see [outage queues](queue-and-events.md).
 5. Demonstrate durable acceptance, fencing, mailbox recovery, tenant isolation and
    capacity in two actual regions. Proposed targets are not measured SLOs.
 

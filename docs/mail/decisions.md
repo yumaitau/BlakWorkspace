@@ -15,19 +15,20 @@ multi-region services rejected unless their exact scope is verified and constrai
 boundaries. Absolute Australia-only control plane is incompatible with commercial
 AWS IAM. **Gate:** customer boundary acceptance and supplier assessment.
 
-## MAIL-ADR-002 — SES Sydney, independent Australian DR transport
+## MAIL-ADR-002 — Queue in Australia until Sydney SES recovers
 
 **Evidence:** [SES endpoint table](https://docs.aws.amazon.com/general/latest/gr/ses.html)
 lists Sydney but not Melbourne on 2026-09-28.
-**Decision:** primary Postfix relay is SES Sydney; secondary is a separately contracted,
-tested Australian relay independent of Sydney. Regional routing is explicit.
-**Safe default:** no unqualified DR route; hold outbound mail when Sydney is unavailable.
-This is intentionally not advertised as completed outbound DR.
-**Alternative:** direct-to-recipient Postfix from Melbourne requires approved port 25,
-reverse DNS, warmed IPs, DKIM, bounce/complaint handling and deliverability drills.
-**Rejected:** SES Singapore/global automatic failover; Melbourne Postfix calling
-Sydney SES during a Sydney outage; treating a backup MX as outbound delivery.
-**Gate:** provider's AU content/log/support boundaries, contracts and test results.
+**Decision (owner, 2026-09-29):** both regions use Sydney SES and retain outbound mail
+in encrypted Australian Postfix queues during its outage. This supersedes the earlier
+independent-relay proposal. No direct-MX delivery, alternate relay or foreign fallback.
+**Recovery:** drain through Sydney SES only after health, credentials, sender policy,
+suppression and quota checks; rate-limit batches and reconcile uncertain attempts.
+**Consequence:** outbound Internet delivery is unavailable until SES recovers plus
+backlog drain. Mailbox and inbound recovery objectives remain separate.
+**Gate:** prolonged-outage HOLD controller, restart survival, backpressure and tested
+hold-to-requeue recovery; ordinary retry expiry does not meet indefinite retention.
+See [outage queues and events](queue-and-events.md).
 
 ## MAIL-ADR-003 — One writable mailbox region, positively fenced
 

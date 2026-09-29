@@ -1,38 +1,46 @@
 # Mail control-plane foundations
 
-This is not a running mail server or exposed API. Architecture and release gates live
-in [docs/mail](../../docs/mail/README.md).
+Not a running mail server or exposed API. Architecture and release gates live in
+[docs/mail](../../docs/mail/README.md). Existing Proton launcher remains unchanged.
 
-Implemented source increment:
+- `apps/portal/mail-policy.js`: authenticated membership and AU region contracts.
+  Both regions hold while Sydney SES is unavailable; recovery uses only Sydney SES.
+- `apps/portal/mail-dns.js`: bounded tenant-authorised DNS checks. MTA-STS HTTPS,
+  provider activation, routing reservation and delivery remain pending gates.
+- `schema.sql`: eleven tenant-scoped metadata tables with FORCE RLS, composite
+  references, protected domain verification, credential-hash read restrictions and
+  separate append-only ingest grants. No message bodies or production migration.
+- `scripts/mail/check-deployment.py`: strict declared-intent checks for Australian
+  resources, SES SMTP with STARTTLS, outage HOLD and evidence gates. No cloud discovery
+  or evidence-signature verification; passing intent does not authorise deployment.
 
-- `apps/portal/mail-policy.js`: explicit region/transport policy and membership checks.
-  Melbourne/failed Sydney returns `hold`; no unqualified relay is used.
-- `apps/portal/mail-dns.js`: tenant-authorised, bounded DNS-only record verification.
-  TXT policies compare to provisioned values and do not imply full SPF evaluation.
-  MTA-STS HTTPS, provider activation and delivery remain separate pending gates.
-- `schema.sql`: tenant-qualified domain/mailbox/alias keys, forced PostgreSQL RLS and
-  append-only runtime audit grants. No production migration or DB credentials.
+Identity and memberships must come from a verified server-side adapter, never request
+fields. No portal endpoint is enabled. The consolidated initial schema replaces the
+unshipped four-table draft; the DNS verifier's server-owned ownership challenge and
+expected records still require a provisioning adapter before exposing an API.
 
-Ownership challenge tokens are public DNS proof values, not authentication secrets;
-the schema retains them so administrators can see required TXT records until expiry.
+Install schema into an empty dedicated database as a migration owner. `mail_app` and
+`mail_ingest` are NOLOGIN groups without superuser/BYPASSRLS. Runtime login roles must
+inherit only needed privileges and never own tables. Trusted provisioning creates
+tenants and verifies domains; ordinary app grants cannot mark domains verified.
 
-The identity/membership arguments must be supplied by a verified server-side adapter.
-These functions do not verify OIDC tokens. No new portal route accepts caller-supplied
-memberships. The existing Mail launcher is untouched until integration is complete.
+Each request starts a transaction and uses parameterized
+`set_config('blak.tenant_id', $1, true)` with its server-authorised tenant UUID.
+Commit/rollback clears scope; missing context sees no rows. RLS guards omitted filters,
+not a compromised shared backend that can set another tenant UUID. Native protocol,
+global domain ownership and storage isolation remain production gates.
 
-The SQL migration is initial-only, runs under a migration owner and creates a NOLOGIN
-runtime group. Provision a separate authenticated runtime role later. Execute queries
-inside a transaction with `SET LOCAL blak.tenant_id` from verified membership; never
-use a connection-wide tenant setting. Runtime cannot own tables, TRUNCATE or bypass
-RLS. A trusted backend can change the tenant GUC: this is not protection against a
-compromised shared backend. Native mail/storage isolation remains a later acceptance
-gate. See [PostgreSQL RLS](https://www.postgresql.org/docs/current/ddl-rowsecurity.html).
+App reads audit/traces; dedicated tenant-scoped ingest appends. Outbox records desired
+changes with provisioning/audit intent in one transaction. Publisher leases, consumer
+receipts, replay archive and immutable external audit are not implemented yet; see
+[queue and event contract](../../docs/mail/queue-and-events.md).
 
 ```sh
 node --test apps/portal/test/mail-foundation.test.js
+PYTHONPATH=tests python3 -m unittest test_mail_policy
 python3 scripts/test-mail-isolation.py
 ```
 
-The SQL test uses remote Docker context `m3-max`, verifies availability, creates a
-randomly named container with no network or published ports, and removes only that
-container and its anonymous volumes. It never contacts AWS or an existing database.
+SQL tests use digest-pinned PostgreSQL on remote Docker context `m3-max`, synthetic
+data, no network or published ports, and remove only their own container and volumes.
+They never contact AWS or an existing database.

@@ -29,9 +29,9 @@ flowchart TB
   DB -. replication .-> DRDB[Melbourne replicas]
   OX --> OUT[Postfix outbound / policy / durable queue]
   OUT --> SES[SES Sydney private endpoint]
-  OUT -. declared regional disaster .-> RELAY[Independent verified Australian relay]
+  OUT -. SES unavailable .-> HOLD[Encrypted regional HOLD queues]
+  HOLD -. controlled drain after SES recovery .-> SES
   SES --> EXT[Recipient mail system]
-  RELAY --> EXT
   DB --> BACKUP[Separate AU backup accounts / immutable recovery sets]
   FS --> BACKUP
   J --> BACKUP
@@ -81,9 +81,10 @@ recipient delivery. Feedback updates trace/suppression state asynchronously.
 
 After Sydney failure: fence Sydney, promote Melbourne databases/identity/storage,
 replay missing journal messages idempotently, validate ACLs, then expose OX/IMAP and
-submission. Melbourne sends through an independently qualified Australian relay.
-Without that relay, hold outbound mail and report degraded service, not successful
-DR. On recovery, reseed Sydney from Melbourne; never merge two writable datasets.
+submission. Both regions hold outbound mail until Sydney SES recovers; Melbourne
+then drains through that same approved SES endpoint. No direct or alternate delivery.
+See [outage queues and events](queue-and-events.md) for HOLD protection and controlled
+replay. On recovery, reseed Sydney from Melbourne; never merge two writable datasets.
 
 ## Network and deployment boundary
 

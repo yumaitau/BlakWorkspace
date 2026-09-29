@@ -61,8 +61,8 @@ Default domain examples below are proposed, not proof of ownership:
 - `MX 10 mx1.blakworkspace.au`, `MX 20 mx2.blakworkspace.au`; A/AAAA point to
   independently reachable AU gateways. Publish IPv6 only after complete testing.
 - SES custom MAIL FROM has its own required MX and SPF; do not confuse it with
-  inbound MX for user addresses. Authorise DR relay in the appropriate SPF policy.
-- DKIM uses distinct SES and DR selectors. No private signing keys in public DNS.
+  inbound MX for user addresses. Only the approved SES sender route belongs in the SPF policy.
+- DKIM uses the provisioned SES selectors; no alternate DR sender is enabled. No private signing keys in public DNS.
 - DMARC aligned DKIM is required; relaxed alignment may be necessary for bounce
   subdomain. Shared mailbox/delegate sending must preserve authorised identity.
 - `_mta-sts.<domain>` TXT version/id and HTTPS policy at the fixed well-known path,

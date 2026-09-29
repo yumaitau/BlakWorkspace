@@ -96,8 +96,8 @@ Use strict source account/ARN policies; verify origin, deduplicate and correlate
 server-owned delivery ID and tenant, never arbitrary supplied SES tags. Strip
 user-supplied provider configuration headers and inject trusted values. Suppress hard
 bounces and complaints; distinguish tenant opt-out from provider-level suppression.
-Shared provider suppression must not reveal another tenant's recipients. Keep AU DR
-relay suppression policy reconciled. Disable engagement tracking.
+Shared provider suppression must not reveal another tenant's recipients. Reconcile
+suppression before either region drains its outage backlog. Disable engagement tracking.
 [Event publishing](https://docs.aws.amazon.com/ses/latest/dg/monitor-using-event-publishing.html).
 
 SES delivery success is an MTA acceptance event, not proof of inbox placement.

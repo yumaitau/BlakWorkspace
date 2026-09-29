@@ -27,12 +27,12 @@ function requireRegion(region) {
 function outboundRoute(region, primaryAvailable) {
   requireRegion(region);
   if (typeof primaryAvailable !== 'boolean') throw new Error('Regional health is required');
-  if (region === REGIONS.primary && primaryAvailable) {
-    return Object.freeze({ action: 'relay', region, host: 'email-smtp.ap-southeast-2.amazonaws.com', port: 587 });
+  if (primaryAvailable) {
+    return Object.freeze({ action: 'relay', region: REGIONS.primary, host: 'email-smtp.ap-southeast-2.amazonaws.com', port: 587 });
   }
-  // A separately qualified AU relay is not configured yet. Never fabricate SES
-  // Melbourne or send back to failed Sydney. Queuing does not satisfy outbound DR.
-  return Object.freeze({ action: 'hold', region, reason: 'Australian DR delivery is not qualified' });
+  // Both regions keep mail in their local queue while Sydney SES is unavailable.
+  // Recovery drains only through Sydney SES; no direct or alternate relay.
+  return Object.freeze({ action: 'hold', region, reason: 'Waiting for Sydney SES recovery' });
 }
 
 module.exports = { REGIONS, PERMISSIONS, requireMailAccess, requireRegion, outboundRoute };
