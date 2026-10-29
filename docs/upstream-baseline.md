@@ -28,6 +28,8 @@ Upstream lists images in `helmfile/environments/default/images.yaml.gotmpl` and 
 
 Eval may use upstream-bundled databases and object storage for learning only. Production intent requires operator-managed PostgreSQL/MariaDB/object storage per upstream external-services guidance. This seed does not apply production infrastructure.
 
+Any MariaDB 10.11 server, including the K3s `frappe-db` (pinned `mariadb:10.11.19`) and an operator-managed production MariaDB, must run 10.11.19 or later (CVE-2026-85746, CVE-2026-92262). Confirm with `SELECT VERSION();`.
+
 ## Gaps (honest)
 
 - Image digests and chart versions are not copied here; read them from the pinned tag.
